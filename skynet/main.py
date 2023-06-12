@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 
+from skynet.langchain import Langchain
+from skynet.models.summary import SummaryPayload
+
 app = FastAPI()
+langchain = Langchain()
 
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+@app.post("/summary")
+def summary(payload: SummaryPayload):
+    return langchain.summarize(payload.text)
