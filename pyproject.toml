@@ -9,6 +9,8 @@ readme = "README.md"
 python = "^3.11"
 fastapi = "^0.96.0"
 uvicorn = "^0.22.0"
+langchain = "^0.0.194"
+pydantic = "^1.10.9"
 
 
 [build-system]
