@@ -1,24 +1,34 @@
 from fastapi import FastAPI
+from fastapi_versionizer.versionizer import api_version, versionize
 
 from skynet.langchain import Langchain
 from skynet.models.summary import SummaryPayload
 
 app = FastAPI()
 langchain = Langchain()
-version = "v1"
 
-@app.post(f"/{version}/summary")
-def create_summary(payload: SummaryPayload):
-    return langchain.summarize(payload.text)
+@api_version(1)
+@app.post("/summarize")
+def summarize(payload: SummaryPayload):
+    return langchain.summarize(payload)
 
-@app.get(f"/{version}/summary/" + "{id}")
-def get_summary(id: str):
-    return langchain.get_summary(id)
+@app.get("/summary/{id}")
+def get_summary(id: str, retrieveActionItems: bool = False):
+    return langchain.get_summary(id, retrieveActionItems)
 
-@app.put(f"/{version}/summary/" + "{id}")
+@app.put("/summary/{id}")
 def update_summary(id: str, payload: SummaryPayload):
-    return langchain.update_summary(id, payload.text)
+    return langchain.update_summary(id, payload)
 
-@app.delete(f"/{version}/summary/" + "{id}")
+@app.delete("/summary/{id}")
 def delete_summary(id: str):
     return langchain.delete_summary(id)
+
+versions = versionize(
+    app=app,
+    prefix_format='/v{major}',
+    docs_url='/docs',
+    enable_latest=True,
+    latest_prefix='/latest',
+    sorted_routes=True
+)
