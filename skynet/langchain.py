@@ -1,10 +1,10 @@
-import logging
 import os
 
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import ChatOpenAI
 
 from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from skynet.models.summary import SummaryPayload
@@ -19,13 +19,24 @@ class Langchain:
         if not payload.text:
             return ""
 
+        llm = ChatOpenAI(temperature=0, model_name=OPENAI_LLM)
         text_splitter = RecursiveCharacterTextSplitter()
         docs = text_splitter.create_documents([payload.text])
-        chain = load_summarize_chain(
-            ChatOpenAI(temperature=0, model_name=OPENAI_LLM),
-            chain_type="map_reduce")
+        chain = load_summarize_chain(llm, chain_type="map_reduce")
 
-        return chain.run(docs)
+        summary = chain.run(docs)
+
+        if payload.retrieveActionItems:
+            action_items_chain = load_summarize_chain(
+                llm,
+                chain_type="map_reduce",
+                combine_prompt=PromptTemplate(input_variables=["text"], template="Return relevant action items, if any, for the following text: {text}"))
+
+            action_items = action_items_chain.run(docs)
+        else:
+            action_items = []
+
+        return { "summary": summary, "action_items": action_items }
 
     def get_summary(self, id: str, retrieveActionItems: bool = False):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
