@@ -1,11 +1,15 @@
 import logging
+import os
 
 from langchain.chains.summarize import load_summarize_chain
-from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
+
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from skynet.models.summary import SummaryPayload
+
+OPENAI_LLM = os.environ.get('OPENAI_LLM', 'gpt-3.5-turbo')
 
 class Langchain:
     def __init__(self):
@@ -17,7 +21,9 @@ class Langchain:
 
         text_splitter = RecursiveCharacterTextSplitter()
         docs = text_splitter.create_documents([payload.text])
-        chain = load_summarize_chain(OpenAI(temperature=0), chain_type="map_reduce")
+        chain = load_summarize_chain(
+            ChatOpenAI(temperature=0, model_name=OPENAI_LLM),
+            chain_type="map_reduce")
 
         return chain.run(docs)
 
