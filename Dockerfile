@@ -29,6 +29,7 @@ RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         build-essential \
         curl \
+        tini \
     && curl -sSL https://install.python-poetry.org | python - \
     && apt-get purge --auto-remove -y \
       build-essential \
@@ -68,6 +69,9 @@ EXPOSE 3000
 
 # Use the unpriveledged user to run the application
 USER 1001
+
+# Use tini as our PID 1
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run the uvicorn application server.
 CMD exec uvicorn --workers 1 --host 0.0.0.0 --port 3000 skynet.main:app
