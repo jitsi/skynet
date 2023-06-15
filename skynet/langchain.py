@@ -1,7 +1,6 @@
 import os
 
 from langchain.chains.summarize import load_summarize_chain
-from langchain.chains.summarize.map_reduce_prompt import PROMPT as MAP_REDUCE_PROMPT
 from langchain.chat_models import ChatOpenAI
 
 from langchain.memory import ConversationBufferMemory
@@ -67,7 +66,7 @@ class Langchain:
         return memory.load_memory_variables({}).get("history")
 
     def delete_summary(self, id: str):
-        if (id in self.chains):
+        if id in self.chains:
             del self.chains[id]
             return True
 
