@@ -9,11 +9,11 @@ langchain = Langchain()
 
 @api_version(1)
 @app.post("/summarize")
-def summarize(payload: SummaryPayload):
-    return langchain.summarize(payload)
+async def summarize(payload: SummaryPayload):
+    return await langchain.summarize(payload)
 
 @app.get("/summary/{id}")
-def get_summary(id: str):
+async def get_summary(id: str):
     return langchain.get_summary(id)
 
 @app.put("/summary/{id}")

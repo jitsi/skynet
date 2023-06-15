@@ -17,7 +17,7 @@ class Langchain:
     def __init__(self):
         self.chains = {}
 
-    def summarize(self, payload: SummaryPayload):
+    async def summarize(self, payload: SummaryPayload):
         if not payload.text:
             return ""
 
@@ -47,18 +47,18 @@ class Langchain:
             chain_type="map_reduce",
             combine_prompt=PromptTemplate(input_variables=["text"], template=template))
 
-        result = chain.run(docs)
+        result = await chain.arun(docs)
         result_json = parser.parse(result)
 
         summary, action_items = result_json.values()
 
         return { "summary": summary, "action_items": action_items }
 
-    def get_summary(self, id: str):
+    async def get_summary(self, id: str):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         history = memory.load_memory_variables({}).get("history")
 
-        return self.summarize(SummaryPayload(text=history))
+        return await self.summarize(SummaryPayload(text=history))
 
     def update_summary(self, id: str, payload: SummaryPayload):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
