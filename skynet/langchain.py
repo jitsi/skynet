@@ -1,9 +1,11 @@
 import os
 
 from langchain.chains.summarize import load_summarize_chain
+from langchain.chains.summarize.map_reduce_prompt import PROMPT as MAP_REDUCE_PROMPT
 from langchain.chat_models import ChatOpenAI
 
 from langchain.memory import ConversationBufferMemory
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
@@ -22,27 +24,41 @@ class Langchain:
         llm = ChatOpenAI(temperature=0, model_name=OPENAI_LLM)
         text_splitter = RecursiveCharacterTextSplitter()
         docs = text_splitter.create_documents([payload.text])
-        chain = load_summarize_chain(llm, chain_type="map_reduce")
+        template = """
+            For the following text, extract the following information:
 
-        summary = chain.run(docs)
+            summary: Write a concise summary of the text.
+            action_items: Return relevant action items from the text if any.
 
-        if payload.retrieveActionItems:
-            action_items_chain = load_summarize_chain(
-                llm,
-                chain_type="map_reduce",
-                combine_prompt=PromptTemplate(input_variables=["text"], template="Return relevant action items, if any, for the following text: {text}"))
+            Format the output as JSON with the following keys:
+            summary
+            action_items
 
-            action_items = action_items_chain.run(docs)
-        else:
-            action_items = []
+            text: {text}
+        """
+
+        parser = StructuredOutputParser.from_response_schemas([
+            ResponseSchema(description="Summary of the text", name="summary", type="string"),
+            ResponseSchema(description="Action items extracted from the text", name="action_items", type="array")
+        ])
+
+        chain = load_summarize_chain(
+            llm,
+            chain_type="map_reduce",
+            combine_prompt=PromptTemplate(input_variables=["text"], template=template))
+
+        result = chain.run(docs)
+        result_json = parser.parse(result)
+
+        summary, action_items = result_json.values()
 
         return { "summary": summary, "action_items": action_items }
 
-    def get_summary(self, id: str, retrieveActionItems: bool = False):
+    def get_summary(self, id: str):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         history = memory.load_memory_variables({}).get("history")
 
-        return self.summarize(SummaryPayload(text=history, retrieveActionItems=retrieveActionItems))
+        return self.summarize(SummaryPayload(text=history))
 
     def update_summary(self, id: str, payload: SummaryPayload):
         memory = self.chains.setdefault(id, ConversationBufferMemory())

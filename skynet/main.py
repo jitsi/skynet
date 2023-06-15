@@ -13,8 +13,8 @@ def summarize(payload: SummaryPayload):
     return langchain.summarize(payload)
 
 @app.get("/summary/{id}")
-def get_summary(id: str, retrieveActionItems: bool = False):
-    return langchain.get_summary(id, retrieveActionItems)
+def get_summary(id: str):
+    return langchain.get_summary(id)
 
 @app.put("/summary/{id}")
 def update_summary(id: str, payload: SummaryPayload):
