@@ -28,7 +28,7 @@ class Langchain:
             For the following text, extract the following information:
 
             summary: Write a concise summary of the text.
-            action_items: Return relevant action items from the text if any.
+            action_items: Return relevant action items from the text, as an array of strings.
 
             Format the output as JSON with the following keys:
             summary
