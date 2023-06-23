@@ -1,34 +1,43 @@
-from fastapi import FastAPI
-from fastapi_versionizer.versionizer import api_version, versionize
+from fastapi import APIRouter, Depends, FastAPI
+from fastapi_versionizer.versionizer import versioned_api_route, versionize
 
+from skynet.auth.bearer import JWTBearer
 from skynet.langchain import Langchain
 from skynet.models.summary import SummaryPayload
 
 app = FastAPI()
 langchain = Langchain()
 
-@api_version(1)
-@app.post("/summarize")
+router = APIRouter(
+    dependencies=[Depends(JWTBearer())],
+    responses={
+        401: {"description": "Invalid or expired token"},
+        403: {"description": "Not enough permissions"}},
+    route_class=versioned_api_route(major=1)
+)
+
+@router.post("/summarize")
 async def summarize(payload: SummaryPayload):
     return await langchain.summarize(payload)
 
-@app.get("/summary/{id}")
+@router.get("/summary/{id}")
 async def get_summary(id: str):
     return langchain.get_summary(id)
 
-@app.put("/summary/{id}")
+@router.put("/summary/{id}")
 def update_summary(id: str, payload: SummaryPayload):
     return langchain.update_summary(id, payload)
 
-@app.delete("/summary/{id}")
+@router.delete("/summary/{id}")
 def delete_summary(id: str):
     return langchain.delete_summary(id)
+
+app.include_router(router)
 
 versions = versionize(
     app=app,
     prefix_format='/v{major}',
     docs_url='/docs',
     enable_latest=True,
-    latest_prefix='/latest',
     sorted_routes=True
 )
