@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi_versionizer.versionizer import versioned_api_route, versionize
 
@@ -8,8 +9,10 @@ from skynet.models.summary import SummaryPayload
 app = FastAPI()
 langchain = Langchain()
 
+BYPASS_AUTHORIZATION = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
+
 router = APIRouter(
-    dependencies=[Depends(JWTBearer())],
+    dependencies=[Depends(JWTBearer(auto_error=not BYPASS_AUTHORIZATION))],
     responses={
         401: {"description": "Invalid or expired token"},
         403: {"description": "Not enough permissions"}},
