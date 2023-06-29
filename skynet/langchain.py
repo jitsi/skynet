@@ -8,7 +8,7 @@ from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from skynet.models.v1.summary import SummaryPayload
+from skynet.models.v1.summary import SummaryPayload, SummaryResult
 
 OPENAI_LLM = os.environ.get('OPENAI_LLM', 'gpt-3.5-turbo')
 
@@ -16,7 +16,7 @@ class Langchain:
     def __init__(self):
         self.chains = {}
 
-    async def summarize(self, payload: SummaryPayload):
+    async def summarize(self, payload: SummaryPayload) -> SummaryResult:
         if not payload.text:
             return ""
 
