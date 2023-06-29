@@ -1,8 +1,8 @@
-from skynet.langchain import Langchain
+from skynet.modules.ttt.summaries import SummariesChain
 from skynet.models.v1.summary import SummaryPayload, SummaryResult
 from skynet.routers.utils import get_router
 
-langchain = Langchain()
+langchain = SummariesChain()
 
 router = get_router(1)
 

@@ -12,7 +12,7 @@ from skynet.models.v1.summary import SummaryPayload, SummaryResult
 
 OPENAI_LLM = os.environ.get('OPENAI_LLM', 'gpt-3.5-turbo')
 
-class Langchain:
+class SummariesChain:
     def __init__(self):
         self.chains = {}
 
