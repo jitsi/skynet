@@ -8,7 +8,7 @@ from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from skynet.models.summary import SummaryPayload
+from skynet.models.v1.summary import SummaryPayload
 
 OPENAI_LLM = os.environ.get('OPENAI_LLM', 'gpt-3.5-turbo')
 

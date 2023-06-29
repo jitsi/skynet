@@ -1,48 +1,11 @@
-import os
-from fastapi import APIRouter, Depends, FastAPI
-from fastapi_versionizer.versionizer import versioned_api_route, versionize
+from fastapi import FastAPI
+from fastapi_versionizer.versionizer import versionize
 
-from skynet.auth.bearer import JWTBearer
-from skynet.langchain import Langchain
-from skynet.models.summary import SummaryPayload
+from skynet.routers.v1 import router as v1_router
+
 
 app = FastAPI()
-langchain = Langchain()
-
-BYPASS_AUTHORIZATION = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
-
-if not BYPASS_AUTHORIZATION and (not os.environ.get('SSO_PUBKEY') or not os.environ.get('SSO_ISSUER')):
-    raise RuntimeError('The SSO_PUBKEY and SSO_ISSUER environment variables must be set')
-
-router = APIRouter(
-    dependencies=[] if BYPASS_AUTHORIZATION else [Depends(JWTBearer())],
-    responses={
-        401: {"description": "Invalid or expired token"},
-        403: {"description": "Not enough permissions"}},
-    route_class=versioned_api_route(major=1)
-)
-
-@router.post("/summarize")
-async def summarize(payload: SummaryPayload):
-    return await langchain.summarize(payload)
-
-@router.get("/summary/{id}")
-async def get_summary(id: str):
-    return langchain.get_summary(id)
-
-@router.put("/summary/{id}")
-def update_summary(id: str, payload: SummaryPayload):
-    return langchain.update_summary(id, payload)
-
-@router.delete("/summary/{id}")
-def delete_summary(id: str):
-    return langchain.delete_summary(id)
-
-@app.get("/healthz")
-def health():
-    return {"status": "ok"}
-
-app.include_router(router)
+app.include_router(v1_router)
 
 versions = versionize(
     app=app,
@@ -51,3 +14,14 @@ versions = versionize(
     enable_latest=True,
     sorted_routes=True
 )
+
+# Add the health route after versioning to it's not versioned.
+#
+
+@app.get("/healthz")
+def health():
+    """
+    Health checking for k8s.
+    """
+
+    return {"status": "ok"}
