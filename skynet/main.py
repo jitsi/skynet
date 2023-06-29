@@ -11,8 +11,11 @@ langchain = Langchain()
 
 BYPASS_AUTHORIZATION = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
 
+if not BYPASS_AUTHORIZATION and (not os.environ.get('SSO_PUBKEY') or not os.environ.get('SSO_ISSUER')):
+    raise RuntimeError('The SSO_PUBKEY and SSO_ISSUER environment variables must be set')
+
 router = APIRouter(
-    dependencies=[Depends(JWTBearer(auto_error=not BYPASS_AUTHORIZATION))],
+    dependencies=[] if BYPASS_AUTHORIZATION else [Depends(JWTBearer())],
     responses={
         401: {"description": "Invalid or expired token"},
         403: {"description": "Not enough permissions"}},
