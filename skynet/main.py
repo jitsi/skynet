@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi_versionizer.versionizer import versionize
 
 from skynet.routers.v1 import router as v1_router
@@ -15,8 +16,12 @@ versions = versionize(
     sorted_routes=True
 )
 
-# Add the health route after versioning to it's not versioned.
+# Add additional routes after versioning so they are not versioned.
 #
+
+@app.get("/")
+def root():
+    return RedirectResponse(url='/latest/docs')
 
 @app.get("/healthz")
 def health():
