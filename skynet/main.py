@@ -32,6 +32,10 @@ def update_summary(id: str, payload: SummaryPayload):
 def delete_summary(id: str):
     return langchain.delete_summary(id)
 
+@app.get("/healthz")
+def health():
+    return {"status": "ok"}
+
 app.include_router(router)
 
 versions = versionize(
