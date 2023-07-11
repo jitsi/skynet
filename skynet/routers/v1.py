@@ -20,7 +20,7 @@ async def get_summary(id: str) -> SummaryResult:
     Returns the current summary for the given **id**.
     """
 
-    return langchain.get_summary(id)
+    return await langchain.get_summary(id)
 
 @router.put("/summary/{id}")
 def update_summary(id: str, payload: SummaryPayload):

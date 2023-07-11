@@ -18,7 +18,7 @@ class SummariesChain:
 
     async def summarize(self, payload: SummaryPayload) -> SummaryResult:
         if not payload.text:
-            return ""
+            return { "summary": "", "action_items": [] }
 
         llm = ChatOpenAI(temperature=0, model_name=OPENAI_LLM)
         text_splitter = RecursiveCharacterTextSplitter()
