@@ -5,4 +5,3 @@ class SummaryPayload(BaseModel):
 
 class SummaryResult(BaseModel):
     summary: str
-    action_items: list[str]

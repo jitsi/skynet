@@ -1,57 +1,48 @@
-import os
+import timeit
 
 from langchain.chains.summarize import load_summarize_chain
-from langchain.chat_models import ChatOpenAI
+from langchain.llms import CTransformers
 
 from langchain.memory import ConversationBufferMemory
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from skynet.models.v1.summary import SummaryPayload, SummaryResult
-
-OPENAI_LLM = os.environ.get('OPENAI_LLM', 'gpt-3.5-turbo')
+from skynet.env import llama_path
+from skynet.prompts.summary import summary_template
 
 class SummariesChain:
     def __init__(self):
         self.chains = {}
+        self.llm = CTransformers(
+            model=llama_path,
+            model_type='llama',
+            config={'max_new_tokens': 1000, 'temperature': 1}
+        )
 
     async def summarize(self, payload: SummaryPayload) -> SummaryResult:
         if not payload.text:
-            return { "summary": "", "action_items": [] }
+            return { "summary": "" }
 
-        llm = ChatOpenAI(temperature=0, model_name=OPENAI_LLM)
+        start = timeit.default_timer()
+
         text_splitter = RecursiveCharacterTextSplitter()
         docs = text_splitter.create_documents([payload.text])
-        template = """
-            For the following text, extract the following information:
 
-            summary: Write a concise summary of the text.
-            action_items: Return relevant action items from the text, as an array of strings.
-
-            Format the output as JSON with the following keys:
-            summary
-            action_items
-
-            text: {text}
-        """
-
-        parser = StructuredOutputParser.from_response_schemas([
-            ResponseSchema(description="Summary of the text", name="summary", type="string"),
-            ResponseSchema(description="Action items extracted from the text", name="action_items", type="array")
-        ])
+        prompt = PromptTemplate(template=summary_template, input_variables=["text"])
 
         chain = load_summarize_chain(
-            llm,
+            self.llm,
             chain_type="map_reduce",
-            combine_prompt=PromptTemplate(input_variables=["text"], template=template))
+            combine_prompt=prompt)
 
-        result = await chain.arun(docs)
-        result_json = parser.parse(result)
+        result = chain.run(docs)
 
-        summary, action_items = result_json.values()
+        end = timeit.default_timer()
 
-        return { "summary": summary, "action_items": action_items }
+        print(f"Time to retrieve response: {end - start}")
+
+        return { "summary": result }
 
     async def get_summary(self, id: str):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
@@ -59,13 +50,13 @@ class SummariesChain:
 
         return await self.summarize(SummaryPayload(text=history))
 
-    def update_summary(self, id: str, payload: SummaryPayload):
+    def update_summary_context(self, id: str, payload: SummaryPayload):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         memory.save_context({"input": payload.text }, {"output": ""})
 
         return memory.load_memory_variables({}).get("history")
 
-    def delete_summary(self, id: str):
+    def delete_summary_context(self, id: str):
         if id in self.chains:
             del self.chains[id]
             return True
