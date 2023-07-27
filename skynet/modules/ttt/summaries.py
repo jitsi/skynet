@@ -17,7 +17,7 @@ class SummariesChain:
         self.llm = CTransformers(
             model=llama_path,
             model_type='llama',
-            config={'max_new_tokens': 1000, 'temperature': 1}
+            config={'max_new_tokens': 1000, 'temperature': 0.01}
         )
 
     async def summarize(self, payload: SummaryPayload) -> SummaryResult:
