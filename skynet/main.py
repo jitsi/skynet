@@ -27,6 +27,10 @@ app.mount("/openai-api", create_llama_cpp_app(Settings(model=llama_path)))
 def root():
     return RedirectResponse(url='/latest/docs')
 
+@app.get("/openai-api")
+def root():
+    return RedirectResponse(url='/openai-api/docs')
+
 @app.get("/healthz")
 def health():
     """
