@@ -1,71 +1,88 @@
-import os
+import logging
+import timeit
+import asyncio
+
+from concurrent.futures import ThreadPoolExecutor
 
 from langchain.chains.summarize import load_summarize_chain
-from langchain.chat_models import ChatOpenAI
+from langchain.llms import LlamaCpp
 
 from langchain.memory import ConversationBufferMemory
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+from skynet.models.v1.action_items import ActionItemsPayload, ActionItemsResult
 from skynet.models.v1.summary import SummaryPayload, SummaryResult
-
-OPENAI_LLM = os.environ.get('OPENAI_LLM', 'gpt-3.5-turbo')
+from skynet.env import llama_path
+from skynet.prompts.action_items import action_items_template
+from skynet.prompts.summary import summary_template
 
 class SummariesChain:
     def __init__(self):
+        self.executor = ThreadPoolExecutor(max_workers=1)
         self.chains = {}
 
-    async def summarize(self, payload: SummaryPayload) -> SummaryResult:
-        if not payload.text:
-            return { "summary": "", "action_items": [] }
+        self.llm = LlamaCpp(
+            model_path=llama_path,
+            temperature=0.01,
+            max_tokens=1000,
+            n_ctx=2048
+        )
 
-        llm = ChatOpenAI(temperature=0, model_name=OPENAI_LLM)
-        text_splitter = RecursiveCharacterTextSplitter()
-        docs = text_splitter.create_documents([payload.text])
-        template = """
-            For the following text, extract the following information:
+    async def process(self, text: str, template: str) -> str:
+        if not text:
+            return ""
 
-            summary: Write a concise summary of the text.
-            action_items: Return relevant action items from the text, as an array of strings.
+        start = timeit.default_timer()
 
-            Format the output as JSON with the following keys:
-            summary
-            action_items
+        loop = asyncio.get_running_loop()
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        docs = text_splitter.create_documents([text])
 
-            text: {text}
-        """
-
-        parser = StructuredOutputParser.from_response_schemas([
-            ResponseSchema(description="Summary of the text", name="summary", type="string"),
-            ResponseSchema(description="Action items extracted from the text", name="action_items", type="array")
-        ])
+        prompt = PromptTemplate(template=template, input_variables=["text"])
 
         chain = load_summarize_chain(
-            llm,
+            self.llm,
             chain_type="map_reduce",
-            combine_prompt=PromptTemplate(input_variables=["text"], template=template))
+            combine_prompt=prompt)
 
-        result = await chain.arun(docs)
-        result_json = parser.parse(result)
+        result = await loop.run_in_executor(self.executor, chain.run, docs)
 
-        summary, action_items = result_json.values()
+        end = timeit.default_timer()
 
-        return { "summary": summary, "action_items": action_items }
+        print(f"Time to retrieve response: {end - start}")
 
-    async def get_summary(self, id: str):
+        return result
+
+    async def get_action_items_from_text(self, payload: ActionItemsPayload) -> ActionItemsResult:
+        result = await self.process(payload.text, template=action_items_template)
+        return ActionItemsResult(action_items=result)
+
+    async def get_action_items_from_id(self, id: str) -> ActionItemsResult:
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         history = memory.load_memory_variables({}).get("history")
 
-        return await self.summarize(SummaryPayload(text=history))
+        logging.warn(f"History: {history}")
 
-    def update_summary(self, id: str, payload: SummaryPayload):
+        return await self.get_action_items_from_text(ActionItemsPayload(text=history))
+
+    async def get_summary_from_text(self, payload: SummaryPayload) -> SummaryResult:
+        result = await self.process(payload.text, template=summary_template)
+        return SummaryResult(summary=result)
+
+    async def get_summary_from_id(self, id: str):
+        memory = self.chains.setdefault(id, ConversationBufferMemory())
+        history = memory.load_memory_variables({}).get("history")
+
+        return await self.get_summary_from_text(SummaryPayload(text=history))
+
+    def update_summary_context(self, id: str, payload: SummaryPayload):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         memory.save_context({"input": payload.text }, {"output": ""})
 
         return memory.load_memory_variables({}).get("history")
 
-    def delete_summary(self, id: str):
+    def delete_summary_context(self, id: str):
         if id in self.chains:
             del self.chains[id]
             return True
