@@ -3,9 +3,10 @@ from fastapi.responses import RedirectResponse
 from fastapi_versionizer.versionizer import versionize
 
 from skynet.routers.v1 import router as v1_router
+from skynet.routers.utils import dependencies, responses
 from skynet.env import llama_path
 
-from llama_cpp.server.app import Settings, create_app as create_llama_cpp_app
+from llama_cpp.server.app import Settings, router as llama_router, create_app as create_llama_cpp_app
 
 app = FastAPI()
 app.include_router(v1_router)
@@ -18,10 +19,15 @@ versions = versionize(
     sorted_routes=True
 )
 
-# Add additional routes after versioning so they are not versioned.
-#
 
-app.mount("/openai-api", create_llama_cpp_app(Settings(model=llama_path)))
+# Add additional routes after versioning so they are not versioned.
+
+create_llama_cpp_app(Settings(model=llama_path))
+# Need to create a new app in order to have our dependencies work
+llama_app = FastAPI()
+llama_app.include_router(llama_router, dependencies=dependencies, responses=responses)
+
+app.mount("/openai-api", llama_app)
 
 @app.get("/")
 def root():

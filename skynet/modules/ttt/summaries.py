@@ -1,4 +1,3 @@
-import logging
 import timeit
 import asyncio
 
@@ -61,8 +60,6 @@ class SummariesChain:
     async def get_action_items_from_id(self, id: str) -> ActionItemsResult:
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         history = memory.load_memory_variables({}).get("history")
-
-        logging.warn(f"History: {history}")
 
         return await self.get_action_items_from_text(ActionItemsPayload(text=history))
 
