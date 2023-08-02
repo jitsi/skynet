@@ -36,5 +36,7 @@ def authorize(jwt_incoming: str) -> bool:
     try:
         jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'])
         return True
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Expired token.")
     except Exception:
         raise HTTPException(status_code=401, detail=f'Failed decoding JWT with public key {pub_key_remote_filename}')
