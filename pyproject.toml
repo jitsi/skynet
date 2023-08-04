@@ -5,6 +5,8 @@ description = ""
 authors = ["Jitsi Team <team@jitsi.org>"]
 readme = "README.md"
 
+[tool.poetry.group.dev.dependencies]
+
 [tool.poetry.dependencies]
 fastapi = "0.99.1"
 fastapi-versionizer = "^0.1.6"
