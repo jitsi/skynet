@@ -14,3 +14,14 @@ poetry run uvicorn skynet.main:app
 Visit
 http://127.0.0.1:8000/latest/docs#/
 http://127.0.0.1:8000/openai-api/docs#/
+
+## Some benchmarks
+
+Summary:
+
+| Input size | Document chunk size | Time to summarize (M1 CPU) | Time to summarize (GPU) |
+|---|---|---|---|
+| 16000 chars | 4000 chars | ~249 sec |  |
+| 16000 chars | 2000 chars | ~294 sec |  |
+| 8000 chars | 4000 chars | ~124 sec |  |
+| 8000 chars | 2000 chars | ~145 sec |  |

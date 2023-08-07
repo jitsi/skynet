@@ -35,7 +35,7 @@ class SummariesChain:
         start = timeit.default_timer()
 
         loop = asyncio.get_running_loop()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=100)
         docs = text_splitter.create_documents([text])
 
         prompt = PromptTemplate(template=template, input_variables=["text"])
