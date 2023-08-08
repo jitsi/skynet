@@ -13,7 +13,7 @@ app.include_router(v1_router)
 
 versions = versionize(
     app=app,
-    prefix_format='/v{major}',
+    prefix_format='/summaries/v{major}',
     docs_url='/docs',
     enable_latest=True,
     sorted_routes=True

@@ -10,8 +10,9 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from skynet.models.v1.action_items import ActionItemsPayload, ActionItemsResult
-from skynet.models.v1.summary import SummaryPayload, SummaryResult
+from skynet.models.v1.action_items import ActionItemsResult
+from skynet.models.v1.summary import SummaryResult
+from skynet.models.v1.document import DocumentPayload
 from skynet.env import llama_path
 from skynet.prompts.action_items import action_items_template
 from skynet.prompts.summary import summary_template
@@ -53,7 +54,7 @@ class SummariesChain:
 
         return result
 
-    async def get_action_items_from_text(self, payload: ActionItemsPayload) -> ActionItemsResult:
+    async def get_action_items_from_text(self, payload: DocumentPayload) -> ActionItemsResult:
         result = await self.process(payload.text, template=action_items_template)
         return ActionItemsResult(action_items=result)
 
@@ -61,9 +62,9 @@ class SummariesChain:
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         history = memory.load_memory_variables({}).get("history")
 
-        return await self.get_action_items_from_text(ActionItemsPayload(text=history))
+        return await self.get_action_items_from_text(DocumentPayload(text=history))
 
-    async def get_summary_from_text(self, payload: SummaryPayload) -> SummaryResult:
+    async def get_summary_from_text(self, payload: DocumentPayload) -> SummaryResult:
         result = await self.process(payload.text, template=summary_template)
         return SummaryResult(summary=result)
 
@@ -71,15 +72,15 @@ class SummariesChain:
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         history = memory.load_memory_variables({}).get("history")
 
-        return await self.get_summary_from_text(SummaryPayload(text=history))
+        return await self.get_summary_from_text(DocumentPayload(text=history))
 
-    def update_summary_context(self, id: str, payload: SummaryPayload):
+    def update_document_context(self, id: str, payload: DocumentPayload):
         memory = self.chains.setdefault(id, ConversationBufferMemory())
         memory.save_context({"input": payload.text }, {"output": ""})
 
         return memory.load_memory_variables({}).get("history")
 
-    def delete_summary_context(self, id: str):
+    def delete_document_context(self, id: str):
         if id in self.chains:
             del self.chains[id]
             return True
