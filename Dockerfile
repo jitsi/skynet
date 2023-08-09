@@ -117,7 +117,7 @@ COPY ./poetry.lock ./pyproject.toml /app/
 ENV CMAKE_ARGS="-DLLAMA_CUBLAS=on"
 ENV FORCE_CMAKE=1
 
-RUN poetry install --no-interaction --no-root --without dev
+RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
 
 ## Production Image
 ##
