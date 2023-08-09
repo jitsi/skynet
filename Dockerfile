@@ -12,7 +12,7 @@ RUN rm download_model.py
 ## Base Image
 ##
 
-FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 as base
+FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 as base
 ARG POETRY_VERSION=1.5.1
 
 # Adapted from https://github.com/max-pfeiffer/python-poetry/blob/main/build/Dockerfile
