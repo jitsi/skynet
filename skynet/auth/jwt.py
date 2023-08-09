@@ -1,5 +1,4 @@
 import jwt
-import logging
 import requests
 
 from hashlib import sha256
@@ -9,7 +8,6 @@ from skynet.env import asap_pub_keys_url
 
 def get_public_key(url: str) -> str:
     requests_url = f'{asap_pub_keys_url}/{url}'
-    logging.debug(f'Getting remote key {requests_url}')
 
     req = requests.get(requests_url)
     pub_key = req.text
