@@ -1,4 +1,6 @@
 ## Model download
+##
+
 FROM python:3.11-slim AS model_download
 
 RUN pip install --upgrade huggingface_hub
@@ -7,12 +9,27 @@ RUN mkdir /models
 WORKDIR /models
 COPY download_model.py ./download_model.py
 RUN python3 download_model.py
-RUN rm download_model.py
+
+## llama.cpp build
+##
+
+FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 as llamacpp_build
+ARG LLAMACPP_VERSION=1d16309
+RUN mkdir /build
+WORKDIR /build
+RUN <<-EOF
+    apt-get update
+    apt-get install -y git
+    git clone https://github.com/ggerganov/llama.cpp.git
+    cd llama.cpp
+    git checkout ${LLAMACPP_VERSION}
+    LLAMA_CUBLAS=1 make libllama.so
+EOF
 
 ## Base Image
 ##
 
-FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 as base
+FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 as base
 ARG POETRY_VERSION=1.5.1
 
 # Adapted from https://github.com/max-pfeiffer/python-poetry/blob/main/build/Dockerfile
@@ -73,10 +90,6 @@ ENV PYTHONUNBUFFERED=1 \
 # https://docs.python.org/3/library/venv.html#how-venvs-work
 ENV PATH="$VIRTUAL_ENVIRONMENT_PATH/bin:$PATH"
 
-RUN mkdir -p ${PYTHONPATH}/skynet/models
-COPY --from=model_download /models/* ${PYTHONPATH}/skynet/models/
-ENV LLAMA_PATH="/app/skynet/models/llama-2-7b-chat.ggmlv3.q8_0.bin"
-
 # Principle of least privilege: create a new user for running the application
 RUN groupadd -g 1001 jitsi && \
     useradd -r -u 1001 -g jitsi jitsi
@@ -124,8 +137,17 @@ RUN poetry install --no-interaction --no-root --without dev
 
 FROM base
 
+ENV LLAMA_PATH="/app/skynet/models/llama-2-7b-chat.ggmlv3.q8_0.bin"
+ENV LLAMA_CPP_LIB="/app/skynet/libllama.so"
+
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
+
+# Copy models
+COPY --chown=jitsi:jitsi --from=model_download /models/* /app/skynet/models/
+
+# Copy libllama
+COPY --chown=jitsi:jitsi --from=llamacpp_build /build/llama.cpp/libllama.so /app/skynet/
