@@ -17,14 +17,12 @@ FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 as llamacpp_build
 ARG LLAMACPP_VERSION=1d16309
 RUN mkdir /build
 WORKDIR /build
-RUN <<-EOF
-    apt-get update
-    apt-get install -y git
-    git clone https://github.com/ggerganov/llama.cpp.git
-    cd llama.cpp
-    git checkout ${LLAMACPP_VERSION}
-    LLAMA_CUBLAS=1 make libllama.so
-EOF
+RUN apt-get update \
+    && apt-get install -y git \
+    && git clone https://github.com/ggerganov/llama.cpp.git \
+    && cd llama.cpp \
+    && git checkout ${LLAMACPP_VERSION} \
+    && LLAMA_CUBLAS=1 make libllama.so
 
 ## Base Image
 ##
