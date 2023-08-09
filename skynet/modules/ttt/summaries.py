@@ -26,7 +26,8 @@ class SummariesChain:
             model_path=llama_path,
             temperature=0.01,
             max_tokens=1000,
-            n_ctx=2048
+            n_ctx=2048,
+            n_gpu_layers=32
         )
 
     async def process(self, text: str, template: str) -> str:

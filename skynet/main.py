@@ -22,7 +22,9 @@ versions = versionize(
 
 # Add additional routes after versioning so they are not versioned.
 
-create_llama_cpp_app(Settings(model=llama_path))
+
+create_llama_cpp_app(Settings(model=llama_path, n_gpu_layers=32, n_ctx=2048))
+
 # Need to create a new app in order to have our dependencies work
 llama_app = FastAPI()
 llama_app.include_router(llama_router, dependencies=dependencies, responses=responses)
