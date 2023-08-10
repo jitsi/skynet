@@ -125,7 +125,10 @@ FROM base as builder
 # see: https://python-poetry.org/docs/configuration/#virtualenvsin-project
 COPY ./poetry.lock ./pyproject.toml /app/
 
-RUN poetry install --no-interaction --no-root --without dev
+ENV CMAKE_ARGS="-DLLAMA_CUBLAS=on"
+ENV FORCE_CMAKE=1
+
+RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
 
 ## Production Image
 ##
