@@ -13,7 +13,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from skynet.models.v1.action_items import ActionItemsResult
 from skynet.models.v1.summary import SummaryResult
 from skynet.models.v1.document import DocumentPayload
-from skynet.env import llama_path
+from skynet.env import llama_path, llama_n_gpu_layers, llama_n_batch
 from skynet.prompts.action_items import action_items_template
 from skynet.prompts.summary import summary_template
 
@@ -27,7 +27,8 @@ class SummariesChain:
             temperature=0.01,
             max_tokens=1000,
             n_ctx=2048,
-            n_gpu_layers=32
+            n_gpu_layers=llama_n_gpu_layers,
+            n_batch=llama_n_batch,
         )
 
     async def process(self, text: str, template: str) -> str:

@@ -4,7 +4,7 @@ from fastapi_versionizer.versionizer import versionize
 
 from skynet.routers.v1 import router as v1_router
 from skynet.routers.utils import dependencies, responses
-from skynet.env import llama_path
+from skynet.env import llama_path, llama_n_batch, llama_n_gpu_layers
 
 from llama_cpp.server.app import Settings, router as llama_router, create_app as create_llama_cpp_app
 
@@ -22,8 +22,10 @@ versions = versionize(
 
 # Add additional routes after versioning so they are not versioned.
 
-
-create_llama_cpp_app(Settings(model=llama_path, n_gpu_layers=32, n_ctx=2048))
+create_llama_cpp_app(Settings(model=llama_path,
+                              n_gpu_layers=llama_n_gpu_layers,
+                              n_batch=llama_n_batch,
+                              n_ctx=2048))
 
 # Need to create a new app in order to have our dependencies work
 llama_app = FastAPI()
