@@ -26,7 +26,7 @@ class SummariesChain:
             model_path=llama_path,
             temperature=0.01,
             max_tokens=1000,
-            n_ctx=2048,
+            n_ctx=4096,
             n_gpu_layers=llama_n_gpu_layers,
             n_batch=llama_n_batch,
         )

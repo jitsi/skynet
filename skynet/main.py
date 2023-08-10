@@ -25,7 +25,7 @@ versions = versionize(
 create_llama_cpp_app(Settings(model=llama_path,
                               n_gpu_layers=llama_n_gpu_layers,
                               n_batch=llama_n_batch,
-                              n_ctx=2048))
+                              n_ctx=4096))
 
 # Need to create a new app in order to have our dependencies work
 llama_app = FastAPI()
