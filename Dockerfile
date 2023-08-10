@@ -132,7 +132,7 @@ RUN poetry install --no-interaction --no-root --without dev
 
 FROM base
 
-ENV LLAMA_PATH="/app/skynet/models/llama-2-7b-chat.ggmlv3.q8_0.bin"
+ENV LLAMA_PATH="/app/skynet/models/llama-2-7b-chat.ggmlv3.q4_1.bin"
 ENV LLAMA_CPP_LIB="/app/skynet/libllama.so"
 
 # Copy virtual environment

@@ -5,7 +5,7 @@ download_path = f'{os.getcwd()}'
 print(f'Storing model in {download_path}')
 
 allow_patterns = [
-    "llama-2-7b-chat.ggmlv3.q8_0.bin"
+    "llama-2-7b-chat.ggmlv3.q4_1.bin"
 ]
 
 kwargs = {
