@@ -1,5 +1,6 @@
 import os
 import sys
+from logging import Filter, LogRecord
 
 is_mac = sys.platform == 'darwin'
 
@@ -14,3 +15,17 @@ if not bypass_auth and not asap_pub_keys_url:
 
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', 1 if is_mac else 40))
 llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
+
+
+# suppress some logs
+class AccessLogSuppressor(Filter):
+
+    exclude_paths = (
+        '/healthz',
+        '/metrics'
+    )
+
+    def filter(self, record: LogRecord) -> bool:
+        log_msg = record.getMessage()
+        is_excluded = any(excluded in log_msg for excluded in self.exclude_paths)
+        return False if is_excluded else True
