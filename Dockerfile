@@ -103,6 +103,10 @@ RUN chown jitsi:jitsi ${PYTHONPATH}
 # https://python-poetry.org/docs/configuration/#cache-directory
 RUN mkdir ${POETRY_CACHE_DIR} && chown jitsi:jitsi ${POETRY_CACHE_DIR}
 
+RUN mkdir /models && chown -R jitsi:jitsi /models
+# Copy models
+COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
+
 # Document the exposed port
 EXPOSE 3000
 
@@ -135,7 +139,7 @@ RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
 
 FROM base
 
-ENV LLAMA_PATH="/app/skynet/models/llama-2-7b-chat.ggmlv3.q4_1.bin"
+ENV LLAMA_PATH="/models/llama-2-7b-chat.ggmlv3.q4_1.bin"
 ENV LLAMA_CPP_LIB="/app/skynet/libllama.so"
 
 # Copy virtual environment
@@ -143,9 +147,6 @@ COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
-
-# Copy models
-COPY --chown=jitsi:jitsi --from=model_download /models/* /app/skynet/models/
 
 # Copy libllama
 COPY --chown=jitsi:jitsi --from=llamacpp_build /build/llama.cpp/libllama.so /app/skynet/
