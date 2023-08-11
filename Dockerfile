@@ -10,20 +10,6 @@ WORKDIR /models
 COPY download_model.py ./download_model.py
 RUN python3 download_model.py
 
-## llama.cpp build
-##
-
-FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 as llamacpp_build
-ARG LLAMACPP_VERSION=1d16309
-RUN mkdir /build
-WORKDIR /build
-RUN apt-get update \
-    && apt-get install -y git \
-    && git clone https://github.com/ggerganov/llama.cpp.git \
-    && cd llama.cpp \
-    && git checkout ${LLAMACPP_VERSION} \
-    && LLAMA_CUBLAS=1 make libllama.so
-
 ## Base Image
 ##
 
@@ -103,7 +89,11 @@ RUN chown jitsi:jitsi ${PYTHONPATH}
 # https://python-poetry.org/docs/configuration/#cache-directory
 RUN mkdir ${POETRY_CACHE_DIR} && chown jitsi:jitsi ${POETRY_CACHE_DIR}
 
-RUN mkdir /models && chown -R jitsi:jitsi /models
+RUN mkdir /models && chown -R 1001:1001 /models
+RUN mkdir /libllama && chown -R 1001:1001 /libllama
+
+# Copy libllama
+COPY --chown=1001:1001 libllama-t4-1d16309.so /libllama/libllama.so
 # Copy models
 COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
 
@@ -140,13 +130,10 @@ RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
 FROM base
 
 ENV LLAMA_PATH="/models/llama-2-7b-chat.ggmlv3.q4_1.bin"
-ENV LLAMA_CPP_LIB="/app/skynet/libllama.so"
+ENV LLAMA_CPP_LIB="/libllama/libllama.so"
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
-
-# Copy libllama
-COPY --chown=jitsi:jitsi --from=llamacpp_build /build/llama.cpp/libllama.so /app/skynet/
