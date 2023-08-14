@@ -1,10 +1,12 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi_versionizer.versionizer import versionize
 
 from skynet.routers.v1 import router as v1_router
 from skynet.routers.utils import dependencies, responses
-from skynet.env import llama_path, llama_n_batch, llama_n_gpu_layers
+from skynet.env import llama_path, llama_n_batch, llama_n_gpu_layers, AccessLogSuppressor
 
 from llama_cpp.server.app import Settings, router as llama_router, create_app as create_llama_cpp_app
 
@@ -32,6 +34,8 @@ llama_app = FastAPI()
 llama_app.include_router(llama_router, dependencies=dependencies, responses=responses)
 
 app.mount("/openai-api", llama_app)
+
+logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
 
 @app.get("/")
 def root():
