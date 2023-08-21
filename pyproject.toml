@@ -8,15 +8,15 @@ readme = "README.md"
 [tool.poetry.group.dev.dependencies]
 
 [tool.poetry.dependencies]
-fastapi = "0.99.1"
-fastapi-versionizer = "^0.1.6"
-langchain = "^0.0.194"
-llama-cpp-python = {version = "0.1.68", extras = ["server"]}
-pydantic = "1.10.9"
+fastapi = "0.101.1"
+fastapi-versionizer = "0.1.6"
+langchain = "0.0.268"
+llama-cpp-python = {version = "0.1.78", extras = ["server"]}
+pydantic = "2.0.3"
 pyjwt = "2.6.0"
 python = "^3.11"
-uvicorn = "^0.22.0"
-cryptography = "^41.0.3"
+uvicorn = "0.23.2"
+cryptography = "41.0.3"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
