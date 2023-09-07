@@ -1,6 +1,6 @@
-from skynet.models.v1.action_items import ActionItemsResult
+from skynet.models.v1.job import Job
 from skynet.modules.ttt.summaries import SummariesChain
-from skynet.models.v1.summary import SummaryResult
+from skynet.modules.ttt.jobs import get_job as get_job
 from skynet.models.v1.document import DocumentPayload
 from skynet.routers.utils import get_router
 
@@ -8,50 +8,26 @@ summary_api = SummariesChain()
 
 router = get_router(1)
 
-@router.post("/summary")
-async def get_summary(payload: DocumentPayload) -> SummaryResult:
-    """
-    Summarizes the given payload. It's not stored in memory.
-    """
-
-    return await summary_api.get_summary_from_text(payload)
-
 @router.post("/action-items")
-async def get_action_items_from_text(payload: DocumentPayload) -> ActionItemsResult:
+async def get_action_items(payload: DocumentPayload) -> str:
     """
-    Extracts action items from the given payload. It's not stored in memory.
-    """
-
-    return await summary_api.get_action_items_from_text(payload)
-
-@router.get("/action-items/{id}")
-async def get_action_items(id: str) -> ActionItemsResult:
-    """
-    Extracts action items based on the document context for the given **id**.
+    Starts a job to extract action items from the given payload.
     """
 
-    return await summary_api.get_action_items_from_id(id)
+    return await summary_api.start_action_items_job(payload)
 
-@router.get("/summary/{id}")
-async def get_summary(id: str) -> SummaryResult:
+@router.post("/summary")
+async def get_summary(payload: DocumentPayload) -> str:
     """
-    Summarizes based on the document context for the given **id**.
-    """
-
-    return await summary_api.get_summary_from_id(id)
-
-@router.put("/document/{id}")
-def update_document_context(id: str, payload: DocumentPayload):
-    """
-    Updates a document context identified by **id** with the given payload (or creates a new one if it doesn't exist).
+    Starts a job to summarize the given payload.
     """
 
-    return summary_api.update_document_context(id, payload)
+    return await summary_api.start_summary_job(payload)
 
-@router.delete("/document/{id}")
-def delete_document_context(id: str) -> bool:
+@router.get("/job/{id}")
+def get_job_result(id: str) -> Job | None:
     """
-    Deletes an in-memory document context identified by **id**.
+    Returns the job identified by **id**.
     """
 
-    return summary_api.delete_document_context(id)
+    return get_job(id)

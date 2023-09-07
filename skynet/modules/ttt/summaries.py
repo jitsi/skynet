@@ -6,21 +6,19 @@ from concurrent.futures import ThreadPoolExecutor
 from langchain.chains.summarize import load_summarize_chain
 from langchain.llms import LlamaCpp
 
-from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from skynet.models.v1.action_items import ActionItemsResult
-from skynet.models.v1.summary import SummaryResult
+from skynet.models.v1.job import JobStatus, JobType
 from skynet.models.v1.document import DocumentPayload
 from skynet.env import llama_path, llama_n_gpu_layers, llama_n_batch
+from skynet.modules.ttt.jobs import create_job, update_job
 from skynet.prompts.action_items import action_items_template
 from skynet.prompts.summary import summary_template
 
 class SummariesChain:
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=1)
-        self.chains = {}
 
         self.llm = LlamaCpp(
             model_path=llama_path,
@@ -31,7 +29,7 @@ class SummariesChain:
             n_batch=llama_n_batch,
         )
 
-    async def process(self, text: str, template: str) -> str:
+    async def process(self, text: str, template: str, job_id: str) -> str:
         if not text:
             return ""
 
@@ -54,37 +52,22 @@ class SummariesChain:
 
         print(f"Time to retrieve response: {end - start}")
 
+        update_job(job_id, status=JobStatus.SUCCESS, result=result)
+
         return result
 
-    async def get_action_items_from_text(self, payload: DocumentPayload) -> ActionItemsResult:
-        result = await self.process(payload.text, template=action_items_template)
-        return ActionItemsResult(action_items=result)
+    async def start_summary_job(self, payload: DocumentPayload) -> str:
+        job_id = create_job(job_type=JobType.SUMMARY)
 
-    async def get_action_items_from_id(self, id: str) -> ActionItemsResult:
-        memory = self.chains.setdefault(id, ConversationBufferMemory())
-        history = memory.load_memory_variables({}).get("history")
+        task = self.process(payload.text, template=summary_template, job_id=job_id)
+        asyncio.create_task(task)
 
-        return await self.get_action_items_from_text(DocumentPayload(text=history))
+        return job_id
 
-    async def get_summary_from_text(self, payload: DocumentPayload) -> SummaryResult:
-        result = await self.process(payload.text, template=summary_template)
-        return SummaryResult(summary=result)
+    async def start_action_items_job(self, payload: DocumentPayload) -> str:
+        job_id = create_job(job_type=JobType.ACTION_ITEMS)
 
-    async def get_summary_from_id(self, id: str):
-        memory = self.chains.setdefault(id, ConversationBufferMemory())
-        history = memory.load_memory_variables({}).get("history")
+        task = self.process(payload.text, template=action_items_template, job_id=job_id)
+        asyncio.create_task(task)
 
-        return await self.get_summary_from_text(DocumentPayload(text=history))
-
-    def update_document_context(self, id: str, payload: DocumentPayload):
-        memory = self.chains.setdefault(id, ConversationBufferMemory())
-        memory.save_context({"input": payload.text }, {"output": ""})
-
-        return memory.load_memory_variables({}).get("history")
-
-    def delete_document_context(self, id: str):
-        if id in self.chains:
-            del self.chains[id]
-            return True
-
-        return False
+        return job_id
