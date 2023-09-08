@@ -129,7 +129,7 @@ RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
 
 FROM base
 
-ENV LLAMA_PATH="/models/llama-2-7b-chat.ggmlv3.q4_1.bin"
+ENV LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf"
 ENV LLAMA_CPP_LIB="/libllama/libllama.so"
 
 # Copy virtual environment
