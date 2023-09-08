@@ -13,7 +13,7 @@ RUN python3 download_model.py
 ## Base Image
 ##
 
-FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 as base
+FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 AS base
 ARG POETRY_VERSION=1.5.1
 
 # Adapted from https://github.com/max-pfeiffer/python-poetry/blob/main/build/Dockerfile
@@ -93,7 +93,7 @@ RUN mkdir /models && chown -R 1001:1001 /models
 RUN mkdir /libllama && chown -R 1001:1001 /libllama
 
 # Copy libllama
-COPY --chown=1001:1001 libllama-t4-1d16309.so /libllama/libllama.so
+COPY --chown=1001:1001 /libllama-bin/libllama-t4-06abf8e.so /libllama/libllama.so
 # Copy models
 COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
 
@@ -112,7 +112,7 @@ CMD exec uvicorn --workers 1 --host 0.0.0.0 --port 3000 skynet.main:app
 ## Builder Image
 ##
 
-FROM base as builder
+FROM base AS builder
 
 # install [tool.poetry.dependencies]
 # this will install virtual environment into /.venv because of POETRY_VIRTUALENVS_IN_PROJECT=true
