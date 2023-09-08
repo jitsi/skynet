@@ -5,7 +5,7 @@ download_path = f'{os.getcwd()}'
 print(f'Storing model in {download_path}')
 
 allow_patterns = [
-    "llama-2-7b-chat.ggmlv3.q4_1.bin"
+    "llama-2-7b-chat.Q4_K_M.gguf"
 ]
 
 kwargs = {
@@ -15,6 +15,6 @@ kwargs = {
     "local_dir_use_symlinks": False
 }
 
-repo_id = 'TheBloke/Llama-2-7B-Chat-GGML'
+repo_id = 'TheBloke/Llama-2-7b-Chat-GGUF'
 
 snapshot_download(repo_id, **kwargs)
