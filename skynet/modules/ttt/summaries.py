@@ -52,7 +52,7 @@ class SummariesChain:
 
         print(f"Time to retrieve response: {end - start}")
 
-        update_job(job_id, status=JobStatus.SUCCESS, result=result)
+        update_job(job_id, status=JobStatus.SUCCESS, result=result, duration=end-start)
 
         return result
 

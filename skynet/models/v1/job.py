@@ -15,3 +15,4 @@ class Job(BaseModel):
     result: str | None
     status: JobStatus
     type: JobType
+    duration: float
