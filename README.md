@@ -29,9 +29,9 @@ Make sure you use the right file name.
 
 Summary:
 
-| Input size | Document chunk size | Time to summarize (M1 CPU) | Time to summarize (GPU) |
-|---|---|---|---|
-| 16000 chars | 4000 chars | ~190 sec |  |
-| 16000 chars | 2000 chars | ~190 sec |  |
-| 8000 chars | 4000 chars | ~95 sec |  |
-| 8000 chars | 2000 chars | ~110 sec |  |
+Model | Input size | Document chunk size | Time to summarize (M1 CPU) | Time to summarize (GPU) |
+|---|---|---|---|---|
+| [llama-2-7b-chat.Q4_K_M.gguf][1] | 16000 chars | 4000 chars | ~87 sec | ~44 sec |
+| [llama-2-7b-chat.Q4_K_M.gguf][1] | 8000 chars | 4000 chars | ~51 sec | ~28 sec  |
+
+[1]: https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf
