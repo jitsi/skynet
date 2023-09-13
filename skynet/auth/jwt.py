@@ -4,10 +4,12 @@ import requests
 from hashlib import sha256
 
 from fastapi import HTTPException
-from skynet.env import asap_pub_keys_url
+from skynet.env import asap_pub_keys_url, asap_pub_keys_folder
 
-def get_public_key(url: str) -> str:
-    requests_url = f'{asap_pub_keys_url}/{url}'
+def get_public_key(path: str) -> str:
+    requests_url = f'{asap_pub_keys_url}/{path}'
+
+    print(f'Fetching public key from {requests_url}')
 
     req = requests.get(requests_url)
     pub_key = req.text
@@ -23,11 +25,16 @@ def authorize(jwt_incoming: str) -> bool:
     if 'kid' not in token_header:
         raise HTTPException(status_code=401, detail="Invalid token. No kid header.")
 
-    encoded_pub_key_name = sha256((token_header["kid"] + '\n').encode('UTF-8')).hexdigest()
+    kid = token_header["kid"]
+    is_jaas = kid.startswith('vpaas-magic-cookie')
+    tenant = kid.split('/')[0] if is_jaas else None
+    folder = f'vpaas/{asap_pub_keys_folder}/{tenant}' if is_jaas else asap_pub_keys_folder
+
+    encoded_pub_key_name = sha256((kid).encode('UTF-8')).hexdigest()
     pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
 
     try:
-        public_key = get_public_key(pub_key_remote_filename)
+        public_key = get_public_key(f'{folder}/{pub_key_remote_filename}')
     except Exception:
         raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {pub_key_remote_filename}')
 
