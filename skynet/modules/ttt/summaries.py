@@ -36,7 +36,7 @@ class SummariesChain:
         start = timeit.default_timer()
 
         loop = asyncio.get_running_loop()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=100)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=40000, chunk_overlap=100)
         docs = text_splitter.create_documents([text])
 
         prompt = PromptTemplate(template=template, input_variables=["text"])
@@ -46,15 +46,25 @@ class SummariesChain:
             chain_type="map_reduce",
             combine_prompt=prompt)
 
-        result = await loop.run_in_executor(self.executor, chain.run, docs)
+        has_failed = False
+        result = None
+
+        try:
+            result = await loop.run_in_executor(self.executor, chain.run, docs)
+        except Exception as e:
+            has_failed = True
+            result = str(e)
 
         end = timeit.default_timer()
 
+        update_job(
+            job_id,
+            status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
+            result=result,
+            duration=end-start
+        )
+
         print(f"Time to retrieve response: {end - start}")
-
-        update_job(job_id, status=JobStatus.SUCCESS, result=result, duration=end-start)
-
-        return result
 
     async def start_summary_job(self, payload: DocumentPayload) -> str:
         job_id = create_job(job_type=JobType.SUMMARY)
