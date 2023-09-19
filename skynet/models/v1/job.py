@@ -16,3 +16,6 @@ class Job(BaseModel):
     status: JobStatus
     type: JobType
     duration: float
+
+class JobId(BaseModel):
+    id: str

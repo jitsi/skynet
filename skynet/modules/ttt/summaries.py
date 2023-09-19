@@ -9,7 +9,7 @@ from langchain.llms import LlamaCpp
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from skynet.models.v1.job import JobStatus, JobType
+from skynet.models.v1.job import JobId, JobStatus, JobType
 from skynet.models.v1.document import DocumentPayload
 from skynet.env import llama_path, llama_n_gpu_layers, llama_n_batch
 from skynet.modules.ttt.jobs import create_job, update_job
@@ -66,18 +66,18 @@ class SummariesChain:
 
         print(f"Time to retrieve response: {end - start}")
 
-    async def start_summary_job(self, payload: DocumentPayload) -> str:
+    async def start_summary_job(self, payload: DocumentPayload) -> JobId:
         job_id = create_job(job_type=JobType.SUMMARY)
 
         task = self.process(payload.text, template=summary_template, job_id=job_id)
         asyncio.create_task(task)
 
-        return job_id
+        return JobId(id=job_id)
 
-    async def start_action_items_job(self, payload: DocumentPayload) -> str:
+    async def start_action_items_job(self, payload: DocumentPayload) -> JobId:
         job_id = create_job(job_type=JobType.ACTION_ITEMS)
 
         task = self.process(payload.text, template=action_items_template, job_id=job_id)
         asyncio.create_task(task)
 
-        return job_id
+        return JobId(id=job_id)
