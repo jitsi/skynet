@@ -33,8 +33,6 @@ class SummariesChain:
         if not text:
             return ""
 
-        start = timeit.default_timer()
-
         loop = asyncio.get_running_loop()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=40000, chunk_overlap=100)
         docs = text_splitter.create_documents([text])
@@ -55,16 +53,11 @@ class SummariesChain:
             has_failed = True
             result = str(e)
 
-        end = timeit.default_timer()
-
         update_job(
             job_id,
             status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
-            result=result,
-            duration=end-start
+            result=result
         )
-
-        print(f"Time to retrieve response: {end - start}")
 
     async def start_summary_job(self, payload: DocumentPayload) -> JobId:
         job_id = create_job(job_type=JobType.SUMMARY)
