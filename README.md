@@ -2,6 +2,17 @@
 
 Skynet is an API server for AI services wrapping several APIs and models.
 
+## Usage
+All requests to this service will require a standard HTTP Authorization header with a Bearer JWT
+You can generate a valid JWT in two ways:
+
+1. Have a JaaS account (https://jaas-pilot.8x8.vc or https://jaas.8x8.vc if using production) and use one of the JaaS public - private key pairs to generate the JWT as specified [here](https://developer.8x8.com/jaas/docs/api-keys-jwt). Currently, the tokens will be considered valid as long as they have the header in the specified format (alg, kid and typ), no validation being done on the body of the token, but this might change in the future.
+2. Have a private - public key pair for generating JWTs as specified above, and share the public key with us.
+
+### Code samples
+
+JavaScript: https://github.com/jitsi/skynet/blob/master/samples/javascript.js
+
 ## Running
 
 Download GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
