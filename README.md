@@ -14,7 +14,7 @@ You can generate a valid JWT in two ways:
 JavaScript: https://github.com/jitsi/skynet/blob/master/docs/sample.js
 
 
-### [Flowchart](https://github.com/jitsi/skynet/blob/master/docs/flowchart.drawio)
+### [Flowchart](https://github.com/jitsi/skynet/blob/master/docs/flowchart.jpg)
 
 ## Running
 
