@@ -6,8 +6,14 @@ Skynet is an API server for AI services wrapping several APIs and models.
 All requests to this service will require a standard HTTP Authorization header with a Bearer JWT
 You can generate a valid JWT in two ways:
 
-1. Have a JaaS account (https://jaas-pilot.8x8.vc or https://jaas.8x8.vc if using production) and use one of the JaaS public - private key pairs to generate the JWT as specified [here](https://developer.8x8.com/jaas/docs/api-keys-jwt). Currently, the tokens will be considered valid as long as they have the header in the specified format (alg, kid and typ), no validation being done on the body of the token, but this might change in the future.
-2. Have a private - public key pair for generating JWTs as specified above, and share the public key with us.
+1. Have a JaaS account (https://jaas-pilot.8x8.vc or https://jaas.8x8.vc if using production) and use one of the JaaS public - private key pairs to generate the JWT as specified [here](https://developer.8x8.com/jaas/docs/api-keys-jwt). Currently, the tokens will be considered valid as long as they have the header in the specified format (alg, kid and typ), and an audience set to the value "jitsi".
+2. Have a private - public key pair for generating JWTs as specified above.
+3. Use the helper script to generate a token:
+
+```bash
+./docs/jaas-jwt.sh PrivateKey.pk API-Key
+# The generated token has a validity of 7200 seconds
+```
 
 ### Code samples
 
