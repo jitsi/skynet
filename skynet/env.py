@@ -10,6 +10,7 @@ llama_path = os.environ.get('LLAMA_PATH')
 bypass_auth = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
 asap_pub_keys_url = os.getenv('ASAP_PUB_KEYS_REPO_URL', None)
 asap_pub_keys_folder = os.getenv('ASAP_PUB_KEYS_FOLDER', None)
+asap_pub_keys_auds = os.getenv('ASAP_PUB_KEYS_AUDS', '').strip().split(',')
 
 if not bypass_auth and not asap_pub_keys_url:
     raise RuntimeError('The ASAP public keys repo url must be set')

@@ -4,7 +4,7 @@ import requests
 from hashlib import sha256
 
 from fastapi import HTTPException
-from skynet.env import asap_pub_keys_url, asap_pub_keys_folder
+from skynet.env import asap_pub_keys_url, asap_pub_keys_folder, asap_pub_keys_auds
 
 def get_public_key(path: str) -> str:
     requests_url = f'{asap_pub_keys_url}/{path}'
@@ -39,7 +39,7 @@ def authorize(jwt_incoming: str) -> bool:
         raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {pub_key_remote_filename}')
 
     try:
-        jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'])
+        jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
         return True
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Expired token.")
