@@ -1,24 +1,16 @@
-import redis
+import redis as redis_sync
+import redis.asyncio as redis
 import boto3
-import cachetools.func
 import json
 
 from typing import Tuple, Union
-from skynet.env import redis_host, redis_port, redis_secret_id, use_aws_secrets_manager
+from skynet.env import redis_host, redis_namespace, redis_port, redis_secret_id, use_aws_secrets_manager
 
-class SecretsManagerProvider(redis.CredentialProvider):
-    def __init__(self):
-        self.sm_client = boto3.client('secretsmanager')
-        self.secret_id = redis_secret_id
-        self.version_id = None
-        self.version_stage = 'AWSCURRENT'
-
+class SecretsManagerProvider(redis_sync.CredentialProvider):
     def get_credentials(self) -> Union[Tuple[str], Tuple[str, str]]:
-        @cachetools.func.ttl_cache(maxsize=128, ttl=24 * 60 * 60) #24h
-        def get_sm_user_credentials(secret_id, version_id, version_stage):
-            secret = self.sm_client.get_secret_value(secret_id, version_id, version_stage)
-            return json.loads(secret['SecretString'])
-        creds = get_sm_user_credentials(self.secret_id, self.version_id, self.version_stage)
+        secret = boto3.client('secretsmanager').get_secret_value(redis_secret_id)
+        creds = json.loads(secret['SecretString'])
+
         return creds['username'], creds['password']
 
 class Persistence:
@@ -36,13 +28,16 @@ class Persistence:
         except redis.exceptions.ConnectionError as r_con_error:
             print('Redis connection error', r_con_error)
 
-    def get(self, key):
-        return self.db.get(key)
+    def __get_namespaced_key(self, key):
+        return f'{redis_namespace}:{key}'
 
-    def set(self, key, value):
-        return self.db.set(key, value)
+    async def get(self, key):
+        return await self.db.get(self.__get_namespaced_key(key))
 
-    def delete(self, key):
-        return self.db.delete(key)
+    async def set(self, key, value):
+        return await self.db.set(self.__get_namespaced_key(key), value)
+
+    async def delete(self, key):
+        return await self.db.delete(self.__get_namespaced_key(key))
 
 db = Persistence()

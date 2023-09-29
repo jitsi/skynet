@@ -14,6 +14,7 @@ asap_pub_keys_auds = os.getenv('ASAP_PUB_KEYS_AUDS', '').strip().split(',')
 
 # redis
 redis_host = os.environ.get('REDIS_HOST', 'localhost')
+redis_namespace = os.environ.get('REDIS_NAMESPACE', 'skynet')
 redis_port = int(os.environ.get('REDIS_PORT', 6379))
 redis_secret_id = os.environ.get('REDIS_SECRET_ID', '')
 use_aws_secrets_manager = os.environ.get('USE_AWS_SECRETS_MANAGER', "False").lower() == 'true'

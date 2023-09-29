@@ -25,9 +25,9 @@ async def get_summary(payload: DocumentPayload) -> JobId:
     return await summary_api.start_summary_job(payload)
 
 @router.get("/job/{id}")
-def get_job_result(id: str) -> Job | None:
+async def get_job_result(id: str) -> Job | None:
     """
     Returns the job identified by **id**.
     """
 
-    return get_job(id)
+    return await get_job(id)
