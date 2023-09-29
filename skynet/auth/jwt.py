@@ -1,22 +1,19 @@
 import jwt
-import requests
 
 from hashlib import sha256
 
 from fastapi import HTTPException
+from skynet import http_client
 from skynet.env import asap_pub_keys_url, asap_pub_keys_folder, asap_pub_keys_auds
 
-def get_public_key(path: str) -> str:
-    requests_url = f'{asap_pub_keys_url}/{path}'
+async def get_public_key(path: str) -> str:
+    url = f'{asap_pub_keys_url}/{path}'
 
-    print(f'Fetching public key from {requests_url}')
+    print(f'Fetching public key from {url}')
 
-    req = requests.get(requests_url)
-    pub_key = req.text
+    return await http_client.get(url)
 
-    return pub_key
-
-def authorize(jwt_incoming: str) -> bool:
+async def authorize(jwt_incoming: str) -> bool:
     try:
         token_header = jwt.get_unverified_header(jwt_incoming)
     except Exception:
@@ -34,7 +31,7 @@ def authorize(jwt_incoming: str) -> bool:
     pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
 
     try:
-        public_key = get_public_key(f'{folder}/{pub_key_remote_filename}')
+        public_key = await get_public_key(f'{folder}/{pub_key_remote_filename}')
     except Exception:
         raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {pub_key_remote_filename}')
 

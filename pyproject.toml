@@ -17,6 +17,8 @@ pyjwt = "2.6.0"
 python = "^3.11"
 uvicorn = "0.23.2"
 cryptography = "41.0.3"
+aiohttp = "^3.8.5"
+aiodns = "^3.0.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
