@@ -53,14 +53,14 @@ class SummariesChain:
             has_failed = True
             result = str(e)
 
-        update_job(
+        await update_job(
             job_id,
             status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
             result=result
         )
 
     async def start_summary_job(self, payload: DocumentPayload) -> JobId:
-        job_id = create_job(job_type=JobType.SUMMARY)
+        job_id = await create_job(job_type=JobType.SUMMARY)
 
         task = self.process(payload.text, template=summary_template, job_id=job_id)
         asyncio.create_task(task)
@@ -68,7 +68,7 @@ class SummariesChain:
         return JobId(id=job_id)
 
     async def start_action_items_job(self, payload: DocumentPayload) -> JobId:
-        job_id = create_job(job_type=JobType.ACTION_ITEMS)
+        job_id = await create_job(job_type=JobType.ACTION_ITEMS)
 
         task = self.process(payload.text, template=action_items_template, job_id=job_id)
         asyncio.create_task(task)

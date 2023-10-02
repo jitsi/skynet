@@ -11,7 +11,6 @@ from skynet.env import AccessLogSuppressor
 
 logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
 
-
 app = FastAPI()
 app.mount("/openai-api", openai_api_app)
 app.mount("/summaries", summaries_app)

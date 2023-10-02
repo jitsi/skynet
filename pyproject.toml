@@ -8,6 +8,11 @@ readme = "README.md"
 [tool.poetry.group.dev.dependencies]
 
 [tool.poetry.dependencies]
+aiodns = "^3.0.0"
+aiohttp = "^3.8.5"
+boto3 = "^1.28.56"
+cachetools = "^5.3.1"
+cryptography = "41.0.3"
 fastapi = "0.101.1"
 fastapi-versionizer = "0.1.6"
 langchain = "0.0.268"
@@ -15,10 +20,8 @@ llama-cpp-python = {version = "0.1.83", extras = ["server"]}
 pydantic = "2.0.3"
 pyjwt = "2.6.0"
 python = "^3.11"
+redis = "^5.0.1"
 uvicorn = "0.23.2"
-cryptography = "41.0.3"
-aiohttp = "^3.8.5"
-aiodns = "^3.0.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
