@@ -1,4 +1,3 @@
-import logging
 import os
 import uvicorn
 
@@ -8,9 +7,10 @@ from fastapi.responses import FileResponse
 from skynet.apps.openai_api import app as openai_api_app
 from skynet.apps.summaries import app as summaries_app
 
-from skynet.env import AccessLogSuppressor
+from skynet.logs import get_logger, uvicorn_log_config
 
-logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
+
+log = get_logger('skynet.main')
 
 app = FastAPI()
 app.mount("/openai-api", openai_api_app)
@@ -28,6 +28,10 @@ def health():
 
     return {"status": "ok"}
 
+@app.on_event("startup")
+async def startup_event():
+    log.info('Skynet became self aware')
+
 
 if __name__ == '__main__':
-    uvicorn.run('skynet.main:app', port=8000)
+    uvicorn.run('skynet.main:app', port=8000, log_config=uvicorn_log_config)
