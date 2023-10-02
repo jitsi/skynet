@@ -28,8 +28,8 @@ llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
 
 # suppress some logs
 class AccessLogSuppressor(Filter):
-
     exclude_paths = (
+        '/favicon.ico',
         '/healthz',
         '/metrics'
     )
@@ -37,4 +37,5 @@ class AccessLogSuppressor(Filter):
     def filter(self, record: LogRecord) -> bool:
         log_msg = record.getMessage()
         is_excluded = any(excluded in log_msg for excluded in self.exclude_paths)
-        return False if is_excluded else True
+
+        return not is_excluded
