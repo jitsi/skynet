@@ -1,4 +1,3 @@
 #!/bin/sh
 
-exec poetry run uvicorn skynet.main:app
-
+exec poetry run python skynet/main.py

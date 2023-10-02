@@ -7,7 +7,6 @@ from skynet.modules.persistence import db
 
 TIME_BEFORE_DELETION = 60
 
-loop = asyncio.get_running_loop()
 scheduled_for_deletion = []
 
 async def create_job(job_type: JobType) -> str:
@@ -30,7 +29,7 @@ async def get_job(id: str) -> dict:
 
     if (job and job.status == JobStatus.SUCCESS and id not in scheduled_for_deletion):
         scheduled_for_deletion.append(id)
-        loop.call_later(TIME_BEFORE_DELETION, asyncio.create_task, delete_job(id))
+        asyncio.get_running_loop().call_later(TIME_BEFORE_DELETION, asyncio.create_task, delete_job(id))
 
     return job
 
