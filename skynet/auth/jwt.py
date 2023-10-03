@@ -5,11 +5,14 @@ from hashlib import sha256
 from fastapi import HTTPException
 from skynet import http_client
 from skynet.env import asap_pub_keys_url, asap_pub_keys_folder, asap_pub_keys_auds
+from skynet.logs import get_logger
+
+log = get_logger('skynet.jwt')
 
 async def get_public_key(path: str) -> str:
     url = f'{asap_pub_keys_url}/{path}'
 
-    print(f'Fetching public key from {url}')
+    log.info(f'Fetching public key from {url}')
 
     return await http_client.get(url)
 

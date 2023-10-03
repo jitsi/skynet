@@ -8,6 +8,7 @@ from skynet.apps.openai_api import app as openai_api_app
 from skynet.apps.summaries import app as summaries_app
 
 from skynet.logs import get_logger, uvicorn_log_config
+from skynet.modules.persistence import init_persistence
 
 
 log = get_logger('skynet.main')
@@ -31,6 +32,9 @@ def health():
 @app.on_event("startup")
 async def startup_event():
     log.info('Skynet became self aware')
+
+    await init_persistence()
+    log.info('Persistence initialized')
 
 
 if __name__ == '__main__':
