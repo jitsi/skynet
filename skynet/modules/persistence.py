@@ -16,7 +16,7 @@ class SecretsManagerProvider(redis_sync.CredentialProvider):
 
         return creds['username'], creds['password']
 
-class Persistence:
+class Redis:
     def __init__(self):
         self.db = redis.Redis(
             host=redis_host,
@@ -28,16 +28,18 @@ class Persistence:
         return f'{redis_namespace}:{key}'
 
     def initialize(self):
+        namespaced_methods = ['get', 'set', 'delete', 'rpush', 'lpop', 'lrem', 'lrange']
+
+        for method in namespaced_methods:
+            setattr(
+                self,
+                method,
+                lambda *args, method=method, **kwargs:
+                    getattr(self.db, method)(self.__get_namespaced_key(args[0]), *args[1:], **kwargs))
+
         return self.db.ping()
 
-    async def get(self, key):
-        return await self.db.get(self.__get_namespaced_key(key))
+    async def mget(self, keys):
+        return await self.db.mget([self.__get_namespaced_key(key) for key in keys])
 
-    async def set(self, key, value):
-        return await self.db.set(self.__get_namespaced_key(key), value)
-
-    async def delete(self, key):
-        return await self.db.delete(self.__get_namespaced_key(key))
-
-
-db = Persistence()
+db = Redis()
