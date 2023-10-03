@@ -1,5 +1,3 @@
-import asyncio
-
 import redis as redis_sync
 import redis.asyncio as redis
 import boto3
