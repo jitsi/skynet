@@ -1,7 +1,6 @@
 import redis.asyncio as redis
 import boto3
 from skynet.env import (redis_host,
-                        redis_namespace,
                         redis_port,
                         redis_aws_secret_id,
                         redis_use_secrets_manager,
@@ -36,36 +35,4 @@ class Redis:
 
         self.db = redis.Redis(**connection_options)
 
-    @staticmethod
-    def __get_namespaced_key(key):
-        return f'{redis_namespace}:{key}'
-
-    def initialize(self):
-        return self.db.ping()
-
-    async def mget(self, keys):
-        return await self.db.mget([self.__get_namespaced_key(key) for key in keys])
-
-    async def get(self, key):
-        return await self.db.get(self.__get_namespaced_key(key))
-
-    async def set(self, key, *args, **kwargs):
-        return await self.db.set(self.__get_namespaced_key(key), *args, **kwargs)
-
-    async def lpush(self, key, *values):
-        return await self.db.lpush(self.__get_namespaced_key(key), *values)
-
-    async def rpush(self, key, *values):
-        return await self.db.rpush(self.__get_namespaced_key(key), *values)
-
-    async def lpop(self, key):
-        return await self.db.lpop(self.__get_namespaced_key(key))
-
-    async def lrange(self, key, start, end):
-        return await self.db.lrange(self.__get_namespaced_key(key), start, end)
-
-    async def lrem(self, key, count, value):
-        return await self.db.lrem(self.__get_namespaced_key(key), count, value)
-
-
-db = Redis()
+db = Redis().db

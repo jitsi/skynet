@@ -7,15 +7,15 @@ from skynet.models.v1.document import DocumentPayload
 from skynet.models.v1.job import Job, JobId, JobStatus, JobType
 from skynet.modules.persistence import db
 from skynet.modules.ttt.summaries import SummariesChain
-from skynet.env import redis_exp_seconds
+from skynet.env import redis_exp_seconds, redis_namespace
 
 log = get_logger('skynet.jobs')
 
 summary_api = SummariesChain()
 
 TIME_BETWEEN_JOBS_CHECK = 10
-PENDING_JOBS_KEY = "jobs:pending"
-RUNNING_JOBS_KEY = "jobs:running"
+PENDING_JOBS_KEY = f'{redis_namespace}:jobs:pending'
+RUNNING_JOBS_KEY = f'{redis_namespace}:jobs:running'
 
 background_task = None
 current_task = None
@@ -28,7 +28,7 @@ async def restore_stale_jobs() -> list[Job]:
 
     running_jobs_keys = await db.lrange(RUNNING_JOBS_KEY, 0, -1)
     running_jobs = await db.mget(running_jobs_keys)
-    connected_clients = await db.db.client_list()
+    connected_clients = await db.client_list()
     stale_jobs = []
 
     for job_json in running_jobs:
@@ -45,7 +45,7 @@ async def restore_stale_jobs() -> list[Job]:
 async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
-    job_id = str(uuid.uuid4())
+    job_id = f'{redis_namespace}:{uuid.uuid4()}'
 
     job = Job(
         id=job_id,
@@ -85,7 +85,7 @@ async def run_job(job: Job) -> None:
 
     has_failed = False
     result = None
-    worker_id = await db.db.client_id()
+    worker_id = await db.client_id()
 
     await update_job(
         job_id=job.id,
