@@ -12,6 +12,7 @@ asap_pub_keys_folder = os.getenv('ASAP_PUB_KEYS_FOLDER', None)
 asap_pub_keys_auds = os.getenv('ASAP_PUB_KEYS_AUDS', '').strip().split(',')
 
 # redis
+redis_exp_seconds = int(os.environ.get('REDIS_EXP_SECONDS', 60 * 30)) # 30 minutes default
 redis_host = os.environ.get('REDIS_HOST', 'localhost')
 redis_namespace = os.environ.get('REDIS_NAMESPACE', 'skynet')
 redis_port = int(os.environ.get('REDIS_PORT', 6379))
