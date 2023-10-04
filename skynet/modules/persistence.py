@@ -27,12 +27,9 @@ class Redis:
         }
 
         if redis_use_secrets_manager:
-            try:
-                aws_client = boto3.client('secretsmanager')
-                redis_aws_pass = aws_client.get_secret_value(SecretId=redis_aws_secret_id)['SecretString']
-                connection_options['password'] = redis_aws_pass
-            except Exception as e:
-                raise e
+            aws_client = boto3.client('secretsmanager')
+            redis_aws_pass = aws_client.get_secret_value(SecretId=redis_aws_secret_id)['SecretString']
+            connection_options['password'] = redis_aws_pass
         else:
             connection_options['username'] = redis_usr
             connection_options['password'] = redis_pwd
