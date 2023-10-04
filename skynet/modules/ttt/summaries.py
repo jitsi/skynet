@@ -45,7 +45,6 @@ class SummariesChain:
             combine_prompt=prompt)
 
         has_failed = False
-        result = None
 
         try:
             result = await loop.run_in_executor(self.executor, chain.run, docs)
