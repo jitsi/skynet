@@ -24,11 +24,11 @@ class Persistence:
             credential_provider=SecretsManagerProvider() if use_aws_secrets_manager else None,
             decode_responses=True)
 
-    def _initialize(self):
-        return self.db.ping()
-
     def __get_namespaced_key(self, key):
         return f'{redis_namespace}:{key}'
+
+    def initialize(self):
+        return self.db.ping()
 
     async def get(self, key):
         return await self.db.get(self.__get_namespaced_key(key))

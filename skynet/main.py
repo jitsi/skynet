@@ -33,7 +33,7 @@ def health():
 async def startup_event():
     log.info('Skynet became self aware')
 
-    await db._initialize()
+    await db.initialize()
     log.info('Persistence initialized')
 
 
