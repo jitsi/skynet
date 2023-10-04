@@ -45,10 +45,10 @@ async def restore_stale_jobs() -> list[Job]:
 async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
-    id = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
 
     job = Job(
-        id=id,
+        id=job_id,
         payload=payload,
         type=job_type
     )
@@ -62,15 +62,15 @@ async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
 
     return JobId(id=id)
 
-async def get_job(id: str) -> Job:
-    job_json = await db.get(id)
+async def get_job(job_id: str) -> Job:
+    job_json = await db.get(job_id)
     job = Job.model_validate_json(job_json) if job_json else None
 
     return job
 
-async def update_job(id: str, expires: int = None, **kwargs) -> Job:
+async def update_job(job_id: str, expires: int = None, **kwargs) -> Job:
     """Update a job in the db."""
-    job_json = await db.get(id)
+    job_json = await db.get(job_id)
 
     # deserialize and merge
     job = Job(**(Job.model_validate_json(job_json).model_dump() | kwargs))
@@ -88,7 +88,7 @@ async def run_job(job: Job) -> None:
     worker_id = await db.db.client_id()
 
     await update_job(
-        id=job.id,
+        job_id=job.id,
         start=timeit.default_timer(),
         status=JobStatus.RUNNING,
         worker_id=worker_id)
@@ -107,7 +107,7 @@ async def run_job(job: Job) -> None:
 
     updated_job = await update_job(
         expires=redis_exp_seconds if not has_failed else None,
-        id=job.id,
+        job_id=job.id,
         end=timeit.default_timer(),
         status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
         result=result
