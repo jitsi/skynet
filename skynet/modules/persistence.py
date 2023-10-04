@@ -1,30 +1,46 @@
-import redis as redis_sync
 import redis.asyncio as redis
 import boto3
-import json
-
-from typing import Tuple, Union
-from skynet.env import redis_host, redis_namespace, redis_port, redis_secret_id, use_aws_secrets_manager
+from skynet.env import (redis_host,
+                        redis_namespace,
+                        redis_port,
+                        redis_aws_secret_id,
+                        redis_use_secrets_manager,
+                        redis_use_tls,
+                        redis_db_no,
+                        redis_usr,
+                        redis_pwd)
 from skynet.logs import get_logger
 
 log = get_logger('skynet.redis')
 
-class SecretsManagerProvider(redis_sync.CredentialProvider):
-    def get_credentials(self) -> Union[Tuple[str], Tuple[str, str]]:
-        secret = boto3.client('secretsmanager').get_secret_value(redis_secret_id)
-        creds = json.loads(secret['SecretString'])
-
-        return creds['username'], creds['password']
 
 class Redis:
     def __init__(self):
-        self.db = redis.Redis(
-            host=redis_host,
-            port=redis_port,
-            credential_provider=SecretsManagerProvider() if use_aws_secrets_manager else None,
-            decode_responses=True)
+        connection_options = {
+            'host': redis_host,
+            'port': redis_port,
+            'socket_connect_timeout': 4000,
+            'decode_responses': True,
+            'ssl': redis_use_tls,
+            'db': redis_db_no,
+            'ssl_cert_reqs': None
+        }
 
-    def __get_namespaced_key(self, key):
+        if redis_use_secrets_manager:
+            try:
+                aws_client = boto3.client('secretsmanager')
+                redis_aws_pass = aws_client.get_secret_value(SecretId=redis_aws_secret_id)['SecretString']
+                connection_options['password'] = redis_aws_pass
+            except Exception as e:
+                raise e
+        else:
+            connection_options['username'] = redis_usr
+            connection_options['password'] = redis_pwd
+
+        self.db = redis.Redis(**connection_options)
+
+    @staticmethod
+    def __get_namespaced_key(key):
         return f'{redis_namespace}:{key}'
 
     def initialize(self):
@@ -53,5 +69,6 @@ class Redis:
 
     async def lrem(self, key, count, value):
         return await self.db.lrem(self.__get_namespaced_key(key), count, value)
+
 
 db = Redis()
