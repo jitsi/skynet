@@ -53,14 +53,14 @@ async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
         type=job_type
     )
 
-    await db.set(id, Job.model_dump_json(job))
+    await db.set(job_id, Job.model_dump_json(job))
 
     if can_run_next_job():
         create_run_job_task(job)
     else:
-        await db.rpush(PENDING_JOBS_KEY, id)
+        await db.rpush(PENDING_JOBS_KEY, job_id)
 
-    return JobId(id=id)
+    return JobId(id=job_id)
 
 async def get_job(job_id: str) -> Job:
     job_json = await db.get(job_id)
@@ -76,7 +76,7 @@ async def update_job(job_id: str, expires: int = None, **kwargs) -> Job:
     job = Job(**(Job.model_validate_json(job_json).model_dump() | kwargs))
 
     # serialize changes and save to db
-    await db.set(id, Job.model_dump_json(job), expires)
+    await db.set(job_id, Job.model_dump_json(job), expires)
 
     return job
 
