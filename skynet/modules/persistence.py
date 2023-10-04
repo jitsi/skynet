@@ -40,14 +40,4 @@ class Persistence:
         return await self.db.delete(self.__get_namespaced_key(key))
 
 
-db = None
-
-async def init_persistence():
-    global db
-
-    if db is not None:
-        return
-
-    db = Persistence()
-
-    await db._initialize()
+db = Persistence()
