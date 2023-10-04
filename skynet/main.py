@@ -33,7 +33,7 @@ def health():
 async def startup_event():
     log.info('Skynet became self aware')
 
-    await db.initialize()
+    await db.ping()
     log.info('Persistence initialized')
 
     start_monitoring_jobs()
