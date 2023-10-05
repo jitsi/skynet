@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from skynet.auth.jwt import authorize
 
+
 class JWTBearer(HTTPBearer):
     def __init__(self):
         super().__init__(auto_error=True)

@@ -7,16 +7,12 @@ from skynet.routers.v1 import router as v1_router
 app = FastAPI()
 app.include_router(v1_router)
 
-versionize(
-    app=app,
-    prefix_format='/v{major}',
-    docs_url='/docs',
-    enable_latest=False,
-    sorted_routes=True
-)
+versionize(app=app, prefix_format='/v{major}', docs_url='/docs', enable_latest=False, sorted_routes=True)
+
 
 @app.get("/")
 def root():
     return RedirectResponse(url='v1/docs')
 
-__all__ = [ 'app' ]
+
+__all__ = ['app']

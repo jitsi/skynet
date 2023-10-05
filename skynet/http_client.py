@@ -9,6 +9,7 @@ import aiohttp
 
 _session = None
 
+
 def _get_session():
     global _session
 
@@ -16,10 +17,11 @@ def _get_session():
         _session = aiohttp.ClientSession()
     return _session
 
+
 async def get(url):
     async with _get_session() as session:
         async with session.get(url) as response:
             return await response.text()
 
 
-__all__ = [ 'get' ]
+__all__ = ['get']
