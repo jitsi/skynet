@@ -22,7 +22,14 @@ pyjwt = "2.6.0"
 python = "^3.11"
 redis = "^5.0.1"
 uvicorn = "0.23.2"
+black = "^23.9.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core"]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+skip-string-normalization = 1
+
