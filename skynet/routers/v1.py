@@ -25,11 +25,11 @@ async def get_summary(payload: DocumentPayload) -> JobId:
 
 
 @router.get("/job/{id}")
-async def get_job_result(job_id: str) -> BaseJob | None:
+async def get_job_result(id: str) -> BaseJob | None:
     """
     Returns the job identified by **id**.
     """
 
-    job = await get_job(job_id)
+    job = await get_job(id)
 
     return BaseJob(**(job.model_dump() | {"duration": job.computed_duration})) if job else None
