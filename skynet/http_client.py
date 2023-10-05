@@ -19,9 +19,9 @@ def _get_session():
 
 
 async def get(url):
-    async with _get_session() as session:
-        async with session.get(url) as response:
-            return await response.text()
+    session = _get_session()
+    async with session.get(url) as response:
+        return await response.text()
 
 
 __all__ = ['get']
