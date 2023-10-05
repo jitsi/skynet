@@ -22,6 +22,7 @@ redis_pwd = os.environ.get('REDIS_PWD', None)
 redis_aws_secret_id = os.environ.get('REDIS_AWS_SECRET_ID', '')
 redis_use_secrets_manager = os.environ.get('REDIS_USE_SECRETS_MANAGER', 'false').lower().strip() == 'true'
 redis_namespace = os.environ.get('REDIS_NAMESPACE', 'skynet')
+redis_aws_region = os.environ.get('REDIS_AWS_REGION', 'us-west-2')
 
 if not bypass_auth and not asap_pub_keys_url:
     raise RuntimeError('The ASAP public keys repo url must be set')
