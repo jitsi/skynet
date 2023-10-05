@@ -17,9 +17,11 @@ app = FastAPI()
 app.mount("/openai-api", openai_api_app)
 app.mount("/summaries", summaries_app)
 
+
 @app.get("/")
 def root():
     return FileResponse(os.path.join(os.path.dirname(__file__), 'index.html'))
+
 
 @app.get("/healthz")
 def health():
@@ -29,6 +31,7 @@ def health():
 
     return {"status": "ok"}
 
+
 @app.on_event("startup")
 async def startup_event():
     log.info('Skynet became self aware')
@@ -37,6 +40,7 @@ async def startup_event():
     log.info('Persistence initialized')
 
     start_monitoring_jobs()
+
 
 if __name__ == '__main__':
     uvicorn.run('skynet.main:app', port=8000, log_config=uvicorn_log_config)

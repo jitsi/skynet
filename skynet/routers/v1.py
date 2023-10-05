@@ -5,6 +5,7 @@ from skynet.routers.utils import get_router
 
 router = get_router(1)
 
+
 @router.post("/action-items")
 async def get_action_items(payload: DocumentPayload) -> JobId:
     """
@@ -12,6 +13,7 @@ async def get_action_items(payload: DocumentPayload) -> JobId:
     """
 
     return await create_job(job_type=JobType.ACTION_ITEMS, payload=payload)
+
 
 @router.post("/summary")
 async def get_summary(payload: DocumentPayload) -> JobId:
@@ -21,6 +23,7 @@ async def get_summary(payload: DocumentPayload) -> JobId:
 
     return await create_job(job_type=JobType.SUMMARY, payload=payload)
 
+
 @router.get("/job/{id}")
 async def get_job_result(job_id: str) -> BaseJob | None:
     """
@@ -29,6 +32,4 @@ async def get_job_result(job_id: str) -> BaseJob | None:
 
     job = await get_job(job_id)
 
-    return BaseJob(**(
-        job.model_dump() |
-        {"duration": job.computed_duration})) if job else None
+    return BaseJob(**(job.model_dump() | {"duration": job.computed_duration})) if job else None

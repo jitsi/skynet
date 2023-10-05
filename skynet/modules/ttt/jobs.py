@@ -20,8 +20,10 @@ RUNNING_JOBS_KEY = f'{redis_namespace}:jobs:running'
 background_task = None
 current_task = None
 
+
 def can_run_next_job() -> bool:
     return current_task is None or current_task.done()
+
 
 async def restore_stale_jobs() -> list[Job]:
     """Check if any jobs were running on disconnected workers and requeue them."""
@@ -42,16 +44,13 @@ async def restore_stale_jobs() -> list[Job]:
         log.info(f"Restoring stale job(s): {ids}")
         await db.lpush(PENDING_JOBS_KEY, *[job.id for job in stale_jobs])
 
+
 async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
     job_id = f'{redis_namespace}:{uuid.uuid4()}'
 
-    job = Job(
-        id=job_id,
-        payload=payload,
-        type=job_type
-    )
+    job = Job(id=job_id, payload=payload, type=job_type)
 
     await db.set(job_id, Job.model_dump_json(job))
 
@@ -62,11 +61,13 @@ async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
 
     return JobId(id=job_id)
 
+
 async def get_job(job_id: str) -> Job:
     job_json = await db.get(job_id)
     job = Job.model_validate_json(job_json) if job_json else None
 
     return job
+
 
 async def update_job(job_id: str, expires: int = None, **kwargs) -> Job:
     """Update a job in the db."""
@@ -80,6 +81,7 @@ async def update_job(job_id: str, expires: int = None, **kwargs) -> Job:
 
     return job
 
+
 async def run_job(job: Job) -> None:
     log.info(f"Running job {job.id}")
 
@@ -87,11 +89,7 @@ async def run_job(job: Job) -> None:
     result = None
     worker_id = await db.client_id()
 
-    await update_job(
-        job_id=job.id,
-        start=timeit.default_timer(),
-        status=JobStatus.RUNNING,
-        worker_id=worker_id)
+    await update_job(job_id=job.id, start=timeit.default_timer(), status=JobStatus.RUNNING, worker_id=worker_id)
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
@@ -110,16 +108,18 @@ async def run_job(job: Job) -> None:
         job_id=job.id,
         end=timeit.default_timer(),
         status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
-        result=result
+        result=result,
     )
 
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
     log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
 
+
 def create_run_job_task(job: Job) -> asyncio.Task:
     global current_task
     current_task = asyncio.create_task(run_job(job))
+
 
 async def maybe_run_next_job() -> None:
     if not can_run_next_job():
@@ -135,10 +135,12 @@ async def maybe_run_next_job() -> None:
         next_job = await get_job(next_job_id)
         await run_job(next_job)
 
+
 async def monitor_candidate_jobs() -> None:
     while True:
         await maybe_run_next_job()
         await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK)
+
 
 def start_monitoring_jobs() -> asyncio.Task:
     global background_task

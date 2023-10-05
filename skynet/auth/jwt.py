@@ -9,12 +9,14 @@ from skynet.logs import get_logger
 
 log = get_logger('skynet.jwt')
 
+
 async def get_public_key(path: str) -> str:
     url = f'{asap_pub_keys_url}/{path}'
 
     log.info(f'Fetching public key from {url}')
 
     return await http_client.get(url)
+
 
 async def authorize(jwt_incoming: str) -> bool:
     try:

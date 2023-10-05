@@ -13,6 +13,7 @@ from skynet.env import llama_path, llama_n_gpu_layers, llama_n_batch
 from skynet.prompts.action_items import action_items_template
 from skynet.prompts.summary import summary_template
 
+
 class SummariesChain:
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=1)
@@ -39,9 +40,6 @@ class SummariesChain:
 
         prompt = PromptTemplate(template=template, input_variables=["text"])
 
-        chain = load_summarize_chain(
-            self.llm,
-            chain_type="map_reduce",
-            combine_prompt=prompt)
+        chain = load_summarize_chain(self.llm, chain_type="map_reduce", combine_prompt=prompt)
 
         return await loop.run_in_executor(self.executor, chain.run, docs)

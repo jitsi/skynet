@@ -1,13 +1,15 @@
 import redis.asyncio as redis
 import boto3
-from skynet.env import (redis_host,
-                        redis_port,
-                        redis_aws_secret_id,
-                        redis_use_secrets_manager,
-                        redis_use_tls,
-                        redis_db_no,
-                        redis_usr,
-                        redis_pwd)
+from skynet.env import (
+    redis_host,
+    redis_port,
+    redis_aws_secret_id,
+    redis_use_secrets_manager,
+    redis_use_tls,
+    redis_db_no,
+    redis_usr,
+    redis_pwd,
+)
 
 
 def initialize_redis():
@@ -18,7 +20,7 @@ def initialize_redis():
         'decode_responses': True,
         'ssl': redis_use_tls,
         'db': redis_db_no,
-        'ssl_cert_reqs': None
+        'ssl_cert_reqs': None,
     }
 
     if redis_use_secrets_manager:
@@ -30,5 +32,6 @@ def initialize_redis():
         connection_options['password'] = redis_pwd
 
     return redis.Redis(**connection_options)
+
 
 db = initialize_redis()
