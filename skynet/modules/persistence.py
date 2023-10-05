@@ -1,5 +1,6 @@
 import redis.asyncio as redis
 import boto3
+from botocore.config import Config
 from skynet.env import (
     redis_host,
     redis_port,
@@ -9,6 +10,7 @@ from skynet.env import (
     redis_db_no,
     redis_usr,
     redis_pwd,
+    redis_aws_region,
 )
 
 
@@ -24,7 +26,8 @@ def initialize_redis():
     }
 
     if redis_use_secrets_manager:
-        aws_client = boto3.client('secretsmanager')
+        aws_conf = Config(region=redis_aws_region)
+        aws_client = boto3.client('secretsmanager', config=aws_conf)
         redis_aws_pass = aws_client.get_secret_value(SecretId=redis_aws_secret_id)['SecretString']
         connection_options['password'] = redis_aws_pass
     else:
