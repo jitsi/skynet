@@ -5,6 +5,7 @@ from skynet.logs import get_logger
 
 from skynet.models.v1.document import DocumentPayload
 from skynet.models.v1.job import Job, JobId, JobStatus, JobType
+from skynet.modules.monitoring import SUMMARY_DURATION_METRIC
 from skynet.modules.persistence import db
 from skynet.modules.ttt.summaries import SummariesChain
 from skynet.env import redis_exp_seconds
@@ -113,6 +114,7 @@ async def run_job(job: Job) -> None:
 
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
+    SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
     log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
 
 

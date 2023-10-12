@@ -25,6 +25,7 @@ redis = "^5.0.1"
 uvicorn = "0.23.2"
 black = "^23.9.1"
 prometheus-fastapi-instrumentator = "^6.1.0"
+prometheus-client = "^0.17.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
