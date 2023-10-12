@@ -61,6 +61,9 @@ class Redis:
     async def rpush(self, key, *values):
         return await self.db.rpush(self.__get_namespaced_key(key), *values)
 
+    async def llen(self, key):
+        return await self.db.llen(self.__get_namespaced_key(key))
+
     async def lpop(self, key):
         return await self.db.lpop(self.__get_namespaced_key(key))
 

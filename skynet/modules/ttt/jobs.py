@@ -5,7 +5,7 @@ from skynet.logs import get_logger
 
 from skynet.models.v1.document import DocumentPayload
 from skynet.models.v1.job import Job, JobId, JobStatus, JobType
-from skynet.modules.monitoring import SUMMARY_DURATION_METRIC
+from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_QUEUE_SIZE_METRIC
 from skynet.modules.persistence import db
 from skynet.modules.ttt.summaries import SummariesChain
 from skynet.env import redis_exp_seconds
@@ -26,6 +26,13 @@ def can_run_next_job() -> bool:
     return current_task is None or current_task.done()
 
 
+async def update_summary_queue_metric() -> None:
+    """Update the queue size metric."""
+
+    queue_size = await db.llen(PENDING_JOBS_KEY)
+    SUMMARY_QUEUE_SIZE_METRIC.set(queue_size)
+
+
 async def restore_stale_jobs() -> list[Job]:
     """Check if any jobs were running on disconnected workers and requeue them."""
 
@@ -44,6 +51,7 @@ async def restore_stale_jobs() -> list[Job]:
         ids = [job.id for job in stale_jobs]
         log.info(f"Restoring stale job(s): {ids}")
         await db.lpush(PENDING_JOBS_KEY, *[job.id for job in stale_jobs])
+        await update_summary_queue_metric()
 
 
 async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
@@ -59,6 +67,7 @@ async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
         create_run_job_task(job)
     else:
         await db.rpush(PENDING_JOBS_KEY, job_id)
+        await update_summary_queue_metric()
 
     return JobId(id=job_id)
 
@@ -133,6 +142,8 @@ async def maybe_run_next_job() -> None:
 
     if next_job_id:
         log.info(f"Next job id: {next_job_id}")
+
+        await update_summary_queue_metric()
 
         next_job = await get_job(next_job_id)
         await run_job(next_job)
