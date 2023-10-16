@@ -10,6 +10,7 @@ from skynet.apps.summaries import app as summaries_app
 from skynet.logs import get_logger, uvicorn_log_config
 from skynet.modules.persistence import db
 from skynet.modules.ttt.jobs import start_monitoring_jobs
+from skynet.modules.ttt.summaries import initialize as initialize_summaries
 
 log = get_logger('skynet.main')
 
@@ -35,6 +36,9 @@ def health():
 @app.on_event("startup")
 async def startup_event():
     log.info('Skynet became self aware')
+
+    initialize_summaries()
+    log.info('Summaries initialized')
 
     await db.initialize()
     log.info('Persistence initialized')

@@ -7,12 +7,10 @@ from skynet.models.v1.document import DocumentPayload
 from skynet.models.v1.job import Job, JobId, JobStatus, JobType
 from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_QUEUE_SIZE_METRIC
 from skynet.modules.persistence import db
-from skynet.modules.ttt.summaries import SummariesChain
+from skynet.modules.ttt.summaries import process
 from skynet.env import redis_exp_seconds
 
 log = get_logger('skynet.jobs')
-
-summary_api = SummariesChain()
 
 TIME_BETWEEN_JOBS_CHECK = 10
 PENDING_JOBS_KEY = "jobs:pending"
@@ -106,7 +104,7 @@ async def run_job(job: Job) -> None:
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
     try:
-        result = await summary_api.process(job)
+        result = await process(job)
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 
