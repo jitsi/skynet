@@ -49,10 +49,10 @@ Make sure you use the right file name.
 
 Summary:
 
-Model | Input size | Time to summarize (M1 CPU) | Time to summarize (GPU) |
-|---|---|---|---|---|
-| [llama-2-7b-chat.Q4_K_M.gguf][1] | 16000 chars | ~87 sec | ~44 sec |
-| [llama-2-7b-chat.Q4_K_M.gguf][1] | 8000 chars | ~51 sec | ~28 sec  |
+| Model | Input size | Time to summarize (M1 CPU)  | Time to summarize (GPU) |
+| :---- | :--------: |:---------------------------:|:-----------------------:|
+| [llama-2-7b-chat.Q4_K_M.gguf][1] | 16000 chars |           ~87 sec           |         ~44 sec         |
+| [llama-2-7b-chat.Q4_K_M.gguf][1] | 8000 chars |           ~51 sec           |         ~28 sec         |
 
 [1]: https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf
 
