@@ -3,6 +3,9 @@ import sys
 
 is_mac = sys.platform == 'darwin'
 
+# apps
+enabled_apps = set(os.environ.get('ENABLED_APPS', 'openai-api,summaries').split(','))
+
 # models
 llama_path = os.environ.get('LLAMA_PATH')
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', 1 if is_mac else 40))

@@ -1,22 +1,35 @@
 import os
+import sys
 import uvicorn
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
-from skynet.apps.openai_api import app as openai_api_app
-from skynet.apps.summaries import app as summaries_app
-
+from skynet.env import enabled_apps
 from skynet.logs import get_logger, uvicorn_log_config
-from skynet.modules.persistence import db
-from skynet.modules.ttt.jobs import start_monitoring_jobs
-from skynet.modules.ttt.summaries import initialize as initialize_summaries
 
 log = get_logger('skynet.main')
 
+supported_apps = {'openai-api', 'summaries'}
+enable_apps = supported_apps.intersection(enabled_apps)
+
+if not enabled_apps:
+    log.warn('No apps enabled!')
+    sys.exit(1)
+
+log.info(f'Enabled apps: {enable_apps}')
+
 app = FastAPI()
-app.mount("/openai-api", openai_api_app)
-app.mount("/summaries", summaries_app)
+
+if 'openai-api' in enable_apps:
+    from skynet.apps.openai_api import app as openai_api_app
+
+    app.mount("/openai-api", openai_api_app)
+
+if 'summaries' in enable_apps:
+    from skynet.apps.summaries import app as summaries_app
+
+    app.mount("/summaries", summaries_app)
 
 
 @app.get("/")
@@ -37,13 +50,10 @@ def health():
 async def startup_event():
     log.info('Skynet became self aware')
 
-    initialize_summaries()
-    log.info('Summaries initialized')
+    if 'summaries' in enable_apps:
+        from skynet.apps.summaries import app_startup as summariees_startup
 
-    await db.initialize()
-    log.info('Persistence initialized')
-
-    start_monitoring_jobs()
+        await summariees_startup()
 
 
 if __name__ == '__main__':
