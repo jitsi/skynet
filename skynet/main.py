@@ -5,29 +5,29 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
-from skynet.env import enabled_apps
+from skynet.env import enabled_modules
 from skynet.logs import get_logger, uvicorn_log_config
 
 log = get_logger('skynet.main')
 
-supported_apps = {'openai-api', 'summaries'}
-enable_apps = supported_apps.intersection(enabled_apps)
+supported_modules = {'openai-api', 'summaries'}
+modules = supported_modules.intersection(enabled_modules)
 
-if not enabled_apps:
-    log.warn('No apps enabled!')
+if not modules:
+    log.warn('No modules enabled!')
     sys.exit(1)
 
-log.info(f'Enabled apps: {enable_apps}')
+log.info(f'Enabled modules: {modules}')
 
 app = FastAPI()
 
-if 'openai-api' in enable_apps:
-    from skynet.apps.openai_api import app as openai_api_app
+if 'openai-api' in modules:
+    from skynet.modules.ttt.openai_api.app import app as openai_api_app
 
     app.mount("/openai-api", openai_api_app)
 
-if 'summaries' in enable_apps:
-    from skynet.apps.summaries import app as summaries_app
+if 'summaries' in modules:
+    from skynet.modules.ttt.summaries.app import app as summaries_app
 
     app.mount("/summaries", summaries_app)
 
@@ -50,8 +50,8 @@ def health():
 async def startup_event():
     log.info('Skynet became self aware')
 
-    if 'summaries' in enable_apps:
-        from skynet.apps.summaries import app_startup as summariees_startup
+    if 'summaries' in modules:
+        from skynet.modules.ttt.summaries.app import app_startup as summariees_startup
 
         await summariees_startup()
 

@@ -1,14 +1,14 @@
 import asyncio
 import timeit
 import uuid
-from skynet.logs import get_logger
 
-from skynet.models.v1.document import DocumentPayload
-from skynet.models.v1.job import Job, JobId, JobStatus, JobType
-from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_QUEUE_SIZE_METRIC
-from skynet.modules.persistence import db
-from skynet.modules.ttt.summaries import process
 from skynet.env import redis_exp_seconds
+from skynet.logs import get_logger
+from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_QUEUE_SIZE_METRIC
+
+from .persistence import db
+from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
+from .processor import process
 
 log = get_logger('skynet.jobs')
 
