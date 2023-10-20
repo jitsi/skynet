@@ -3,8 +3,8 @@ import sys
 
 is_mac = sys.platform == 'darwin'
 
-# apps
-enabled_apps = set(os.environ.get('ENABLED_APPS', 'openai-api,summaries').split(','))
+# modules
+enabled_modules = set(os.environ.get('ENABLED_MODULES', 'openai-api,summaries').split(','))
 
 # models
 llama_path = os.environ.get('LLAMA_PATH')

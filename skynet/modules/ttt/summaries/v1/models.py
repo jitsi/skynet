@@ -1,7 +1,9 @@
 from enum import Enum
 from pydantic import BaseModel, computed_field
 
-from skynet.models.v1.document import DocumentPayload
+
+class DocumentPayload(BaseModel):
+    text: str
 
 
 class JobType(Enum):

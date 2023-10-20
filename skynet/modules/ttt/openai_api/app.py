@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
 from skynet.modules.monitoring import PROMETHEUS_NAMESPACE, PROMETHEUS_OPENAI_API_SUBSYSTEM
-from skynet.routers.utils import dependencies, responses
+from skynet.utils import dependencies, responses
 from skynet.env import enable_metrics, llama_path, llama_n_batch, llama_n_gpu_layers
 
 from llama_cpp.server.app import Settings, router as llama_router, create_app as create_llama_cpp_app

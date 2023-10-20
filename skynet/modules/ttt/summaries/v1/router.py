@@ -1,7 +1,7 @@
-from skynet.models.v1.job import BaseJob, JobId, JobType
-from skynet.modules.ttt.jobs import create_job, get_job as get_job
-from skynet.models.v1.document import DocumentPayload
-from skynet.routers.utils import get_router
+from skynet.utils import get_router
+
+from ..jobs import create_job, get_job as get_job
+from .models import BaseJob, JobId, JobType, DocumentPayload
 
 router = get_router(1)
 
