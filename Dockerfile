@@ -1,102 +1,63 @@
-## Model download
-##
-
-FROM python:3.11-slim AS model_download
-ARG download_models=1
-
-RUN pip install --upgrade huggingface_hub
-
-RUN mkdir /models
-WORKDIR /models
-COPY download_model.py ./download_model.py
-RUN if [ "${download_models}" = "1" ]; then python3 download_model.py; else echo "Skipping model download"; fi
-
 ## Base Image
 ##
 
-FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 AS base
-ARG POETRY_VERSION=1.5.1
+FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 AS builder
 
-# Adapted from https://github.com/max-pfeiffer/python-poetry/blob/main/build/Dockerfile
-# and https://github.com/max-pfeiffer/uvicorn-poetry/blob/main/examples/fast_api_multistage_build/Dockerfile
+COPY docker/rootfs/ /
 
-# References:
-# https://pip.pypa.io/en/stable/topics/caching/#avoiding-caching
-# https://pip.pypa.io/en/stable/cli/pip/?highlight=PIP_NO_CACHE_DIR#cmdoption-no-cache-dir
-# https://pip.pypa.io/en/stable/cli/pip/?highlight=PIP_DISABLE_PIP_VERSION_CHECK#cmdoption-disable-pip-version-check
-# https://pip.pypa.io/en/stable/cli/pip/?highlight=PIP_DEFAULT_TIMEOUT#cmdoption-timeout
-# https://pip.pypa.io/en/stable/topics/configuration/#environment-variables
-# https://python-poetry.org/docs/#installation
-# https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.html#OPTADDONAPPLICATIONSOFTWAREPACKAGES
+RUN \
+    apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-get update && \
+    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    PPA_GPG_KEY=F23C5A6CF475977595C89F51BA6932366A755776 \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=${POETRY_VERSION} \
-    PYTHON_VERSION=3.11 \
-    POETRY_HOME="/opt/poetry"
+COPY requirements.txt /app/
+WORKDIR /app
 
-ENV PATH="$POETRY_HOME/bin:$PATH"
+ENV \
+    CMAKE_ARGS="-DLLAMA_CUBLAS=ON -DLLAMA_NATIVE=OFF" \
+    FORCE_CMAKE=1
 
-# add ppa repo as we don't want to use the default py version
-RUN echo "deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu focal main" >> /etc/apt/sources.list \
-    && echo "deb-src https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu focal main" >> /etc/apt/sources.list \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys $PPA_GPG_KEY
+RUN \
+    python3.11 -m venv .venv && \
+    . .venv/bin/activate && \
+    pip install -vvv -r requirements.txt
 
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-        python$PYTHON_VERSION \
-        python3-pip
+## Production Image
+##
 
-# https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions
-RUN apt-get install --no-install-recommends -y \
-        build-essential \
-        g++ \
-        curl \
-        tini \
-    && curl -sSL https://install.python-poetry.org | python3 - \
-    && apt-get purge --auto-remove -y \
-      build-essential \
-      curl
+FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04
 
+COPY docker/rootfs/ /
+COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
+
+RUN \
+    apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-get update && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini
+
+# Principle of least privilege: create a new user for running the application
+RUN \
+    groupadd -g 1001 jitsi && \
+    useradd -r -u 1001 -g jitsi jitsi
+
+# Copy virtual environment
+COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
+
+# Copy application files
+COPY --chown=jitsi:jitsi /skynet /app/skynet/
+
+ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUNBUFFERED
-ENV PYTHONUNBUFFERED=1 \
+    PYTHONUNBUFFERED=1 \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
-    # https://python-poetry.org/docs/configuration/#virtualenvsin-project
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_CACHE_DIR="/app/.cache" \
-    VIRTUAL_ENVIRONMENT_PATH="/app/.venv"
+    LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf"
 
-# Adding the virtual environment to PATH in order to "activate" it.
-# https://docs.python.org/3/library/venv.html#how-venvs-work
-ENV PATH="$VIRTUAL_ENVIRONMENT_PATH/bin:$PATH"
+VOLUME [ "/models" ]
 
-# Principle of least privilege: create a new user for running the application
-RUN groupadd -g 1001 jitsi && \
-    useradd -r -u 1001 -g jitsi jitsi
-
-# Set the WORKDIR to the application root.
-# https://www.uvicorn.org/settings/#development
-# https://docs.docker.com/engine/reference/builder/#workdir
 WORKDIR ${PYTHONPATH}
 RUN chown jitsi:jitsi ${PYTHONPATH}
-
-# Create cache directory and set permissions because user 1001 has no home
-# and poetry cache directory.
-# https://python-poetry.org/docs/configuration/#cache-directory
-RUN mkdir ${POETRY_CACHE_DIR} && chown jitsi:jitsi ${POETRY_CACHE_DIR}
-
-RUN mkdir /models && chown -R 1001:1001 /models
-RUN mkdir /libllama && chown -R 1001:1001 /libllama
-
-# Copy libllama
-COPY --chown=1001:1001 /libllama-bin/* /libllama/
-# Copy models
-COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
 
 # Document the exposed port
 EXPOSE 8000
@@ -107,36 +68,5 @@ USER 1001
 # Use tini as our PID 1
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-# Run the uvicorn application server.
-CMD exec poetry run python skynet/main.py
-
-## Builder Image
-##
-
-FROM base AS builder
-
-# install [tool.poetry.dependencies]
-# this will install virtual environment into /.venv because of POETRY_VIRTUALENVS_IN_PROJECT=true
-# see: https://python-poetry.org/docs/configuration/#virtualenvsin-project
-COPY ./poetry.lock ./pyproject.toml /app/
-
-ENV CMAKE_ARGS="-DLLAMA_CUBLAS=on"
-ENV FORCE_CMAKE=1
-
-RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
-
-## Production Image
-##
-
-FROM base
-
-ENV LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf"
-ENV LLAMA_CPP_LIB="/libllama/libllama-a10-06abf8e.so"
-
-# Copy virtual environment
-COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
-
-COPY --chown=jitsi:jitsi --from=builder /app/./pyproject.toml /app/./pyproject.toml
-
-# Copy application files
-COPY --chown=jitsi:jitsi /skynet /app/skynet/
+# Run Skynet
+CMD ["/opt/run-skynet.sh"]
