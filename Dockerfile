@@ -9,7 +9,7 @@ RUN pip install --upgrade huggingface_hub
 RUN mkdir /models
 WORKDIR /models
 COPY download_model.py ./download_model.py
-RUN if [[ "${download_models}" == "1" ]]; then python3 download_model.py; else echo "Skipping model download"; fi
+RUN if [ "${download_models}" = "1" ]; then python3 download_model.py; else echo "Skipping model download"; fi
 
 ## Base Image
 ##
