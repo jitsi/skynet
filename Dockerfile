@@ -108,7 +108,7 @@ USER 1001
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run the uvicorn application server.
-CMD exec run.sh
+CMD exec poetry run python skynet/main.py
 
 ## Builder Image
 ##
@@ -140,6 +140,3 @@ COPY --chown=jitsi:jitsi --from=builder /app/./pyproject.toml /app/./pyproject.t
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
-
-# Copy run script
-COPY --chown=jitsi:jitsi run.sh /run.sh
