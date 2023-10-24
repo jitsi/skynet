@@ -14,7 +14,9 @@ log = get_logger('skynet.jobs_test')
 
 @pytest.fixture(scope='module', autouse=True)
 def default_session_fixture() -> Iterator[None]:
-    with patch('skynet.modules.ttt.summaries.persistence.db.set'), patch('skynet.modules.ttt.summaries.persistence.db.rpush'):
+    with patch('skynet.modules.ttt.summaries.persistence.db.set'), patch(
+        'skynet.modules.ttt.summaries.persistence.db.rpush'
+    ):
         yield
 
 
