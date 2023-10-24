@@ -93,7 +93,7 @@ RUN mkdir /models && chown -R 1001:1001 /models
 RUN mkdir /libllama && chown -R 1001:1001 /libllama
 
 # Copy libllama
-COPY --chown=1001:1001 /libllama-bin/libllama-t4-06abf8e.so /libllama/libllama.so
+COPY --chown=1001:1001 /libllama-bin/* /libllama/
 # Copy models
 COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
 
@@ -130,7 +130,7 @@ RUN LLAMA_CUBLAS=1 poetry install --no-interaction --no-root --without dev
 FROM base
 
 ENV LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf"
-ENV LLAMA_CPP_LIB="/libllama/libllama.so"
+ENV LLAMA_CPP_LIB="/libllama/libllama-a10-06abf8e.so"
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
