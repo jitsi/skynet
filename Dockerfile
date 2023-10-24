@@ -99,7 +99,7 @@ COPY --chown=1001:1001 /libllama-bin/* /libllama/
 COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
 
 # Document the exposed port
-EXPOSE 3000
+EXPOSE 8000
 
 # Use the unpriveledged user to run the application
 USER 1001
@@ -108,7 +108,7 @@ USER 1001
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run the uvicorn application server.
-CMD exec poetry run python skynet/main.py
+CMD exec /run.sh
 
 ## Builder Image
 ##
@@ -138,3 +138,6 @@ COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
+
+# Copy run script
+COPY --chown=jitsi:jitsi run.sh /run.sh
