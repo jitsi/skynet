@@ -108,7 +108,7 @@ USER 1001
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run the uvicorn application server.
-CMD exec uvicorn --workers 1 --host 0.0.0.0 --port 3000 skynet.main:app
+CMD exec poetry run python skynet/main.py
 
 ## Builder Image
 ##

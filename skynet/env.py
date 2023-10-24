@@ -4,7 +4,9 @@ import sys
 is_mac = sys.platform == 'darwin'
 
 # modules
+supported_modules = {'openai-api', 'summaries'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'openai-api,summaries').split(','))
+modules = {'openai-api', 'summaries'}.intersection(enabled_modules)
 
 # models
 llama_path = os.environ.get('LLAMA_PATH')

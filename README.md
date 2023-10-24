@@ -28,12 +28,12 @@ Download GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-
 
 ```bash
 poetry install
-poetry run uvicorn skynet.main:app
+./run.sh
 ```
 
 Visit
-http://127.0.0.1:8000/latest/docs#/
-http://127.0.0.1:8000/openai-api/docs#/
+http://127.0.0.1:8000
+http://127.0.0.1:8001/metrics
 
 ### Using GPU acceleration on an M1 Mac
 
