@@ -108,7 +108,7 @@ USER 1001
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run the uvicorn application server.
-CMD exec /run.sh
+CMD exec run.sh
 
 ## Builder Image
 ##
@@ -135,6 +135,8 @@ ENV LLAMA_CPP_LIB="/libllama/libllama-a10-06abf8e.so"
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
+
+COPY --chown=jitsi:jitsi --from=builder /app/./pyproject.toml /app/./pyproject.toml
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
