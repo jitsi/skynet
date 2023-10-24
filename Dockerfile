@@ -99,7 +99,7 @@ COPY --chown=1001:1001 /libllama-bin/* /libllama/
 COPY --chown=jitsi:jitsi --from=model_download /models/* /models/
 
 # Document the exposed port
-EXPOSE 3000
+EXPOSE 8000
 
 # Use the unpriveledged user to run the application
 USER 1001
@@ -135,6 +135,8 @@ ENV LLAMA_CPP_LIB="/libllama/libllama-a10-06abf8e.so"
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
+
+COPY --chown=jitsi:jitsi --from=builder /app/./pyproject.toml /app/./pyproject.toml
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/

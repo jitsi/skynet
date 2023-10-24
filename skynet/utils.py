@@ -21,6 +21,6 @@ def get_router(major_version: int) -> APIRouter:
 
 
 async def create_webserver(app, port):
-    server_config = uvicorn.Config(app, port=port, log_config=uvicorn_log_config)
+    server_config = uvicorn.Config(app, host='0.0.0.0', port=port, log_config=uvicorn_log_config)
     server = uvicorn.Server(server_config)
     await server.serve()
