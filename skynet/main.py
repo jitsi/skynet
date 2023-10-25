@@ -47,13 +47,12 @@ async def startup_event():
 
 
 async def main():
-    await asyncio.wait(
-        [
-            asyncio.create_task(create_webserver('skynet.metrics:metrics', port=8001)) if enable_metrics else None,
-            asyncio.create_task(create_webserver('skynet.main:app', port=8000)),
-        ],
-        return_when=asyncio.FIRST_COMPLETED,
-    )
+    tasks = [asyncio.create_task(create_webserver('skynet.main:app', port=8000))]
+
+    if enable_metrics:
+        tasks.insert(0, asyncio.create_task(create_webserver('skynet.metrics:metrics', port=8001)))
+
+    await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
 
 if __name__ == "__main__":

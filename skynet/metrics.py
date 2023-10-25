@@ -2,14 +2,15 @@ from fastapi import FastAPI
 
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
+from skynet.modules.ttt.summaries.persistence import db
 
 from skynet.modules.monitoring import (
-    SUMMARY_QUEUE_SIZE_METRIC,
     instrumentator,
     PROMETHEUS_NAMESPACE,
     PROMETHEUS_SUMMARIES_SUBSYSTEM,
     PROMETHEUS_OPENAI_API_SUBSYSTEM,
 )
+from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
 
 log = get_logger('skynet.metrics')
 
@@ -26,12 +27,13 @@ if enable_metrics:
         return {'status': 'ok'}
 
     @metrics.get('/metrics/autoscaler')
-    def autoscaler_metrics():
+    async def autoscaler_metrics():
         '''
         Metrics required for the autoscaler.
         '''
 
-        return {'queueSize': int(SUMMARY_QUEUE_SIZE_METRIC._value.get())}
+        queue_size = await db.llen(PENDING_JOBS_KEY)
+        return {'queueSize': queue_size}
 
     if 'openai-api' in modules:
         from skynet.modules.ttt.openai_api.app import app as openai_api_app
