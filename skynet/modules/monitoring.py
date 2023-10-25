@@ -5,6 +5,14 @@ PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
 PROMETHEUS_OPENAI_API_SUBSYSTEM = 'OpenAI_API'
 
+SUMMARY_INPUT_LENGTH_METRIC = Histogram(
+    'summary_input_length',
+    documentation='Measures the length of the input text',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    buckets=[50, 100, 500, 1000, 2000, 5000, 10000],
+)
+
 SUMMARY_DURATION_METRIC = Histogram(
     'summary_duration_seconds',
     documentation='Measures the duration of the summary / action items inference in seconds',

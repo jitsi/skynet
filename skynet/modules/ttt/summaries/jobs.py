@@ -4,7 +4,7 @@ import uuid
 
 from skynet.env import redis_exp_seconds
 from skynet.logs import get_logger
-from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_QUEUE_SIZE_METRIC
+from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_INPUT_LENGTH_METRIC, SUMMARY_QUEUE_SIZE_METRIC
 
 from .persistence import db
 from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
@@ -122,6 +122,8 @@ async def run_job(job: Job) -> None:
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
     SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
+    SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
+
     log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
 
 
