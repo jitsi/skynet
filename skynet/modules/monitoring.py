@@ -22,7 +22,7 @@ SUMMARY_DURATION_METRIC = Histogram(
 )
 
 SUMMARY_TIME_IN_QUEUE_METRIC = Histogram(
-    'summary_time_in_queue_seconds',
+    'summary_queue_time_seconds',
     documentation='Measures the time spent in the queue in seconds',
     namespace=PROMETHEUS_NAMESPACE,
     subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
