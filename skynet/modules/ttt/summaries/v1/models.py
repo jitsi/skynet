@@ -1,5 +1,7 @@
+import timeit
+
 from enum import Enum
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field, computed_field
 
 
 class DocumentPayload(BaseModel):
@@ -30,6 +32,7 @@ class BaseJob(BaseModel):
 # since private fields are not serialized, use a different model with required internals
 class Job(BaseJob):
     end: float | None = None
+    created: float = Field(default_factory=timeit.default_timer)
     start: float | None = None
     payload: DocumentPayload
     worker_id: int | None = None

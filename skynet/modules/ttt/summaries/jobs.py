@@ -4,7 +4,12 @@ import uuid
 
 from skynet.env import redis_exp_seconds
 from skynet.logs import get_logger
-from skynet.modules.monitoring import SUMMARY_DURATION_METRIC, SUMMARY_INPUT_LENGTH_METRIC, SUMMARY_QUEUE_SIZE_METRIC
+from skynet.modules.monitoring import (
+    SUMMARY_DURATION_METRIC,
+    SUMMARY_INPUT_LENGTH_METRIC,
+    SUMMARY_QUEUE_SIZE_METRIC,
+    SUMMARY_TIME_IN_QUEUE_METRIC,
+)
 
 from .persistence import db
 from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
@@ -12,7 +17,7 @@ from .processor import process
 
 log = get_logger('skynet.jobs')
 
-TIME_BETWEEN_JOBS_CHECK = 10
+TIME_BETWEEN_JOBS_CHECK = 3
 PENDING_JOBS_KEY = "jobs:pending"
 RUNNING_JOBS_KEY = "jobs:running"
 
@@ -96,8 +101,11 @@ async def run_job(job: Job) -> None:
     has_failed = False
     result = None
     worker_id = await db.db.client_id()
+    start = timeit.default_timer()
 
-    await update_job(job_id=job.id, start=timeit.default_timer(), status=JobStatus.RUNNING, worker_id=worker_id)
+    SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
+
+    await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
