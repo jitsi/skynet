@@ -3,7 +3,7 @@ summary_template = """
   {text}
 
   ### Instructions:
-  Summarize the text above in and separate the sentences with a blank line.
+  Summarize the text above and separate the sentences with a single new line.
 
   ### Response:
 

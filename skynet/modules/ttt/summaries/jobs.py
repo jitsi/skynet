@@ -47,7 +47,7 @@ async def restore_stale_jobs() -> list[Job]:
     for job_json in running_jobs:
         job = Job.model_validate_json(job_json)
 
-        if job.worker_id not in [client['id'] for client in connected_clients]:
+        if str(job.worker_id) not in [client['id'] for client in connected_clients]:
             stale_jobs.append(job)
 
     if stale_jobs:
