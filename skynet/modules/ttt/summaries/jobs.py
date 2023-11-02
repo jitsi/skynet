@@ -1,5 +1,5 @@
 import asyncio
-import timeit
+import time
 import uuid
 
 from skynet.env import redis_exp_seconds
@@ -101,10 +101,13 @@ async def run_job(job: Job) -> None:
     has_failed = False
     result = None
     worker_id = await db.db.client_id()
-    start = timeit.default_timer()
+    start = time.time()
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
+    log.info(f"Job {job.id} created at {job.created}")
+    log.info(f"Job {job.id} started at {start}")
+    log.info(f"Job queue time: {start - job.created} seconds")
     await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
@@ -122,7 +125,7 @@ async def run_job(job: Job) -> None:
     updated_job = await update_job(
         expires=redis_exp_seconds if not has_failed else None,
         job_id=job.id,
-        end=timeit.default_timer(),
+        end=time.time(),
         status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
         result=result,
     )
