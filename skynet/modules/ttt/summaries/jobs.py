@@ -148,10 +148,10 @@ async def maybe_run_next_job() -> None:
 
     next_job_id = await db.lpop(PENDING_JOBS_KEY)
 
+    await update_summary_queue_metric()
+
     if next_job_id:
         log.info(f"Next job id: {next_job_id}")
-
-        await update_summary_queue_metric()
 
         next_job = await get_job(next_job_id)
         await run_job(next_job)
