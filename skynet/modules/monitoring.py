@@ -42,4 +42,5 @@ instrumentator = Instrumentator(
 
 instrumentator.add(
     metrics.latency(buckets=[n for n in range(1, 6)]),
+    metrics.requests(metric_namespace=PROMETHEUS_NAMESPACE, metric_subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM),
 )
