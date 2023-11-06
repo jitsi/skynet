@@ -45,6 +45,11 @@ async def startup_event():
 
         await summaries_startup()
 
+    if 'summaries:executor' in modules:
+        from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
+
+        await executor_startup()
+
 
 async def main():
     tasks = [asyncio.create_task(create_webserver('skynet.main:app', port=8000))]

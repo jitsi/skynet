@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from skynet.env import redis_exp_seconds
+from skynet.env import redis_exp_seconds, modules
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     SUMMARY_DURATION_METRIC,
@@ -26,7 +26,7 @@ current_task = None
 
 
 def can_run_next_job() -> bool:
-    return current_task is None or current_task.done()
+    return 'summaries:executor' in modules and (current_task is None or current_task.done())
 
 
 async def update_summary_queue_metric() -> None:
@@ -41,7 +41,7 @@ async def restore_stale_jobs() -> list[Job]:
 
     running_jobs_keys = await db.lrange(RUNNING_JOBS_KEY, 0, -1)
     running_jobs = await db.mget(running_jobs_keys)
-    connected_clients = await db.db.client_list()
+    connected_clients = await db.client_list()
     stale_jobs = []
 
     for job_json in running_jobs:

@@ -13,7 +13,6 @@ from skynet.modules.monitoring import (
 from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
 
 log = get_logger('skynet.metrics')
-
 metrics = FastAPI()
 
 if enable_metrics:
