@@ -12,7 +12,7 @@ from skynet.modules.monitoring import (
 )
 from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
 
-log = get_logger('skynet.metrics')
+log = get_logger(__name__)
 metrics = FastAPI()
 
 if enable_metrics:
@@ -41,7 +41,7 @@ if enable_metrics:
             openai_api_app, metric_namespace=PROMETHEUS_NAMESPACE, metric_subsystem=PROMETHEUS_OPENAI_API_SUBSYSTEM
         ).expose(metrics)
 
-    if 'summaries' in modules:
+    if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.summaries.app import app as summaries_app
 
         instrumentator.instrument(

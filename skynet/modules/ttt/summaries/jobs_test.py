@@ -36,8 +36,7 @@ class TestCreateJob:
         mocker.patch('skynet.modules.ttt.summaries.jobs.can_run_next_job', return_value=False)
         mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
 
-        from skynet.modules.ttt.summaries.jobs import create_job, update_summary_queue_metric
-        from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
+        from skynet.modules.ttt.summaries.jobs import create_job, update_summary_queue_metric, PENDING_JOBS_KEY
 
         job_id = await create_job(JobType.SUMMARY, DocumentPayload(text='test'))
 
@@ -60,7 +59,7 @@ class TestCanRunNextJob:
 
         from skynet.modules.ttt.summaries.jobs import can_run_next_job
 
-        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries'})
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:dispatcher'})
 
         assert not can_run_next_job()
 

@@ -14,6 +14,9 @@ from skynet.env import (
     redis_pwd,
     redis_aws_region,
 )
+from skynet.logs import get_logger
+
+log = get_logger(__name__)
 
 
 class Redis:
@@ -48,8 +51,13 @@ class Redis:
         if self.initialized:
             return True
 
-        self.initialized = True
-        return await self.db.ping()
+        try:
+            await self.db.ping()
+            self.initialized = True
+            return True
+        except Exception as e:
+            log.error(f'Failed to initialize Redis: {e}')
+            return False
 
     async def client_list(self):
         return await self.db.client_list()

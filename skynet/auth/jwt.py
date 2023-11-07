@@ -7,7 +7,7 @@ from skynet import http_client
 from skynet.env import asap_pub_keys_url, asap_pub_keys_folder, asap_pub_keys_auds
 from skynet.logs import get_logger
 
-log = get_logger('skynet.jwt')
+log = get_logger(__name__)
 
 
 async def get_public_key(path: str) -> str:

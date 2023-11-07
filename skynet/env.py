@@ -4,8 +4,8 @@ import sys
 is_mac = sys.platform == 'darwin'
 
 # modules
-supported_modules = {'summaries:executor', 'openai-api', 'summaries'}
-enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries,summaries:executor').split(','))
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api'}
+enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
 
 # models

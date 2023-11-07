@@ -15,7 +15,7 @@ from .persistence import db
 from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
 from .processor import process
 
-log = get_logger('skynet.jobs')
+log = get_logger(__name__)
 
 TIME_BETWEEN_JOBS_CHECK = 3
 PENDING_JOBS_KEY = "jobs:pending"
