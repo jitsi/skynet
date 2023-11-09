@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
-from fastapi_versionizer.versionizer import versionize
+from fastapi_versionizer.versionizer import Versionizer
 
 from skynet.logs import get_logger
 
@@ -15,12 +14,7 @@ log = get_logger(__name__)
 app = FastAPI()
 app.include_router(v1_router)
 
-versionize(app=app, prefix_format='/v{major}', docs_url='/docs', enable_latest=False, sorted_routes=True)
-
-
-@app.get("/")
-def root():
-    return RedirectResponse(url='v1/docs')
+Versionizer(app=app, prefix_format='/v{major}', sort_routes=True).versionize()
 
 
 async def app_startup():
