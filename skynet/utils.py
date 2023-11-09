@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from fastapi_versionizer.versionizer import versioned_api_route
 import uvicorn
 
 from skynet.auth.bearer import JWTBearer
@@ -14,10 +13,8 @@ responses = (
 )
 
 
-def get_router(major_version: int) -> APIRouter:
-    return APIRouter(
-        dependencies=dependencies, responses=responses, route_class=versioned_api_route(major=major_version)
-    )
+def get_router() -> APIRouter:
+    return APIRouter(dependencies=dependencies, responses=responses)
 
 
 async def create_webserver(app, port):
