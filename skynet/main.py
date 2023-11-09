@@ -10,7 +10,7 @@ from skynet.logs import get_logger
 
 from skynet.utils import create_webserver
 
-log = get_logger('skynet.main')
+log = get_logger(__name__)
 
 if not modules:
     log.warn('No modules enabled!')
@@ -25,7 +25,7 @@ if 'openai-api' in modules:
 
     app.mount('/openai-api', openai_api_app)
 
-if 'summaries' in modules:
+if 'summaries:dispatcher' in modules:
     from skynet.modules.ttt.summaries.app import app as summaries_app
 
     app.mount('/summaries', summaries_app)
@@ -40,10 +40,15 @@ def root():
 async def startup_event():
     log.info('Skynet became self aware')
 
-    if 'summaries' in modules:
+    if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.summaries.app import app_startup as summaries_startup
 
         await summaries_startup()
+
+    if 'summaries:executor' in modules:
+        from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
+
+        await executor_startup()
 
 
 async def main():

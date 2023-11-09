@@ -14,6 +14,9 @@ from skynet.env import (
     redis_pwd,
     redis_aws_region,
 )
+from skynet.logs import get_logger
+
+log = get_logger(__name__)
 
 
 class Redis:
@@ -38,13 +41,26 @@ class Redis:
             connection_options['password'] = redis_pwd
 
         self.db = redis.Redis(**connection_options)
+        self.initialized = False
 
     @staticmethod
     def __get_namespaced_key(key):
         return f'{redis_namespace}:{key}'
 
-    def initialize(self):
-        return self.db.ping()
+    async def initialize(self):
+        if self.initialized:
+            return True
+
+        try:
+            await self.db.ping()
+            self.initialized = True
+            return True
+        except Exception as e:
+            log.error(f'Failed to initialize Redis: {e}')
+            return False
+
+    async def client_list(self):
+        return await self.db.client_list()
 
     async def mget(self, keys):
         return await self.db.mget([self.__get_namespaced_key(key) for key in keys])

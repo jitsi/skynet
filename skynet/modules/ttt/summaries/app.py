@@ -10,7 +10,7 @@ from .processor import initialize as initialize_summaries
 from .v1.router import router as v1_router
 
 
-log = get_logger('skynet.summaries')
+log = get_logger(__name__)
 
 app = FastAPI()
 app.include_router(v1_router)
@@ -24,8 +24,15 @@ def root():
 
 
 async def app_startup():
+    log.info('summaries:dispatcher module initialized')
+
+    await db.initialize()
+    log.info('Persistence initialized')
+
+
+async def executor_startup():
     initialize_summaries()
-    log.info('Summaries initialized')
+    log.info('summaries:executor module initialized')
 
     await db.initialize()
     log.info('Persistence initialized')
@@ -33,4 +40,4 @@ async def app_startup():
     start_monitoring_jobs()
 
 
-__all__ = ['app', 'app_startup']
+__all__ = ['app', 'executor_startup', 'app_startup']

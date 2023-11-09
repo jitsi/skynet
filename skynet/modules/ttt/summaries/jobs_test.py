@@ -3,13 +3,8 @@ import pytest
 from typing import Iterator
 from unittest.mock import patch
 
-from skynet.logs import get_logger
-
 from skynet.modules.ttt.summaries.persistence import db
-from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
-from skynet.modules.ttt.summaries.v1.models import DocumentPayload, JobType
-
-log = get_logger('skynet.jobs_test')
+from skynet.modules.ttt.summaries.v1.models import DocumentPayload, Job, JobType
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -41,9 +36,58 @@ class TestCreateJob:
         mocker.patch('skynet.modules.ttt.summaries.jobs.can_run_next_job', return_value=False)
         mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
 
-        from skynet.modules.ttt.summaries.jobs import create_job, update_summary_queue_metric
+        from skynet.modules.ttt.summaries.jobs import create_job, update_summary_queue_metric, PENDING_JOBS_KEY
 
         job_id = await create_job(JobType.SUMMARY, DocumentPayload(text='test'))
 
         db.rpush.assert_called_once_with(PENDING_JOBS_KEY, job_id.id)
         update_summary_queue_metric.assert_called_once()
+
+
+class TestCanRunNextJob:
+    def test_returns_true_if_executor_enabled(self, mocker):
+        '''Test that it returns true if executor module is enabled.'''
+
+        from skynet.modules.ttt.summaries.jobs import can_run_next_job
+
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:executor'})
+
+        assert can_run_next_job()
+
+    def test_returns_false_if_executor_enabled(self, mocker):
+        '''Test that it returns false if executor module is not enabled.'''
+
+        from skynet.modules.ttt.summaries.jobs import can_run_next_job
+
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:dispatcher'})
+
+        assert not can_run_next_job()
+
+
+class TestRestoreStaleJobs:
+    @pytest.mark.asyncio
+    async def test_restore_stales_jobs(self, mocker):
+        '''Test that if there are stale jobs, they will be restored. A job is considered stale if it is running and the worker is no longer connected.'''
+
+        from skynet.modules.ttt.summaries.jobs import restore_stale_jobs, PENDING_JOBS_KEY
+
+        job_1 = Job(id='job_id_1', payload=DocumentPayload(text='some text'), type='summary', worker_id=1)
+        job_2 = Job(id='job_id_2', payload=DocumentPayload(text='some text'), type='summary', worker_id=2)
+        job_3 = Job(id='job_id_3', payload=DocumentPayload(text='some text'), type='summary', worker_id=2)
+        job_1_json = Job.model_dump_json(job_1)
+        job_2_json = Job.model_dump_json(job_2)
+        job_3_json = Job.model_dump_json(job_3)
+
+        running_jobs = [job_1_json, job_2_json, job_3_json]
+        client_list = [
+            {'id': '1'}
+        ]  # only one worker connected, any jobs that were running on worker 2 should be restored (jobs 2 and 3 in this case)
+
+        mocker.patch('skynet.modules.ttt.summaries.persistence.db.lrange')
+        mocker.patch('skynet.modules.ttt.summaries.persistence.db.mget', return_value=running_jobs)
+        mocker.patch('skynet.modules.ttt.summaries.persistence.db.lpush')
+        mocker.patch('skynet.modules.ttt.summaries.persistence.db.client_list', return_value=client_list)
+
+        await restore_stale_jobs()
+
+        db.lpush.assert_called_once_with(PENDING_JOBS_KEY, job_2.id, job_3.id)
