@@ -41,4 +41,4 @@ target-version = ['py311']
 skip-string-normalization = 1
 
 [tool.githooks]
-pre-commit = "sh lint.sh"
+pre-commit = "sh lint.sh && sh sync-requirements.sh"
