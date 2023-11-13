@@ -1,7 +1,7 @@
 ## Base Image
 ##
 
-FROM nvidia/cuda:12.2.0-devel-ubuntu20.04 AS builder
+FROM nvidia/cuda:12.3.0-devel-ubuntu20.04 AS builder
 
 COPY docker/rootfs/ /
 
@@ -15,7 +15,8 @@ WORKDIR /app
 
 ENV \
     CMAKE_ARGS="-DLLAMA_CUBLAS=ON -DLLAMA_NATIVE=OFF" \
-    FORCE_CMAKE=1
+    FORCE_CMAKE=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=on
 
 RUN \
     python3.11 -m venv .venv && \
@@ -25,7 +26,7 @@ RUN \
 ## Production Image
 ##
 
-FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04
+FROM nvidia/cuda:12.3.0-runtime-ubuntu20.04
 
 COPY docker/rootfs/ /
 COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
