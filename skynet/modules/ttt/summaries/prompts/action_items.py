@@ -1,10 +1,6 @@
 action_items_template = """
-  ### Context:
-  {text}
-
-  ### Instructions:
-  Extract action items from the text above if there are any
-
-  ### Action items:
-
+<s>[INST] <<SYS>>
+Extract action items from the following text, if there are any.
+<</SYS>>
+{text} [/INST]
 """
