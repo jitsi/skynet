@@ -1,10 +1,6 @@
 summary_template = """
-  ### Context:
-  {text}
-
-  ### Instructions:
-  Summarize the text above and separate the sentences with a single new line.
-
-  ### Response:
-
+<s>[INST] <<SYS>>
+Provide a short summary of the following text.
+<</SYS>>
+{text} [/INST]
 """
