@@ -4,7 +4,13 @@ from enum import Enum
 from pydantic import BaseModel, Field, computed_field
 
 
+class Language(Enum):
+    ENGLISH = 'en-US'
+    FRENCH = 'fr-FR'
+
+
 class DocumentPayload(BaseModel):
+    language: Language = Language.ENGLISH
     text: str
 
 

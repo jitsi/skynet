@@ -42,8 +42,9 @@ async def process(job: Job) -> str:
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=12000, chunk_overlap=100)
     docs = text_splitter.create_documents([text])
     template = summary_template if job.type is JobType.SUMMARY else action_items_template
+    language = job.payload.language.name.capitalize()
 
-    prompt = PromptTemplate(template=template, input_variables=["text"])
+    prompt = PromptTemplate.from_template(template.replace("{language}", language))
 
     chain = load_summarize_chain(llm, chain_type="map_reduce", combine_prompt=prompt)
 
