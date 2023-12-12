@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from fastapi_versionizer.versionizer import api_version
 
 from skynet.utils import get_router
@@ -36,5 +37,6 @@ async def get_job_result(id: str) -> BaseJob | None:
     """
 
     job = await get_job(id)
-
-    return BaseJob(**(job.model_dump() | {"duration": job.computed_duration})) if job else None
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return BaseJob(**(job.model_dump() | {"duration": job.computed_duration}))
