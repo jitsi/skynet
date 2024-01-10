@@ -1,6 +1,7 @@
 import jwt
 
 from hashlib import sha256
+from asyncio_cache import cache
 
 from fastapi import HTTPException
 from skynet import http_client
@@ -9,7 +10,7 @@ from skynet.logs import get_logger
 
 log = get_logger(__name__)
 
-
+@cache
 async def get_public_key(path: str) -> str:
     url = f'{asap_pub_keys_url}/{path}'
 
