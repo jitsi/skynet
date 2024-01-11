@@ -157,7 +157,7 @@ async def maybe_run_next_job() -> None:
         log.info(f"Next job id: {next_job_id}")
 
         next_job = await get_job(next_job_id)
-        await run_job(next_job)
+        create_run_job_task(next_job)
 
 
 async def monitor_candidate_jobs() -> None:
