@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from skynet.env import redis_exp_seconds, modules
+from skynet.env import job_timeout, redis_exp_seconds, modules
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     SUMMARY_DURATION_METRIC,
@@ -10,6 +10,7 @@ from skynet.modules.monitoring import (
     SUMMARY_QUEUE_SIZE_METRIC,
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
+from skynet.utils import kill_process
 
 from .persistence import db
 from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
@@ -115,7 +116,11 @@ async def run_job(job: Job) -> None:
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
     try:
+        exit_task = asyncio.create_task(exit_on_timeout())
+
         result = await process(job)
+
+        exit_task.cancel()
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 
@@ -166,6 +171,14 @@ async def monitor_candidate_jobs() -> None:
         await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK)
 
 
-def start_monitoring_jobs() -> asyncio.Task:
+async def exit_on_timeout() -> None:
+    await asyncio.sleep(job_timeout)
+
+    log.warning(f"Job timed out after {job_timeout} seconds, exiting...")
+
+    kill_process()
+
+
+def start_monitoring_jobs() -> None:
     global background_task
     background_task = asyncio.create_task(monitor_candidate_jobs())

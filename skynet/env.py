@@ -38,6 +38,8 @@ redis_use_secrets_manager = os.environ.get('REDIS_USE_SECRETS_MANAGER', 'false')
 redis_namespace = os.environ.get('REDIS_NAMESPACE', 'skynet')
 redis_aws_region = os.environ.get('REDIS_AWS_REGION', 'us-west-2')
 
+# jobs
+job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 10))  # 10 minutes default
 
 # monitoring
 enable_metrics = os.environ.get('ENABLE_METRICS', 'true').lower() == 'true'

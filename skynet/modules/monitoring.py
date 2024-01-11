@@ -1,5 +1,5 @@
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from prometheus_client import Gauge, Histogram
+from prometheus_client import Gauge, Histogram, Counter
 
 PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
@@ -32,6 +32,13 @@ SUMMARY_TIME_IN_QUEUE_METRIC = Histogram(
 SUMMARY_QUEUE_SIZE_METRIC = Gauge(
     'summary_queue_size',
     documentation='Number of jobs in the queue',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+)
+
+FORCED_EXIT_COUNTER = Counter(
+    'forced_exit',
+    documentation='Number of forced exits',
     namespace=PROMETHEUS_NAMESPACE,
     subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
