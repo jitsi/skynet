@@ -155,6 +155,17 @@ test = ["anyio[trio]", "coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "mock (>=
 trio = ["trio (<0.22)"]
 
 [[package]]
+name = "async-lru"
+version = "2.0.4"
+description = "Simple LRU cache for asyncio"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "async-lru-2.0.4.tar.gz", hash = "sha256:b8a59a5df60805ff63220b2a0c5b5393da5521b113cd5465a44eb037d81a5627"},
+    {file = "async_lru-2.0.4-py3-none-any.whl", hash = "sha256:ff02944ce3c288c5be660c42dbcca0742b32c3b279d6dceda655190240b99224"},
+]
+
+[[package]]
 name = "async-timeout"
 version = "4.0.3"
 description = "Timeout context manager for asyncio programs"
@@ -163,17 +174,6 @@ python-versions = ">=3.7"
 files = [
     {file = "async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f"},
     {file = "async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028"},
-]
-
-[[package]]
-name = "asyncio-cache"
-version = "0.0.1"
-description = "A python library for asyncio caches (like functools cache and lru_cache)"
-optional = false
-python-versions = "*"
-files = [
-    {file = "asyncio_cache-0.0.1-py3-none-any.whl", hash = "sha256:b1b0d9d90fa63f572846d68bb4ad9f99705fe89c8105ca26f2eafd10ff1dcccb"},
-    {file = "asyncio_cache-0.0.1.tar.gz", hash = "sha256:47dde01a991d01a21283838e9449ce7f0c5667e4a3392c8c157f9bb0706078cb"},
 ]
 
 [[package]]
@@ -2711,4 +2711,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "759d0e54f4d7973f9c1e0755c190cd49d8c8e96df67b14e3761d03ef799c1516"
+content-hash = "882636f362940929e7183aac0478e90d15aa15e725d3fd8ba709b3737be7ea9e"

@@ -1,17 +1,17 @@
 import jwt
 
 from hashlib import sha256
-from asyncio_cache import cache
+from async_lru import alru_cache
 
 from fastapi import HTTPException
 from skynet import http_client
-from skynet.env import asap_pub_keys_url, asap_pub_keys_folder, asap_pub_keys_auds
+from skynet.env import asap_pub_keys_url, asap_pub_keys_folder, asap_pub_keys_auds, asap_pub_keys_max_cache_size
 from skynet.logs import get_logger
 
 log = get_logger(__name__)
 
 
-@cache
+@alru_cache(maxsize=asap_pub_keys_max_cache_size)
 async def get_public_key(path: str) -> str:
     url = f'{asap_pub_keys_url}/{path}'
 
