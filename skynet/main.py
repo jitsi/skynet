@@ -9,6 +9,7 @@ from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
 
 from skynet.utils import create_webserver
+from skynet.env import asap_cache_folder
 
 log = get_logger(__name__)
 
