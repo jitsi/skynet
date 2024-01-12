@@ -1,5 +1,5 @@
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from prometheus_client import Gauge, Histogram
+from prometheus_client import Gauge, Histogram, Counter
 
 PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
@@ -50,6 +50,13 @@ TRANSCRIBE_DURATION_METRIC = Histogram(
     namespace=PROMETHEUS_NAMESPACE,
     subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
     buckets=[x / 10.0 for x in range(1, 31)],
+)
+
+FORCED_EXIT_COUNTER = Counter(
+    'forced_exit',
+    documentation='Number of forced exits',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
 
 instrumentator = Instrumentator(
