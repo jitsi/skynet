@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Ts Test Page</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <h1>Streaming Whisper Test Client</h1>
+    <div class="controls_container">
+        <div class="controls">
+            <button id="transcribebtn">Transcribe</button>
+            <button id="stopbtn" disabled>Stop</button>
+            <label for="langselector">Lang</label>
+            <select id="langselector" name="langselector">
+                <option value="en" selected="selected">en</option>
+                <option value="it">it</option>
+                <option value="ro">ro</option>
+                <option value="bg">bg</option>
+            </select>
+            <div class="inputs">
+                <input type="text" id="wshost" placeholder="ws://localhost:8000/streaming-whisper/ws" value="ws://localhost:8000/streaming-whisper/ws"><br>
+                <input type="text" id="jwt" placeholder="some JWT if using auth">
+            </div>
+        </div>
+    </div>
+    <div id="outputcontainer"><p>Waiting for input...</p></div>
+    <div id="finalcontainer"></div>
+    <script>
+        // mostly taken from here https://dev.to/louisgv/quick-guide-to-audioworklet-30df
+        const main = async () => {
+            const CLIENTID = crypto.randomUUID()
+            const MEETINGID = crypto.randomUUID()
+            const context = new AudioContext({ sampleRate: 16000 })
+            const microphone = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false
+            })
+
+            const source = context.createMediaStreamSource(microphone)
+            // load the worklet
+            await context.audioWorklet.addModule('recorder.worklet.js')
+            let ws = undefined
+
+            const langSel = document.getElementById('langselector')
+            const transcribeBtn = document.getElementById('transcribebtn')
+            const stopBtn = document.getElementById('stopbtn')
+            const output = document.getElementById('outputcontainer')
+            const final = document.getElementById('finalcontainer')
+            const jwt = document.getElementById('jwt')
+            const wsHost = document.getElementById('wshost')
+
+            var isSpeaking = false
+
+            // create the recorder worklet
+            const recorder = new AudioWorkletNode(context, 'recorder.worklet')
+
+            source.connect(recorder).connect(context.destination)
+
+            function convertFloat32To16BitPCM(input) {
+                const output = new Int16Array(input.length)
+                for (let i = 0; i < input.length; i++) {
+                    const s = Math.max(-1, Math.min(1, input[i]))
+                    output[i] = s < 0 ? s * 0x8000 : s * 0x7fff
+                }
+                return output
+            }
+
+            // events
+            function setupWsEvents() {
+                ws.onmessage = (e) => {
+                    let msg = JSON.parse(e.data)
+                    if (msg.type === 'interim') {
+                        output.innerHTML = '<p>' + msg.text + '</p>'
+                    } else {
+                        final.innerHTML += '<p>' + msg.text + '</p>'
+                    }
+                }
+            }
+
+            function wsConnect() {
+                let wsConnectionString = wsHost.value.trim() + '/' + MEETINGID
+                if (jwt.value.trim() != '') {
+                    wsConnectionString += '?auth_token=' + jwt.value.trim()
+                }
+                ws = new WebSocket(wsConnectionString)
+                ws.binaryType = 'blob'
+                setupWsEvents()
+            }
+
+            function wsDisconnect() {
+                if (ws != undefined) {
+                    ws.close()
+                }
+            }
+
+            function preparePayload(data) {
+                let lang = langSel.value
+                let str = CLIENTID + "|" + lang
+                if (str.length < 60) {
+                    str = str.padEnd(60, " ")
+                }
+                let utf8Encode = new TextEncoder()
+                let buffer = utf8Encode.encode(str)
+
+                let headerArr = new Uint16Array(buffer.buffer)
+
+                const payload = []
+
+                headerArr.forEach(i => payload.push(i))
+                data.forEach(i => payload.push(i))
+
+                return Uint16Array.from(payload)
+            }
+
+            transcribeBtn.addEventListener("click", () => {
+                context.resume()
+                isSpeaking = true
+                transcribeBtn.disabled = true
+                stopBtn.disabled = false
+                langSel.disabled = true
+                wsConnect()
+            });
+            stopBtn.addEventListener('click', () => {
+                context.suspend()
+                isSpeaking = false
+                stopBtn.disabled = true;
+                transcribeBtn.disabled = false;
+                langSel.disabled = false
+                wsDisconnect()
+            });
+
+            recorder.port.onmessage = (e) => {
+                if (ws != undefined && isSpeaking) {
+                    const audio = convertFloat32To16BitPCM(e.data)
+                    const payload = preparePayload(audio)
+                    ws.send(payload)
+                }
+            }
+        }
+        main()
+    </script>
+</body>
+</html>

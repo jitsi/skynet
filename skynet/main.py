@@ -30,6 +30,11 @@ if 'summaries:dispatcher' in modules:
 
     app.mount('/summaries', summaries_app)
 
+if 'streaming_whisper' in modules:
+    from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
+
+    app.mount('/streaming-whisper', streaming_whisper_app)
+
 
 @app.get('/')
 def root():

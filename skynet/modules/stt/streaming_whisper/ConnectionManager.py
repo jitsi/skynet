@@ -1,21 +1,24 @@
 import time
+from fastapi import WebSocket, WebSocketDisconnect
 
-import websockets.exceptions
-from fastapi import WebSocket
-from loguru import logger as log
+from skynet.auth.jwt import authorize
+from skynet.modules.stt.streaming_whisper.MeetingConnection import MeetingConnection
+from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_DURATION_METRIC
+from skynet.env import bypass_auth
+from skynet.modules.stt.streaming_whisper.utils import utils
 
-from asap import jwt_auth
-from livets.MeetingConnection import MeetingConnection
-from monitor.prometheus_metrics import CONNECTIONS_METRIC, TRANSCRIBE_DURATION_METRIC
-from utils import utils
+from skynet.logs import get_logger
+
+log = get_logger(__name__)
 
 
 class ConnectionManager:
     def __init__(self):
         self.connections: dict[str, MeetingConnection] = {}
 
-    async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str):
-        if jwt_auth.authorize(auth_token):
+    async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None):
+        authorized = await authorize(auth_token)
+        if bypass_auth or authorized:
             await websocket.accept()
             self.connections[meeting_id] = MeetingConnection(websocket)
             CONNECTIONS_METRIC.set(len(self.connections))
@@ -39,7 +42,7 @@ class ConnectionManager:
     async def send(self, meeting_id: str, result: utils.TranscriptionResponse):
         try:
             await self.connections[meeting_id].ws.send_json(result.model_dump())
-        except websockets.exceptions.ConnectionClosed as e:
+        except WebSocketDisconnect as e:
             log.warning(f'The connection was closed before sending all results: {e}')
             self.disconnect(meeting_id)
         except Exception as ex:
@@ -49,5 +52,5 @@ class ConnectionManager:
         try:
             del self.connections[meeting_id]
         except KeyError:
-            log.warning(f"The key {meeting_id} doesn't exist anymore.")
+            log.warning(f'The key {meeting_id} doesn\'t exist anymore.')
         CONNECTIONS_METRIC.set(len(self.connections))
