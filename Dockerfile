@@ -1,14 +1,22 @@
+ARG BASE_IMAGE_BUILD=nvidia/cuda:12.3.0-devel-ubuntu20.04
+ARG BASE_IMAGE_RUN=nvidia/cuda:12.3.0-runtime-ubuntu20.04
+
 ## Base Image
 ##
 
-FROM nvidia/cuda:12.3.0-devel-ubuntu20.04 AS builder
+FROM ${BASE_IMAGE_BUILD} AS builder
+
+RUN \
+    apt-get update && \
+    apt-get install -y apt-transport-https ca-certificates gnupg
 
 COPY docker/rootfs/ /
 
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv
+    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv && \
+    apt-cleanup
 
 COPY requirements.txt /app/
 WORKDIR /app
@@ -26,7 +34,11 @@ RUN \
 ## Production Image
 ##
 
-FROM nvidia/cuda:12.3.0-runtime-ubuntu20.04
+FROM ${BASE_IMAGE_RUN}
+
+RUN \
+    apt-get update && \
+    apt-get install -y apt-transport-https ca-certificates gnupg
 
 COPY docker/rootfs/ /
 COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
@@ -34,7 +46,8 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini && \
+    apt-cleanup
 
 # Principle of least privilege: create a new user for running the application
 RUN \
