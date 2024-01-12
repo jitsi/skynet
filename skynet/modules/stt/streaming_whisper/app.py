@@ -15,7 +15,7 @@ async def websocket_endpoint(websocket: WebSocket, meeting_id: str, auth_token: 
         while True:
             try:
                 chunk = await websocket.receive_bytes()
-            except KeyError as err:
+            except Exception as err:
                 log.warning(f'Expected bytes, received something else, disconnecting {meeting_id}. Error: \n{err}')
                 ws_connection_manager.disconnect(meeting_id)
                 break
