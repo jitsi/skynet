@@ -142,12 +142,12 @@ class State:
         return sliceable_bytes
 
     async def do_transcription(self, audio: bytes) -> utils.WhisperResult | None:
+        loop = asyncio.get_running_loop()
+        log.debug('Doing TS')
         try:
-            loop = asyncio.get_running_loop()
-            log.debug('Doing TS')
             ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang)
-            log.debug(ts_result)
-            return ts_result
         except RuntimeError as e:
             log.error(f'Failed to transcribe {e}')
             return None
+        log.debug(ts_result)
+        return ts_result
