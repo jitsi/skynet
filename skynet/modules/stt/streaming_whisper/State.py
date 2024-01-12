@@ -125,7 +125,6 @@ class State:
         return result
 
     def reset(self, flush_working_audio: bool = False):
-        log.debug('Resetting old ts, changing id')
         self.transcription_id = str(uuid6.uuid7())
         self.transcription_ts = utils.now()
         # empty working audio
