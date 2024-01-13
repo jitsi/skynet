@@ -4,7 +4,7 @@ import sys
 is_mac = sys.platform == 'darwin'
 
 # modules
-supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api'}
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
 
@@ -38,8 +38,20 @@ redis_use_secrets_manager = os.environ.get('REDIS_USE_SECRETS_MANAGER', 'false')
 redis_namespace = os.environ.get('REDIS_NAMESPACE', 'skynet')
 redis_aws_region = os.environ.get('REDIS_AWS_REGION', 'us-west-2')
 
+
+# modules > stt > streaming_whisper
+whisper_beam_size = int(os.getenv('BEAM_SIZE', 5))
+# https://opennmt.net/CTranslate2/quantization.html
+whisper_compute_type = os.getenv('WHISPER_COMPUTE_TYPE', 'int8')
+whisper_gpu_indices = os.getenv('WHISPER_GPU_INDICES', None)
+whisper_device = os.getenv('WHISPER_DEVICE', 'auto')
+whisper_model_path = os.getenv('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/streaming_whisper')
+# whisper_max_connections = int(os.getenv('WHISPER_MAX_CONNECTIONS', 10))
+
+
 # jobs
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 10))  # 10 minutes default
+
 
 # monitoring
 enable_metrics = os.environ.get('ENABLE_METRICS', 'true').lower() == 'true'

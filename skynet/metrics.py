@@ -9,6 +9,7 @@ from skynet.modules.monitoring import (
     PROMETHEUS_NAMESPACE,
     PROMETHEUS_SUMMARIES_SUBSYSTEM,
     PROMETHEUS_OPENAI_API_SUBSYSTEM,
+    PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM
 )
 from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
 
@@ -46,4 +47,13 @@ if enable_metrics:
 
         instrumentator.instrument(
             summaries_app, metric_namespace=PROMETHEUS_NAMESPACE, metric_subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM
+        ).expose(metrics)
+
+    if 'streaming_whisper' in modules:
+        from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
+
+        instrumentator.instrument(
+            streaming_whisper_app,
+            metric_namespace=PROMETHEUS_NAMESPACE,
+            metric_subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM
         ).expose(metrics)

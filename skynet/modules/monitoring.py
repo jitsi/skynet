@@ -4,6 +4,7 @@ from prometheus_client import Gauge, Histogram, Counter
 PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
 PROMETHEUS_OPENAI_API_SUBSYSTEM = 'OpenAI_API'
+PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM = 'Streaming_Whisper'
 
 SUMMARY_INPUT_LENGTH_METRIC = Histogram(
     'summary_input_length',
@@ -34,6 +35,21 @@ SUMMARY_QUEUE_SIZE_METRIC = Gauge(
     documentation='Number of jobs in the queue',
     namespace=PROMETHEUS_NAMESPACE,
     subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+)
+
+CONNECTIONS_METRIC = Gauge(
+    'LiveWsConnections',
+    documentation='Number of active WS connections',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
+)
+
+TRANSCRIBE_DURATION_METRIC = Histogram(
+    'WhisperTranscriptionDuration',
+    documentation='Measures the duration of the transcription process in seconds',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
+    buckets=[x / 10.0 for x in range(1, 31)],
 )
 
 FORCED_EXIT_COUNTER = Counter(
