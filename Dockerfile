@@ -8,7 +8,7 @@ FROM ${BASE_IMAGE_BUILD} AS builder
 
 RUN \
     apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates gnupg
+    apt-get install -y apt-transport-https ca-certificates gnupg git
 
 COPY docker/rootfs/ /
 
