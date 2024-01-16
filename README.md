@@ -35,16 +35,6 @@ Visit
 http://127.0.0.1:8000
 http://127.0.0.1:8001/metrics
 
-### Using GPU acceleration on an M1 Mac
-
-Run this before starting Skynet:
-
-```bash
-export LLAMA_CPP_LIB=`pwd`/libllama-bin/libllama-m1.so
-```
-
-Make sure you use the right file name.
-
 ### Some benchmarks
 
 Summary:
