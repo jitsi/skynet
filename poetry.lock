@@ -848,25 +848,21 @@ version = "0.9.0"
 description = "Faster Whisper transcription with CTranslate2"
 optional = false
 python-versions = ">=3.8"
-files = []
-develop = false
+files = [
+    {file = "faster-whisper-0.9.0.tar.gz", hash = "sha256:9727a3151ee601090386a5f1e6d8654ae04f617c5e6d24f28ea1d9232eebf37a"},
+    {file = "faster_whisper-0.9.0-py3-none-any.whl", hash = "sha256:ba7fa0d4166548d611177350fe3d639ded222f8c159a6aebedfb2d4f186da222"},
+]
 
 [package.dependencies]
 av = "==10.*"
 ctranslate2 = ">=3.17,<4"
-huggingface_hub = ">=0.13"
+huggingface-hub = ">=0.13"
 onnxruntime = ">=1.14,<2"
 tokenizers = ">=0.13,<0.15"
 
 [package.extras]
 conversion = ["transformers[torch] (>=4.23)"]
 dev = ["black (==23.*)", "flake8 (==6.*)", "isort (==5.*)", "pytest (==7.*)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/guillaumekln/faster-whisper"
-reference = "v0.9.0"
-resolved_reference = "5a0541ea7d054aa3716ac492491de30158c20057"
 
 [[package]]
 name = "fastjsonschema"
@@ -3406,4 +3402,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "188bc64ed78929f5684b9b0537cf6f0cbc3352abf76b3093c5399109082bdcbb"
+content-hash = "380ae356b760ae6cfaa6eec0176ceafe95f249b352c8fbe5cea58da456f74ca2"
