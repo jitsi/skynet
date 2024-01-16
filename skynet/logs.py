@@ -2,6 +2,7 @@ import logging
 import sys
 
 from logging import Filter, LogRecord
+
 from uvicorn.logging import DefaultFormatter
 
 

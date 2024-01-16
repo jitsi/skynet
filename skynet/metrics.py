@@ -2,16 +2,16 @@ from fastapi import FastAPI
 
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
-from skynet.modules.ttt.summaries.persistence import db
 
 from skynet.modules.monitoring import (
     instrumentator,
     PROMETHEUS_NAMESPACE,
-    PROMETHEUS_SUMMARIES_SUBSYSTEM,
     PROMETHEUS_OPENAI_API_SUBSYSTEM,
     PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
+    PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
 from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
+from skynet.modules.ttt.summaries.persistence import db
 
 log = get_logger(__name__)
 metrics = FastAPI()

@@ -3,8 +3,9 @@ from typing import List
 
 import uuid6
 
-from skynet.modules.stt.streaming_whisper.utils import utils
 from skynet.logs import get_logger
+
+from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
 

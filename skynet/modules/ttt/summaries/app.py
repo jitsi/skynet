@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi_versionizer.versionizer import Versionizer
 
 from skynet.logs import get_logger
+from .jobs import start_monitoring_jobs
 
 from .persistence import db
-from .jobs import start_monitoring_jobs
 from .processor import initialize as initialize_summaries
 from .v1.router import router as v1_router
 

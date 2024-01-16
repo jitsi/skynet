@@ -1,13 +1,14 @@
 import time
+
 from fastapi import WebSocket, WebSocketDisconnect
 
 from skynet.auth.jwt import authorize
-from skynet.modules.stt.streaming_whisper.MeetingConnection import MeetingConnection
-from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_DURATION_METRIC
 from skynet.env import bypass_auth
-from skynet.modules.stt.streaming_whisper.utils import utils
 
 from skynet.logs import get_logger
+from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_DURATION_METRIC
+from skynet.modules.stt.streaming_whisper.MeetingConnection import MeetingConnection
+from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
 

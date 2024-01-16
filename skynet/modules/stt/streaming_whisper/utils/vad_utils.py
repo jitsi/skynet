@@ -21,11 +21,11 @@
 # SOFTWARE.
 
 import io
+import warnings
+from typing import Callable
 
 import torch
 import torchaudio
-from typing import Callable
-import warnings
 
 
 def read_audio(path: str, sampling_rate: int = 16000):
