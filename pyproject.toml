@@ -6,35 +6,34 @@ authors = ["Jitsi Team <team@jitsi.org>"]
 readme = "README.md"
 
 [tool.poetry.group.dev.dependencies]
+black = "23.12.1"
 poetry-githooks = "^3.0.0"
+poetry-plugin-export = "^1.6.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "7.4.4"
+pytest-asyncio = "0.23.3"
+pytest-mock = "3.12.0"
 
 [tool.poetry.dependencies]
-aiodns = "^3.0.0"
-aiohttp = "^3.8.5"
+aiohttp = "3.9.1"
+async-lru = "2.0.4"
 boto3 = "^1.28.56"
-cachetools = "^5.3.1"
-cryptography = "41.0.3"
-fastapi = "0.104.1"
+fastapi = "0.109"
 fastapi-versionizer = "3.0.4"
-langchain = "0.0.332"
-llama-cpp-python = {version = "0.2.13", extras = ["server"]}
-pydantic = "2.4.2"
+faster-whisper = { git = "https://github.com/guillaumekln/faster-whisper", tag = "v0.9.0" }
+langchain = "0.0.354"
+llama-cpp-python = {version = "0.2.18", extras = ["server"]}
+prometheus-client = "0.19.0"
+prometheus-fastapi-instrumentator = "6.1.0"
+pydantic = "2.5.3"
 pyjwt = "2.8.0"
 python = "~3.11"
 redis = "5.0.1"
-uvicorn = "0.24.0"
-black = "23.11.0"
-prometheus-fastapi-instrumentator = "6.1.0"
-prometheus-client = "0.18.0"
-pytest = "7.4.3"
-pytest-asyncio = "0.21.1"
-pytest-mock = "3.12.0"
-poetry-plugin-export = "^1.6.0"
-async-lru = "^2.0.4"
-uuid6 = ">=2023.5.2"
-faster-whisper = { git = "https://github.com/guillaumekln/faster-whisper", tag = "v0.9.0" }
 torch = ">=2.0.0,<2.1.0"
 torchaudio = ">=2.0.1,<2.1.0"
+uuid6 = ">=2023.5.2"
+uvicorn = "0.25.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
