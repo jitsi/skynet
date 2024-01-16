@@ -1,16 +1,16 @@
 import redis.asyncio as redis
 
 from skynet.env import (
-    redis_host,
-    redis_port,
+    redis_aws_region,
     redis_aws_secret_id,
+    redis_db_no,
+    redis_host,
+    redis_namespace,
+    redis_port,
+    redis_pwd,
     redis_use_secrets_manager,
     redis_use_tls,
-    redis_db_no,
-    redis_namespace,
     redis_usr,
-    redis_pwd,
-    redis_aws_region,
 )
 from skynet.logs import get_logger
 

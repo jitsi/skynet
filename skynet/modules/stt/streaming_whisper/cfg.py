@@ -2,9 +2,10 @@ import os
 
 import torch
 from faster_whisper import WhisperModel
-from skynet.modules.stt.streaming_whisper.utils import vad_utils as vad
-from skynet.env import whisper_compute_type, whisper_gpu_indices, whisper_device, whisper_model_path
+
+from skynet.env import whisper_compute_type, whisper_device, whisper_gpu_indices, whisper_model_path
 from skynet.logs import get_logger
+from skynet.modules.stt.streaming_whisper.utils import vad_utils as vad
 
 log = get_logger(__name__)
 

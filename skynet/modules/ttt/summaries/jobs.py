@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from skynet.env import job_timeout, redis_exp_seconds, modules
+from skynet.env import job_timeout, modules, redis_exp_seconds
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     SUMMARY_DURATION_METRIC,
@@ -13,8 +13,8 @@ from skynet.modules.monitoring import (
 from skynet.utils import kill_process
 
 from .persistence import db
-from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
 from .processor import process
+from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
 
 log = get_logger(__name__)
 

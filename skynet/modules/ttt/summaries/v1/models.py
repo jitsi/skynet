@@ -1,7 +1,8 @@
 import time
 
 from enum import Enum
-from pydantic import BaseModel, Field, computed_field
+
+from pydantic import BaseModel, computed_field, Field
 
 
 class DocumentPayload(BaseModel):

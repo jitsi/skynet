@@ -8,11 +8,11 @@ from langchain.llms import LlamaCpp
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from skynet.env import llama_path, llama_n_gpu_layers, llama_n_batch
-
-from .v1.models import Job, JobType
+from skynet.env import llama_n_batch, llama_n_gpu_layers, llama_path
 from .prompts.action_items import action_items_template
 from .prompts.summary import summary_template
+
+from .v1.models import Job, JobType
 
 executor = None
 llm = None

@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
-from typing import Tuple, List
+from typing import List, Tuple
 
 import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
+
 import skynet.modules.stt.streaming_whisper.cfg as cfg
 from skynet.env import whisper_beam_size
 from skynet.logs import get_logger

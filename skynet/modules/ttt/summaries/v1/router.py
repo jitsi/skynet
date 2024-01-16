@@ -4,7 +4,7 @@ from fastapi_versionizer.versionizer import api_version
 from skynet.utils import get_router
 
 from ..jobs import create_job, get_job as get_job
-from .models import BaseJob, JobId, JobType, DocumentPayload
+from .models import BaseJob, DocumentPayload, JobId, JobType
 
 router = get_router()
 

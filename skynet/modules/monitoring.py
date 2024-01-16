@@ -1,5 +1,5 @@
+from prometheus_client import Counter, Gauge, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
-from prometheus_client import Gauge, Histogram, Counter
 
 PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'

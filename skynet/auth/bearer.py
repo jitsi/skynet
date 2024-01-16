@@ -1,5 +1,5 @@
 from fastapi import Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from skynet.auth.jwt import authorize
 

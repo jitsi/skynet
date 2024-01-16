@@ -1,7 +1,8 @@
 import os
 import sys
-from fastapi import APIRouter, Depends
+
 import uvicorn
+from fastapi import APIRouter, Depends
 
 from skynet.auth.bearer import JWTBearer
 from skynet.env import bypass_auth
