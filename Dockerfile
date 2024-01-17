@@ -15,7 +15,7 @@ COPY docker/rootfs/ /
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv && \
+    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv libgomp1 cuda-cupti-11-7 && \
     apt-cleanup
 
 COPY requirements.txt /app/
@@ -66,7 +66,8 @@ ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
-    LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf"
+    LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf" \
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda-11.7/targets/x86_64-linux/lib"
 
 VOLUME [ "/models" ]
 
@@ -76,7 +77,7 @@ RUN chown jitsi:jitsi ${PYTHONPATH}
 # Document the exposed port
 EXPOSE 8000
 
-# Use the unpriveledged user to run the application
+# Use the unpriviledged user to run the application
 USER 1001
 
 # Use tini as our PID 1
