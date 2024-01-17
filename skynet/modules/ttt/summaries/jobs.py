@@ -115,17 +115,17 @@ async def run_job(job: Job) -> None:
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
+    exit_task = asyncio.create_task(exit_on_timeout())
+
     try:
-        exit_task = asyncio.create_task(exit_on_timeout())
-
         result = await process(job)
-
-        exit_task.cancel()
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 
         has_failed = True
         result = str(e)
+
+    exit_task.cancel()
 
     updated_job = await update_job(
         expires=redis_exp_seconds if not has_failed else None,
