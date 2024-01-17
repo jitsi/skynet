@@ -41,7 +41,7 @@ Visit http://127.0.0.1:8000
 ## Build Image
 
 ```bash
-docker buildx build -f summaries.Dockerfile --push --progress plain --platform linux/amd64 -t your-registry/skynet:your-tag .
+docker buildx build -f Dockerfile --push --progress plain --platform linux/amd64 -t your-registry/skynet:your-tag .
 ```
 
 When running the resulting image, make sure to mount a model under `/models` on the container fs.
