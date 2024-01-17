@@ -52,6 +52,8 @@ whisper_model_path = os.getenv('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/stre
 # jobs
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 10))  # 10 minutes default
 
+# summaries
+summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
 
 # monitoring
 enable_metrics = os.environ.get('ENABLE_METRICS', 'true').lower() == 'true'

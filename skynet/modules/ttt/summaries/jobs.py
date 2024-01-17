@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from skynet.env import job_timeout, modules, redis_exp_seconds
+from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     SUMMARY_DURATION_METRIC,
@@ -106,26 +106,30 @@ async def run_job(job: Job) -> None:
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
-    log.info(f"Job {job.id} created at {job.created}")
-    log.info(f"Job {job.id} started at {start}")
     log.info(f"Job queue time: {start - job.created} seconds")
+
     await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
-    exit_task = asyncio.create_task(exit_on_timeout())
+    if len(job.payload.text) < summary_minimum_payload_length:
+        log.warning(f"Job {job.id} failed because payload is too short: \"{job.payload.text}\"")
 
-    try:
-        result = await process(job)
-    except Exception as e:
-        log.warning(f"Job {job.id} failed: {e}")
+        result = job.payload.text
+    else:
+        exit_task = asyncio.create_task(exit_on_timeout())
 
-        has_failed = True
-        result = str(e)
+        try:
+            result = await process(job)
+        except Exception as e:
+            log.warning(f"Job {job.id} failed: {e}")
 
-    exit_task.cancel()
+            has_failed = True
+            result = str(e)
+
+        exit_task.cancel()
 
     updated_job = await update_job(
         expires=redis_exp_seconds if not has_failed else None,

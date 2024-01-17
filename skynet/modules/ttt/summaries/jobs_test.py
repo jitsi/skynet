@@ -17,10 +17,10 @@ def default_session_fixture() -> Iterator[None]:
 
 class TestCreateJob:
     @pytest.mark.asyncio
-    async def test_runs_job(self, mocker):
-        '''Test that a job is run.'''
+    async def test_creates_run_job(self, mocker):
+        '''Test that a job run task is created.'''
 
-        mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task'),
+        mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
 
         from skynet.modules.ttt.summaries.jobs import create_job, create_run_job_task
 
@@ -33,6 +33,7 @@ class TestCreateJob:
     async def test_queues_job(self, mocker):
         '''Test that a job is queued and queue size metric is updated.'''
 
+        mocker.patch('skynet.modules.monitoring.SUMMARY_DURATION_METRIC.observe')
         mocker.patch('skynet.modules.ttt.summaries.jobs.can_run_next_job', return_value=False)
         mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
 
@@ -42,6 +43,48 @@ class TestCreateJob:
 
         db.rpush.assert_called_once_with(PENDING_JOBS_KEY, job_id.id)
         update_summary_queue_metric.assert_called_once()
+
+
+@pytest.fixture()
+def run_job_fixture(mocker):
+    mocker.patch('skynet.modules.ttt.summaries.jobs.SUMMARY_DURATION_METRIC.observe')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.update_job')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.process')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.db.db')
+
+    yield 'run_job_fixture'
+
+
+class TestRunJob:
+    @pytest.mark.asyncio
+    async def test_does_not_run_job(self, run_job_fixture):
+        '''Test that a job with a short payload is not sent for inference.'''
+
+        from skynet.modules.ttt.summaries.jobs import process, run_job
+
+        await run_job(
+            Job(payload=DocumentPayload(text="Hello. It’s me . . . Where are you?"), type=JobType.SUMMARY, id='job_id')
+        )
+
+        process.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_run_job(self, run_job_fixture):
+        '''Test that a job with a long enough payload is sent for inference.'''
+
+        from skynet.modules.ttt.summaries.jobs import process, run_job
+
+        await run_job(
+            Job(
+                payload=DocumentPayload(
+                    text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+                ),
+                type=JobType.SUMMARY,
+                id='job_id',
+            )
+        )
+
+        process.assert_called_once()
 
 
 class TestCanRunNextJob:
