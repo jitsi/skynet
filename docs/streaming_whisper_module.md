@@ -4,8 +4,6 @@ Performs live transcriptions using [Faster Whisper](https://github.com/SYSTRAN/f
 
 Enable the module by setting the `ENABLED_MODULES` env var to `streaming_whisper`.
 
-This module is mutual
-
 > Here the JWT (see [Authorization](auth.md)) needs to be provided as a GET parameter. Please make sure to make it _very_ short-lived.
 
 ## Requirements
