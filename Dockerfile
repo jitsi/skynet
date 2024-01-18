@@ -15,7 +15,7 @@ COPY docker/rootfs/ /
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv libgomp1 cuda-cupti-11-7 && \
+    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv && \
     apt-cleanup
 
 COPY requirements.txt /app/
@@ -46,7 +46,7 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application
@@ -66,8 +66,7 @@ ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
-    LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf" \
-    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda-11.7/targets/x86_64-linux/lib"
+    LLAMA_PATH="/models/llama-2-7b-chat.Q4_K_M.gguf"
 
 VOLUME [ "/models" ]
 
