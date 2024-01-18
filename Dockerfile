@@ -46,7 +46,7 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application
@@ -76,7 +76,7 @@ RUN chown jitsi:jitsi ${PYTHONPATH}
 # Document the exposed port
 EXPOSE 8000
 
-# Use the unpriveledged user to run the application
+# Use the unpriviledged user to run the application
 USER 1001
 
 # Use tini as our PID 1

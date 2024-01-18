@@ -18,14 +18,15 @@ class ConnectionManager:
         self.connections: dict[str, MeetingConnection] = {}
 
     async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None):
-        authorized = await authorize(auth_token)
-        if bypass_auth or authorized:
-            await websocket.accept()
-            self.connections[meeting_id] = MeetingConnection(websocket)
-            CONNECTIONS_METRIC.set(len(self.connections))
-            log.info(f'Client {meeting_id} connected. Connection count {len(self.connections)}')
-        else:
-            await websocket.close(401, 'Bad JWT token')
+        if not bypass_auth:
+            authorized = await authorize(auth_token)
+            if not authorized:
+                await websocket.close(401, 'Bad JWT token')
+                return
+        await websocket.accept()
+        self.connections[meeting_id] = MeetingConnection(websocket)
+        CONNECTIONS_METRIC.set(len(self.connections))
+        log.info(f'Client {meeting_id} connected. Connection count {len(self.connections)}')
 
     async def process(self, meeting_id: str, chunk: bytes):
         if meeting_id not in self.connections:

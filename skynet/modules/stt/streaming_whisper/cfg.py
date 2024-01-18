@@ -18,7 +18,7 @@ def get_device() -> str:
     return 'cpu'
 
 
-vad_model = vad.init_jit_model(f'{os.getcwd()}/modules/stt/streaming_whisper/models/vad/silero_vad.jit')
+vad_model = vad.init_jit_model(f'{os.getcwd()}/skynet/modules/stt/streaming_whisper/models/vad/silero_vad.jit')
 
 device = whisper_device if whisper_device != 'auto' else get_device()
 log.info(f'Using {device}')

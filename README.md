@@ -1,53 +1,52 @@
 # Skynet
 
-Skynet is an API server for AI services wrapping several APIs and models.
+Skynet is an API server for AI services wrapping several apps and models.
 
-## Usage
-All requests to this service will require a standard HTTP Authorization header with a Bearer JWT
-You can generate a valid JWT in two ways:
+It is comprised of specialized modules which can be enabled or disabled as needed.
 
-1. Have a JaaS account (https://jaas-pilot.8x8.vc or https://jaas.8x8.vc if using production) and use one of the JaaS public - private key pairs to generate the JWT as specified [here](https://developer.8x8.com/jaas/docs/api-keys-jwt). Currently, the tokens will be considered valid as long as they have the header in the specified format (alg, kid and typ), and an audience set to the value "jitsi".
-2. Have a private - public key pair for generating JWTs as specified above.
-3. Use the helper script to generate a token:
+- **Summary and Action Items** with llama.cpp (enabled by default)
+- **Live Transcriptions** with Faster Whisper via websockets
+- _more to follow_
 
-```bash
-./docs/jaas-jwt.sh PrivateKey.pk API-Key
-# The generated token has a validity of 7200 seconds
-```
+## Requirements
 
-### Code samples
+- Poetry
+- Redis
 
-JavaScript: https://github.com/jitsi/skynet/blob/master/docs/sample.js
-
-
-### [Flowchart](https://github.com/jitsi/skynet/blob/master/docs/flowchart.jpg)
-
-### Running
-
-Download GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
+## Quickstart
 
 ```bash
+# Download the preferred GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
+mkdir skynet/models
+
+wget -q --show-progress "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf?download=true" -O skynet/models/llama-2-7b-chat.Q4_K_M.gguf
+
+export LLAMA_PATH="$(pwd)/skynet/models/llama-2-7b-chat.Q4_K_M.gguf"
+
+# start Redis
+docker run -d --rm -p 6379:6379 redis 
+
+# disable authorization
+export BYPASS_AUTHORIZATION="true"
+
 poetry install
-./run.sh
+poetry run python skynet/main.py
+
+# open http://localhost:8000/summaries/docs in a browser
 ```
 
-Visit
-http://127.0.0.1:8000
-http://127.0.0.1:8001/metrics
+## Documentation
 
-### Some benchmarks
+Detailed documentation on how to configure, run, build, monitor and deploy Skynet and can be found in the [docs](docs/README.md) folder.
 
-Summary:
+## Development
 
-| Model | Input size | Time to summarize (M1 CPU)  | Time to summarize (GPU) |
-| :---- | :--------: |:---------------------------:|:-----------------------:|
-| [llama-2-7b-chat.Q4_K_M.gguf][1] | 16000 chars |           ~87 sec           |         ~44 sec         |
-| [llama-2-7b-chat.Q4_K_M.gguf][1] | 8000 chars |           ~51 sec           |         ~28 sec         |
+If you want to contribute, make sure to install the pre-commit hook for linting.
 
-[1]: https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf
+```bash
+poetry run githooks setup
+```
 
-### Development
+## License
 
-Install pre-commit hook that we use for linting
-
-```poetry run githooks setup```
+Skynet is distributed under the Apache 2.0 License.
