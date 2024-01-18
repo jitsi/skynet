@@ -14,11 +14,11 @@ Enable the module by setting the `ENABLED_MODULES` env var to `streaming_whisper
 
 ```bash 
 # git lfs install
-git clone git@hf.co:guillaumekln/faster-whisper-base.en "$(pwd)/skynet/models/streaming-whisper"
+git clone git@hf.co:guillaumekln/faster-whisper-base.en "$HOME/my-models-folder/streaming-whisper"
 
 export BYPASS_AUTHORIZATION="true"
 export ENABLED_MODULES="streaming_whisper"
-export WHISPER_MODEL_PATH="$(pwd)/skynet/models/streaming-whisper/"
+export WHISPER_MODEL_PATH="$HOME/my-models-folder/streaming-whisper"
 
 poetry install
 ./run.sh
@@ -131,11 +131,18 @@ public void sendAudio(Participant participant, ByteBuffer audio) {
 
 ## Build image
 
+You need to change the build and runtime images to `cuda:11.8.0-cudnn8-devel-ubuntu20.04` and `nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04` respectively.
+
 ```bash
-docker buildx build --build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" --build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" --push --progress plain --platform linux/amd64 -t your-registry/skynet:your-tag .
+docker buildx build --build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04" --build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" --push --progress plain --platform linux/amd64 -t your-registry/skynet:your-tag .
 ```
 
-When running the resulting image, make sure to mount a faster-whisper model under `/app/models` on the container fs.
+When running the resulting image, make sure to mount a faster-whisper model under `/models` on the container fs and reference it in the `WHISPER_MODEL_PATH` environment variable.
+
+```bash
+git clone git@hf.co:guillaumekln/faster-whisper-base.en "$HOME/my-models-folder/streaming-whisper"
+docker run -p 8000:8000 -e "BEAM_SIZE=1" -e "WHISPER_MODEL_PATH=/models/streaming-whisper" -e "ENABLED_MODULES=streaming_whisper" -e "BYPASS_AUTHORIZATION=true" -v "$HOME/my-models-folder":"/models" skynet:test-whisper
+```
 
 ## Demo
 
