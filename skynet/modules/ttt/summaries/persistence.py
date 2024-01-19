@@ -13,6 +13,7 @@ from skynet.env import (
     redis_usr,
 )
 from skynet.logs import get_logger
+from skynet.modules.monitoring import REDIS_CONNECTION_STATUS
 
 log = get_logger(__name__)
 
@@ -55,6 +56,7 @@ class Redis:
         try:
             await self.db.ping()
             self.initialized = True
+            REDIS_CONNECTION_STATUS.set(1)
         except Exception as e:
             raise RuntimeError(f'Failed to initialize Redis: {e}')
 

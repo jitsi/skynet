@@ -6,6 +6,13 @@ PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
 PROMETHEUS_OPENAI_API_SUBSYSTEM = 'OpenAI_API'
 PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM = 'Streaming_Whisper'
 
+REDIS_CONNECTION_STATUS = Gauge(
+    'redis_connection_status',
+    documentation='Status of the connection to Redis',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+)
+
 SUMMARY_INPUT_LENGTH_METRIC = Histogram(
     'summary_input_length',
     documentation='Measures the length of the input text',
