@@ -24,7 +24,7 @@ poetry install
 ./run.sh
 ```
 
-Go to [demos/streaming-whisper/](../demos/streaming-whisper/) and start a Python http server
+Go to [demos/streaming-whisper/](../demos/streaming-whisper/) and start a Python http server.
 
 ```bash
 python3 -m http.server 8080

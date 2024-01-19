@@ -4,7 +4,7 @@ Skynet uses a JWT signed with an asymmetric key, just like [**Jitsi as a Service
 
 The authorization is performed by downloading the public key advertised in the JWT's `kid` header from a well-known location and checking if the JWT signature and the audiences match.
 
-> Authorization can be disabled all together by setting the `BYPASS_AUTHORIZATION` env var to `true`. 
+> Authorization can be disabled altogether by setting the `BYPASS_AUTHORIZATION` env var to `true`. 
 
 
 ## Creating a keypair
@@ -25,7 +25,7 @@ echo -n "my-awesome-service" | shasum -a 256
 So you would rename `id_rsa.pub`, or whatever your public key's name is, to `cf83fb2ffe64d959f93c3ade60a1c45421f016be3dcbbeda9ea7f1b78afdb698.pub` and upload
 it to a http server of your liking.
 
-> **N.B.** The web service url and root path should be specified as environment variables, check `ASAP_PUB_KEYS_REPO_URL` and `ASAP_PUB_KEYS_FOLDER` in [Environment Variables](./env_vars.md).
+> **N.B.** The web service url and root path should be specified as environment variables, check `ASAP_PUB_KEYS_REPO_URL` and `ASAP_PUB_KEYS_FOLDER` in [Environment Variables](env_vars.md).
 
 ## Creating JWTs
 
@@ -39,23 +39,23 @@ The JWT unencrypted header should look like this, note the mandatory `kid` with 
 }
 ```
 
-The only mandatory field in the body is the `aud` claim, which must match at least one of the audiences defined in the `ASAP_PUB_KEYS_AUDS` environment variable, check [Environment Variables](./env_vars.md).
+The only mandatory field in the body is the `aud` claim, which must match at least one of the audiences defined in the `ASAP_PUB_KEYS_AUDS` environment variable, check [Environment Variables](env_vars.md).
 
 Once you have your JWT, sign it with the private key and use it to access any of the services provided by Skynet.
 
 ## Authorization Flow
 
 1. Skynet receives the JWT and reads the unencrypted header
-2. It extracts the `kid` and performs a `SHA256` sum on the string
-3. It then attempts to download the public key from `ASAP_PUB_KEYS_REPO_URL/ASAP_PUB_KEYS_FOLDER/{sha-sum-of-kid}.pem` if it cannot find it in the local cache
-4. It checks if the signature and the audience match 
+2. Extracts the `kid` and performs a `SHA256` sum on the string
+3. Attempts to download the public key from `ASAP_PUB_KEYS_REPO_URL/ASAP_PUB_KEYS_FOLDER/{sha-sum-of-kid}.pem` if it cannot find it in the local cache
+4. Verifies the signature and the audiences 
 
 ## Helper script
 
 Use this [bash script](jaas-jwt.sh) to quickly generate JWTs. Please note that you will still need to upload the public key somewhere and generate the key pair.
 
 ```bash
-./docs/jaas-jwt.sh PrivateKey.pk API-Key
+./docs/jaas-jwt.sh PrivateKey.pk my-awesome-service
 # The generated token has a validity of 7200 seconds
 ```
 

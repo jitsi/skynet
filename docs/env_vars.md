@@ -34,10 +34,11 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `REDIS_USE_SECRETS_MANAGER` | Use AWS Secrets Manager to retrieve credentials | `false` | N/A |
 | `REDIS_NAMESPACE` | Prefix for each Redis key | `skynet` | N/A |
 | `REDIS_AWS_REGION` | The AWS region. Needed when using AWS Secrets Manager to retrieve credentials. | `us-west-2` | N/A |
+| `SUMMARY_MINIMUM_PAYLOAD_LENGTH` | The minimum payload length allowed for summarization. | `100` | N/A |
 
 ## Streaming Whisper Module Environment Variables
 
-| Name                 | **Description**                                                                                                                                        | **Default**                             | **Available values** |
+| Name                 | **Description**                                                                                                                                    | **Default**                         | **Available values** |
 |----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|------------------|
 | `BEAM_SIZE` | Whisper beam size  | `5` | N/A |
 | `WHISPER_COMPUTE_TYPE` | Quantization https://opennmt.net/CTranslate2/quantization.html | `int8` | `int8`, `int8_float32`, `int8_float16`, `int8_bfloat16`, `int16`, `float16`, `bfloat16`, `float32` |
