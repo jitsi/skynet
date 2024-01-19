@@ -1,6 +1,6 @@
 # Skynet Summaries Module
 
-Extracts summaries and action items from a given text. The API wraps the wonderful [ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp). It is split into two sub-modules, `summaries:dispatcher` and `summaries:executor`.
+Extracts summaries and action items from a given text. The API wraps the wonderful [ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp). It is split into two sub-modules: `summaries:dispatcher` and `summaries:executor`.
 
 `summaries:dispatcher` will push jobs and retrieve job results from a Redis queue while `summaries:executor` performs the actual inference. They can both be enabled at the same time or deployed separately.
 
@@ -23,11 +23,11 @@ All of the configuration is done via env vars. Check the [Skynet Environment Var
 
 ```bash
 # Download the preferred GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
-mkdir skynet/models
+mkdir "$HOME/models"
 
-wget -q --show-progress "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf?download=true" -O skynet/models/llama-2-7b-chat.Q4_K_M.gguf
+wget -q --show-progress "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf?download=true" -O "$HOME/models/llama-2-7b-chat.Q4_K_M.gguf"
 
-export LLAMA_PATH="$(pwd)/skynet/models/llama-2-7b-chat.Q4_K_M.gguf"
+export LLAMA_PATH="$HOME/models/llama-2-7b-chat.Q4_K_M.gguf"
 
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
