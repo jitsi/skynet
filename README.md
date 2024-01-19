@@ -17,11 +17,11 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 
 ```bash
 # Download the preferred GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
-mkdir skynet/models
+mkdir "$HOME/models"
 
-wget -q --show-progress "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf?download=true" -O skynet/models/llama-2-7b-chat.Q4_K_M.gguf
+wget -q --show-progress "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf?download=true" -O "$HOME/models/llama-2-7b-chat.Q4_K_M.gguf"
 
-export LLAMA_PATH="$(pwd)/skynet/models/llama-2-7b-chat.Q4_K_M.gguf"
+export LLAMA_PATH="$HOME/models/llama-2-7b-chat.Q4_K_M.gguf"
 
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
@@ -37,7 +37,7 @@ poetry run python skynet/main.py
 
 ## Documentation
 
-Detailed documentation on how to configure, run, build, monitor and deploy Skynet and can be found in the [docs](docs/README.md) folder.
+Detailed documentation on how to configure, run, build and monitor Skynet and can be found in the [docs](docs/README.md).
 
 ## Development
 
