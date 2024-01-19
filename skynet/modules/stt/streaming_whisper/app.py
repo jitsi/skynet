@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from skynet.logs import get_logger
-from skynet.modules.stt.streaming_whisper.ConnectionManager import ConnectionManager
+from skynet.modules.stt.streaming_whisper.connection_manager import ConnectionManager
 
 log = get_logger(__name__)
 
