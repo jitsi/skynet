@@ -1,5 +1,4 @@
 import time
-
 from enum import Enum
 
 from pydantic import BaseModel, computed_field, Field

@@ -3,8 +3,7 @@ from typing import List
 from starlette.websockets import WebSocket
 
 from skynet.logs import get_logger
-
-from skynet.modules.stt.streaming_whisper.State import State
+from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
