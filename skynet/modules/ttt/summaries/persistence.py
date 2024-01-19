@@ -50,15 +50,13 @@ class Redis:
 
     async def initialize(self):
         if self.initialized:
-            return True
+            return
 
         try:
             await self.db.ping()
             self.initialized = True
-            return True
         except Exception as e:
-            log.error(f'Failed to initialize Redis: {e}')
-            return False
+            raise RuntimeError(f'Failed to initialize Redis: {e}')
 
     async def client_list(self):
         return await self.db.client_list()
