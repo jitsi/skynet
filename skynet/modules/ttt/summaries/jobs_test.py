@@ -11,7 +11,7 @@ from skynet.modules.ttt.summaries.v1.models import DocumentPayload, Job, JobType
 def default_session_fixture() -> Iterator[None]:
     with patch('skynet.modules.ttt.summaries.persistence.db.set'), patch(
         'skynet.modules.ttt.summaries.persistence.db.rpush'
-    ):
+    ), patch('skynet.modules.ttt.summaries.persistence.db.llen'):
         yield
 
 
