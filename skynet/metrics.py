@@ -2,7 +2,6 @@ from fastapi import FastAPI
 
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
-
 from skynet.modules.monitoring import (
     instrumentator,
     PROMETHEUS_NAMESPACE,

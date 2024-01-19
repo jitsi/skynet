@@ -2,7 +2,6 @@ from hashlib import sha256
 
 import jwt
 from async_lru import alru_cache
-
 from fastapi import HTTPException
 
 from skynet import http_client

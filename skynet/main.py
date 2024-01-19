@@ -7,7 +7,6 @@ from fastapi.responses import FileResponse
 
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
-
 from skynet.utils import create_webserver
 
 log = get_logger(__name__)
