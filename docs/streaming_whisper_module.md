@@ -16,7 +16,7 @@ Enable the module by setting the `ENABLED_MODULES` env var to `streaming_whisper
 # Please bear in mind that you need to create a Huggingface account in order to download the model with git.
 # brew install git-lfs
 # git lfs install
-git clone git@hf.co:guillaumekln/faster-whisper-base.en "$HOME/my-models-folder/streaming-whisper"
+git clone git@hf.co:Systran/faster-whisper-base.en "$HOME/my-models-folder/streaming-whisper"
 
 export BYPASS_AUTHORIZATION="true"
 export ENABLED_MODULES="streaming_whisper"
