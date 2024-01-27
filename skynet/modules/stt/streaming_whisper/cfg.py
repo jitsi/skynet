@@ -3,7 +3,7 @@ import os
 import torch
 from faster_whisper import WhisperModel
 
-from skynet.env import whisper_compute_type, whisper_device, whisper_gpu_indices, whisper_model_path, whisper_model_name
+from skynet.env import whisper_compute_type, whisper_device, whisper_gpu_indices, whisper_model_name, whisper_model_path
 from skynet.logs import get_logger
 from skynet.modules.stt.streaming_whisper.utils import vad_utils as vad
 
