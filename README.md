@@ -13,7 +13,7 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 - Poetry
 - Redis
 
-## Quickstart
+## Summaries Quickstart
 
 ```bash
 # Download the preferred GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
@@ -34,6 +34,27 @@ poetry run python skynet/main.py
 
 # open http://localhost:8000/summaries/docs in a browser
 ```
+
+## Live Transcriptions Quickstart
+
+```bash
+mkdir -p "$HOME/my-models-folder/streaming-whisper"
+export WHISPER_MODEL_NAME="tiny.en"
+export BYPASS_AUTHORIZATION="true"
+export ENABLED_MODULES="streaming_whisper"
+export WHISPER_MODEL_PATH="$HOME/my-models-folder/streaming-whisper"
+
+poetry install
+./run.sh
+```
+
+Go to [demos/streaming-whisper/](../demos/streaming-whisper/) and start a Python http server.
+
+```bash
+python3 -m http.server 8080
+```
+
+Open http://127.0.0.1:8080.
 
 ## Documentation
 
