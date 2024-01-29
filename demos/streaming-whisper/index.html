@@ -4,31 +4,60 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Ts Test Page</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Skynet - Streaming Whisper Demo</title>
+    <link rel="stylesheet" href="bulma.min.css">
 </head>
 
 <body>
-    <h1>Streaming Whisper Test Client</h1>
-    <div class="controls_container">
-        <div class="controls">
-            <button id="transcribebtn">Transcribe</button>
-            <button id="stopbtn" disabled>Stop</button>
-            <label for="langselector">Lang</label>
-            <select id="langselector" name="langselector" disabled>
-                <option value="en" selected="selected">en</option>
-            </select>
-            <div class="inputs">
-                <input type="text" id="wshost" placeholder="ws://localhost:8000/streaming-whisper/ws" value="ws://localhost:8000/streaming-whisper/ws"><br>
-                <input type="text" id="jwt" placeholder="some JWT if using auth">
-            </div>
-        </div>
+  <section class="section">
+    <div class="container is-max-desktop has-text-centered">
+        <h1 class="title">Streaming Whisper Demo</h1>
     </div>
-    <div id="outputcontainer"><p>Waiting for input...</p></div>
-    <div id="finalcontainer"></div>
+  </section>
+  <section class="section is-small">
+      <div class="container is-max-desktop">
+          <div class="box">
+              <div class="field">
+                  <div class="control">
+                      <div class="field">
+                      <button class="button is-primary" id="transcribebtn">Transcribe</button>
+                      <button class="button" id="stopbtn" disabled>Stop</button>
+                      <div class="select is-disabled">
+                          <select id="langselector" name="langselector">
+                            <option value="en" selected="selected">English</option>
+                          </select>
+                      </div>
+                      </div>
+                      <div class="field">
+                          <input type="text"
+                                 class="input"
+                                 id="wshost"
+                                 placeholder="ws://localhost:8000/streaming-whisper/ws"
+                                 value="ws://localhost:8000/streaming-whisper/ws"
+                          >
+                      </div>
+                      <div class="field">
+                          <input type="text" id="jwt" class="input" placeholder="some JWT if using auth">
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </section>
+  <section class="section">
+      <div class="container is-max-desktop">
+          <div class="box has-text-centered is-family-monospace has-text-grey" id="outputcontainer">
+              <p>Waiting for interims...</p>
+          </div>
+      </div>
+  </section>
+  <section class="section is-small">
+      <div class="container is-max-desktop" id="finalcontainer">
+      </div>
+  </section>
     <script>
-        // mostly taken from here https://dev.to/louisgv/quick-guide-to-audioworklet-30df
+        // mostly taken from https://dev.to/louisgv/quick-guide-to-audioworklet-30df
         const main = async () => {
             const CLIENTID = crypto.randomUUID()
             const MEETINGID = crypto.randomUUID()
@@ -74,7 +103,7 @@
                     if (msg.type === 'interim') {
                         output.innerHTML = '<p>' + msg.text + '</p>'
                     } else {
-                        final.innerHTML += '<p>' + msg.text + '</p>'
+                        final.innerHTML += '<article class="media">' + msg.text + '</article>'
                     }
                 }
             }
