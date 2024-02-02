@@ -30,7 +30,7 @@ docker run -d --rm -p 6379:6379 redis
 export BYPASS_AUTHORIZATION="true"
 
 poetry install
-poetry run python skynet/main.py
+./run.sh
 
 # open http://localhost:8000/summaries/docs in a browser
 ```
@@ -38,11 +38,11 @@ poetry run python skynet/main.py
 ## Live Transcriptions Quickstart
 
 ```bash
-mkdir -p "$HOME/my-models-folder/streaming-whisper"
+mkdir -p "$HOME/models/streaming-whisper"
 export WHISPER_MODEL_NAME="tiny.en"
 export BYPASS_AUTHORIZATION="true"
 export ENABLED_MODULES="streaming_whisper"
-export WHISPER_MODEL_PATH="$HOME/my-models-folder/streaming-whisper"
+export WHISPER_MODEL_PATH="$HOME/models/streaming-whisper"
 
 poetry install
 ./run.sh
