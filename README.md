@@ -6,7 +6,7 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 
 - **Summary and Action Items** with llama.cpp (enabled by default)
 - **Live Transcriptions** with Faster Whisper via websockets
-- _more to follow_
+- 🚧 _More to follow_
 
 ## Requirements
 
