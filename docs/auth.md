@@ -15,14 +15,14 @@ Generate an `RS256` keypair with the command below and upload the public key to 
 ssh-keygen -m PKCS8 -b 2048 -t rsa
 ```
 
-Pick a key id (`kid`), e.g. `my-awesome-service`, and rename the public key to its `SHA256` sum.
+Pick a key id (`kid`), e.g. `my-awesome-service`, and rename the public key to its `SHA256` sum followed by the `.pem` extension.
 
 ```bash
 echo -n "my-awesome-service" | shasum -a 256
 # cf83fb2ffe64d959f93c3ade60a1c45421f016be3dcbbeda9ea7f1b78afdb698 -
 ```
 
-So you would rename `id_rsa.pub`, or whatever your public key's name is, to `cf83fb2ffe64d959f93c3ade60a1c45421f016be3dcbbeda9ea7f1b78afdb698.pub` and upload
+So you would rename `id_rsa.pub`, or whatever your public key's name is, to `cf83fb2ffe64d959f93c3ade60a1c45421f016be3dcbbeda9ea7f1b78afdb698.pem` and upload
 it to a http server of your liking.
 
 > **N.B.** The web service url and root path should be specified as environment variables, check `ASAP_PUB_KEYS_REPO_URL` and `ASAP_PUB_KEYS_FOLDER` in [Environment Variables](env_vars.md).
