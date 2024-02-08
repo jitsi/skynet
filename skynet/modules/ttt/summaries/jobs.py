@@ -97,8 +97,6 @@ async def update_job(job_id: str, expires: int = None, **kwargs) -> Job:
 
 
 async def run_job(job: Job) -> None:
-    log.info(f"Running job {job.id}")
-
     has_failed = False
     result = None
     worker_id = await db.db.client_id()
@@ -106,7 +104,7 @@ async def run_job(job: Job) -> None:
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
-    log.info(f"Job queue time: {start - job.created} seconds")
+    log.info(f"Running job {job.id}. Queue time: {round(start - job.created, 3)} seconds")
 
     await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
 
