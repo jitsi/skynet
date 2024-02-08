@@ -67,6 +67,8 @@ async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
 
     await db.set(job_id, Job.model_dump_json(job))
 
+    log.info(f"Created job {job.id}")
+
     if can_run_next_job():
         create_run_job_task(job)
     else:
