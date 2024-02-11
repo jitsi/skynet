@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -17,32 +18,25 @@ if not modules:
 
 log.info(f'Enabled modules: {modules}')
 
-app = FastAPI()
 
-if 'openai-api' in modules:
-    from skynet.modules.ttt.openai_api.app import app as openai_api_app
-
-    app.mount('/openai-api', openai_api_app)
-
-if 'summaries:dispatcher' in modules:
-    from skynet.modules.ttt.summaries.app import app as summaries_app
-
-    app.mount('/summaries', summaries_app)
-
-if 'streaming_whisper' in modules:
-    from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
-
-    app.mount('/streaming-whisper', streaming_whisper_app)
-
-
-@app.get('/')
-def root():
-    return FileResponse(os.path.join(os.path.dirname(__file__), 'index.html'))
-
-
-@app.on_event('startup')
-async def startup_event():
+@asynccontextmanager
+async def lifespan(main_app: FastAPI):
     log.info('Skynet became self aware')
+
+    if 'openai-api' in modules:
+        from skynet.modules.ttt.openai_api.app import app as openai_api_app
+
+        main_app.mount('/openai-api', openai_api_app)
+
+    if 'summaries:dispatcher' in modules:
+        from skynet.modules.ttt.summaries.app import app as summaries_app
+
+        main_app.mount('/summaries', summaries_app)
+
+    if 'streaming_whisper' in modules:
+        from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
+
+        main_app.mount('/streaming-whisper', streaming_whisper_app)
 
     if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.summaries.app import app_startup as summaries_startup
@@ -53,6 +47,15 @@ async def startup_event():
         from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
 
         await executor_startup()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.get('/')
+def root():
+    return FileResponse(os.path.join(os.path.dirname(__file__), 'index.html'))
 
 
 async def main():
