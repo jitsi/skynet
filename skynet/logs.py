@@ -2,8 +2,9 @@ import logging
 import sys
 from logging import Filter, LogRecord
 
-from skynet.env import log_level
 from uvicorn.logging import DefaultFormatter
+
+from skynet.env import log_level
 
 
 # Suppress some logs from uvicorn
