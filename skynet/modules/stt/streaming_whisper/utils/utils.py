@@ -193,7 +193,7 @@ def is_silent(audio: bytes) -> Tuple[bool, iter]:
     stream = wav_header + b'' + audio
     audio = cfg.vad.read_audio(stream)
     st = cfg.vad.get_speech_timestamps(audio, model=cfg.vad_model, return_seconds=True)
-    log.debug(st)
+    log.debug(f'Detected speech timestamps: {st}')
     silent = True if len(st) == 0 else False
     return silent, st
 
@@ -208,7 +208,7 @@ def find_biggest_gap_between_words(word_list: list[WhisperWord]) -> dict:
         if diff > biggest_so_far:
             biggest_so_far = diff
             result = {'start': prev_word.end, 'end': word.start}
-            log.debug(result)
+            log.debug(f'Biggest gap between words:\n{result}')
         prev_word = word
     return result
 
@@ -273,8 +273,7 @@ def transcribe(buffer_list: List[bytes], lang: str = 'en') -> WhisperResult:
     )
     res = list(iterator)
     ts_obj = WhisperResult(res)
-    log.debug(ts_obj)
-    log.debug(res)
+    log.debug(f'Transcription results:\n{ts_obj}\n{res}')
     return ts_obj
 
 

@@ -25,9 +25,10 @@ class ConnectionManager:
         await websocket.accept()
         self.connections[meeting_id] = MeetingConnection(websocket)
         CONNECTIONS_METRIC.set(len(self.connections))
-        log.info(f'Client {meeting_id} connected. Connection count {len(self.connections)}')
+        log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
     async def process(self, meeting_id: str, chunk: bytes):
+        log.debug(f'Processing chunk for meeting {meeting_id}')
         if meeting_id not in self.connections:
             log.warning(f'No such meeting id {meeting_id}, the connection was probably closed.')
             return
@@ -44,14 +45,14 @@ class ConnectionManager:
         try:
             await self.connections[meeting_id].ws.send_json(result.model_dump())
         except WebSocketDisconnect as e:
-            log.warning(f'The connection was closed before sending all results: {e}')
+            log.warning(f'Meeting {meeting_id}: the connection was closed before sending all results: {e}')
             self.disconnect(meeting_id)
         except Exception as ex:
-            log.error(f'Exception while sending transcription results {ex}')
+            log.error(f'Meeting {meeting_id}: exception while sending transcription results {ex}')
 
     def disconnect(self, meeting_id: str):
         try:
             del self.connections[meeting_id]
         except KeyError:
-            log.warning(f'The key {meeting_id} doesn\'t exist anymore.')
+            log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
         CONNECTIONS_METRIC.set(len(self.connections))
