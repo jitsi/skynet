@@ -63,16 +63,16 @@ class State:
             # search for final up to silence
             if word.end <= last_pause['end']:
                 final += word.word + space
-                log.debug(f'Final is: {final}')
+                log.debug(f'Participant {self.participant_id}: final is "{final}"')
             # consider everything else as interim
             else:
                 interim += word.word + space
-                log.debug(f'Interim is: {interim}')
+                log.debug(f'Participant {self.participant_id}: interim is "{interim}"')
 
         if final.strip():
             cut_mark = self.get_num_bytes_for_slicing(last_pause['end'])
             if cut_mark > 0:
-                log.debug(f'Cut mark set at {cut_mark} bytes')
+                log.debug(f'Participant {self.participant_id}: cut mark set at {cut_mark} bytes')
                 results.append(self.get_response_payload(final, True))
                 self.all_final += final
                 self.trim_working_audio(cut_mark)
@@ -96,22 +96,33 @@ class State:
             results = self._extract_transcriptions(last_pause, ts_result)
             if len(results) > 0:
                 return results
-        log.debug(f'No ts results')
+        log.debug(f'Participant {self.participant_id}: no ts results')
         return None
 
     def add_to_store(self, chunk: bytes):
         is_silent, _ = utils.is_silent(chunk)
         if not is_silent or (is_silent and self.silent_chunks < self.silence_count_before_ignore):
             self.working_audio += chunk
-            log.debug(f'The audio buffer is {utils.convert_bytes_to_seconds(self.working_audio)} seconds long.')
+            log.debug(
+                f'Participant {self.participant_id}: the audio buffer is '
+                + f'{utils.convert_bytes_to_seconds(self.working_audio)}s long'
+            )
         if is_silent:
+            log.debug(f'Participant {self.participant_id}: the chunk is silent.')
             self.silent_chunks += 1
         else:
             self.silent_chunks = 0
 
     def trim_working_audio(self, bytes_to_cut: int):
+        log.debug(
+            f'Participant {self.participant_id}: '
+            + f'trimming the audio buffer, current length is {len(self.working_audio)} bytes.'
+        )
         self.working_audio = bytearray(self.get_num_bytes_for_slicing(1.0)) + self.working_audio[bytes_to_cut:]
-        log.debug(f'The working_audio after cut is now {len(self.working_audio)} bytes long')
+        log.debug(
+            f'Participant {self.participant_id}: '
+            + f'the audio buffer after cut is now {len(self.working_audio)} bytes'
+        )
 
     def get_response_payload(self, transcription: str, final: bool = False) -> utils.TranscriptionResponse:
         result = utils.TranscriptionResponse(
@@ -129,7 +140,7 @@ class State:
         self.transcription_ts = utils.now()
         # empty working audio
         if flush_working_audio:
-            log.debug('Flushing working audio')
+            log.debug(f'Participant {self.participant_id}: flushing working audio')
             self.working_audio = b''
 
     @staticmethod
@@ -143,11 +154,11 @@ class State:
 
     async def do_transcription(self, audio: bytes) -> utils.WhisperResult | None:
         loop = asyncio.get_running_loop()
-        log.debug('Doing TS')
+        log.debug(f'Participant {self.participant_id}: starting transcription of {len(audio)} bytes.')
         try:
             ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang)
         except RuntimeError as e:
-            log.error(f'Failed to transcribe {e}')
+            log.error(f'Participant {self.participant_id}: failed to transcribe {e}')
             return None
         log.debug(ts_result)
         return ts_result

@@ -30,7 +30,9 @@ class MeetingConnection:
 
     async def process(self, chunk: bytes) -> List[utils.TranscriptionResponse] | None:
         participant_id, lang, audio_chunk = self._extract_from_chunk(chunk)
+        log.debug(f'Extracted from chunk: participant={participant_id}, language={lang}, len_chunk={len(audio_chunk)}')
         if participant_id not in self.participants:
+            log.debug(f'The participant {participant_id} is not in the participants list, creating a new state.')
             self.participants[participant_id] = State(participant_id, lang)
         payloads = await self.participants[participant_id].process(audio_chunk)
         return payloads

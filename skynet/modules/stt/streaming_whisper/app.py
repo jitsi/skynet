@@ -27,4 +27,4 @@ async def websocket_endpoint(websocket: WebSocket, meeting_id: str, auth_token: 
             await ws_connection_manager.process(meeting_id, chunk)
     except WebSocketDisconnect:
         ws_connection_manager.disconnect(meeting_id)
-        log.info(f'{meeting_id} has disconnected')
+        log.info(f'Meeting {meeting_id} has ended')
