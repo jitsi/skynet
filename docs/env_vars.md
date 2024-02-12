@@ -13,7 +13,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `ASAP_PUB_KEYS_FOLDER`         | Public key repository root path                             | `NULL`                                    | N/A                                                                             |
 | `ASAP_PUB_KEYS_AUDS`           | Allowed JWT audiences, separated by commas                  | `NULL`                                    | N/A                                                                             |
 | `ASAP_PUB_KEYS_MAX_CACHE_SIZE` | Public key maximum cache size in bytes                      | `512`                                     | N/A                                                                             |
-| `LOG_LEVEL`                    | Log level                                                   | `INFO`                                    | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                 |
+| `LOG_LEVEL`                    | Log level                                                   | `DEBUG`                                   | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                 |
 
 
 ## Summaries Module Environment Variables
