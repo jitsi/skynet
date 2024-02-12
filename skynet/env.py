@@ -3,7 +3,8 @@ import sys
 
 is_mac = sys.platform == 'darwin'
 
-# modules
+# general
+log_level = os.environ.get('LOG_LEVEL', 'INFO').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)

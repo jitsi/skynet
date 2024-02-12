@@ -1,8 +1,8 @@
 import logging
 import sys
 from logging import Filter, LogRecord
-
 from uvicorn.logging import DefaultFormatter
+from env import log_level
 
 
 # Suppress some logs from uvicorn
@@ -22,7 +22,7 @@ logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
 sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(DefaultFormatter('%(asctime)s %(name)s %(levelprefix)s %(message)s'))
 
-logging.basicConfig(level=logging.INFO, handlers=[sh])
+logging.basicConfig(level=log_level, handlers=[sh])
 
 
 def get_logger(name):
@@ -49,8 +49,8 @@ uvicorn_log_config = {
         'access': {'formatter': 'access', 'class': 'logging.StreamHandler', 'stream': 'ext://sys.stdout'},
     },
     'loggers': {
-        'uvicorn': {'handlers': ['default'], 'level': 'DEBUG', 'propagate': False},
-        'uvicorn.error': {'level': 'DEBUG'},
-        'uvicorn.access': {'handlers': ['access'], 'level': 'DEBUG', 'propagate': False},
+        'uvicorn': {'handlers': ['default'], 'level': log_level, 'propagate': False},
+        'uvicorn.error': {'level': log_level},
+        'uvicorn.access': {'handlers': ['access'], 'level': log_level, 'propagate': False},
     },
 }
