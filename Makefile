@@ -32,4 +32,4 @@ build-whisper:
 	--platform ${PLATFORMS} \
 	--cache-from type=local,src=${CACHE_DIR} \
 	--cache-to type=local,dest=${CACHE_DIR},mode=max \
-	-t ${IMAGE_REGISTRY}/skynet:whisper-${GIT_HASH} .
+	-t ${IMAGE_REGISTRY}/skynet:whisper-${GIT_HASH} .\
