@@ -2,6 +2,8 @@
 .idea
 .pytest_cache
 .venv
+.env
+.env.sample
 .coverage
 Dockerfile
 README.md
