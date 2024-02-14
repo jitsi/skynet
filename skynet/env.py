@@ -6,17 +6,28 @@ is_mac = sys.platform == 'darwin'
 # general
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
-enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
+enabled_modules = set(
+    os.environ.get('ENABLED_MODULES', 'openai-api,summaries:dispatcher,summaries:executor').split(',')
+)
 modules = supported_modules.intersection(enabled_modules)
 
 # models
 llama_path = os.environ.get('LLAMA_PATH')
-llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', 1 if is_mac else 40))
+llama_n_ctx = os.environ.get('LLAMA_N_CTX', 4096)
+llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 40))
 llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
+
+# openai api
+openai_api_key = os.environ.get('OPENAI_API_KEY')
+openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL')
+
+if not openai_api_key and not openai_api_base_url:
+    raise RuntimeError('The OpenAI API key or an OpenAI compatible API base url must be set')
 
 
 # auth
 bypass_auth = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
+bypass_openai_api_auth = os.environ.get('BYPASS_OPENAI_API_AUTHORIZATION', "True").lower() == 'true'
 asap_pub_keys_url = os.getenv('ASAP_PUB_KEYS_REPO_URL', None)
 asap_pub_keys_folder = os.getenv('ASAP_PUB_KEYS_FOLDER', None)
 asap_pub_keys_auds = os.getenv('ASAP_PUB_KEYS_AUDS', '').strip().split(',')
