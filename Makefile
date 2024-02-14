@@ -26,6 +26,7 @@ build-whisper : _login
 	--build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" \
 	--progress plain \
 	--platform ${PLATFORMS} \
+	--push \
 	--cache-from type=local,src=${CACHE_DIR} \
 	--cache-to type=local,dest=${CACHE_DIR},mode=max \
 	-t ${IMAGE_REGISTRY}/skynet:whisper-${GIT_HASH} .
