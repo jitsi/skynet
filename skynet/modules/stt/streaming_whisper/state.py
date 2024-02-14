@@ -111,6 +111,7 @@ class State:
             log.debug(f'Participant {self.participant_id}: the chunk is silent.')
             self.silent_chunks += 1
         else:
+            self.long_silence = False
             self.silent_chunks = 0
 
     def trim_working_audio(self, bytes_to_cut: int):
