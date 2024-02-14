@@ -1,17 +1,15 @@
 ifneq (,$(wildcard ./.env))
-    include .env
-    export
+	include .env
 endif
 
 GIT_HASH ?= $(shell git rev-parse --short HEAD)
 PLATFORMS ?= linux/amd64
 CACHE_DIR ?= /tmp/docker-cache
 
-login:
+_login:
 	${DOCKER_LOGIN_CMD}
 
-build-summaries:
-	$(MAKE) login
+build-summaries : _login
 	docker buildx build \
 	--build-arg="BASE_IMAGE_BUILD=nvidia/cuda:12.3.0-devel-ubuntu20.04" \
 	--build-arg="BASE_IMAGE_RUN=nvidia/cuda:12.3.0-runtime-ubuntu20.04" \
@@ -22,13 +20,11 @@ build-summaries:
 	--cache-to type=local,dest=${CACHE_DIR},mode=max \
 	-t ${IMAGE_REGISTRY}/skynet:summaries-${GIT_HASH} .
 
-build-whisper:
-	$(MAKE) login
+build-whisper : _login
 	docker buildx build \
 	--build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04" \
 	--build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" \
 	--progress plain \
-	--push \
 	--platform ${PLATFORMS} \
 	--cache-from type=local,src=${CACHE_DIR} \
 	--cache-to type=local,dest=${CACHE_DIR},mode=max \
