@@ -1,6 +1,3 @@
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-
 from langchain.chains.summarize import load_summarize_chain
 from langchain.llms import LlamaCpp
 from langchain.prompts import PromptTemplate
@@ -12,13 +9,11 @@ from .prompts.action_items import action_items_template
 from .prompts.summary import summary_template
 from .v1.models import Job, JobType
 
-executor = None
 llm = None
 
 
 def initialize():
-    global executor, llm
-    executor = ThreadPoolExecutor(max_workers=1)
+    global llm
 
     llm = LlamaCpp(
         model_path=llama_path,
@@ -36,7 +31,6 @@ async def process(job: Job) -> str:
     if not text:
         return ""
 
-    loop = asyncio.get_running_loop()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=12000, chunk_overlap=100)
     docs = text_splitter.create_documents([text])
     template = summary_template if job.type is JobType.SUMMARY else action_items_template
@@ -45,4 +39,4 @@ async def process(job: Job) -> str:
 
     chain = load_summarize_chain(llm, chain_type="map_reduce", combine_prompt=prompt)
 
-    return await loop.run_in_executor(executor, chain.run, docs)
+    return await chain.arun(docs)
