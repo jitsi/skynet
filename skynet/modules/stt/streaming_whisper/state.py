@@ -17,6 +17,7 @@ class State:
     all_final = ''
     long_silence = False
     received_last_chunk = utils.now()
+    chunk_count = 0
 
     def __init__(
         self,
@@ -86,11 +87,21 @@ class State:
             results.append(self.get_response_payload(interim))
         return results
 
+    def should_transcribe(self, working_audio_duration: float) -> bool:
+        # prevents hallucinations at the start of the audio
+        if self.silent_chunks == self.chunk_count:
+            return False
+        if working_audio_duration >= 1 and not self.long_silence:
+            return True
+        return False
+
     async def process(self, chunk: bytes) -> List[utils.TranscriptionResponse] | None:
+        self.chunk_count += 1
+        log.debug(f'Participant {self.participant_id}: received chunks {self.chunk_count}')
         self.received_last_chunk = utils.now()
         self.add_to_store(chunk)
         working_audio_duration = utils.convert_bytes_to_seconds(self.working_audio)
-        if working_audio_duration >= 1 and not self.long_silence:
+        if self.should_transcribe(working_audio_duration):
             ts_result = await self.do_transcription(self.working_audio)
             last_pause = utils.get_last_silence_from_result(ts_result, self.perform_final_after_silent_seconds)
             results = self._extract_transcriptions(last_pause, ts_result)
@@ -126,7 +137,7 @@ class State:
         )
 
     def get_response_payload(self, transcription: str, final: bool = False) -> utils.TranscriptionResponse:
-        result = utils.TranscriptionResponse(
+        return utils.TranscriptionResponse(
             id=self.transcription_id,
             participant_id=self.participant_id,
             ts=self.transcription_ts if final else utils.now(),
@@ -134,7 +145,6 @@ class State:
             type='final' if final else 'interim',
             variance=1.0 if final else 0.5,
         )
-        return result
 
     def reset(self, flush_working_audio: bool = False):
         self.transcription_id = str(uuid6.uuid7())
