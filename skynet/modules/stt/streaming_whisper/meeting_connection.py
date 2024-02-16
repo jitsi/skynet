@@ -13,6 +13,7 @@ class MeetingConnection:
     participants: dict[str, State] = {}
 
     def __init__(self, ws: WebSocket):
+        self.participants = {}
         self.ws = ws
 
     @staticmethod
