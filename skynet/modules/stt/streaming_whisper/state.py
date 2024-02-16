@@ -10,14 +10,15 @@ log = get_logger(__name__)
 
 
 class State:
-    working_audio: bytes = b''
-    silent_chunks = 0
-    transcription_id = str(uuid6.uuid7())
-    transcription_ts = utils.now()
-    all_final = ''
-    long_silence = False
-    received_last_chunk = utils.now()
-    chunk_count = 0
+    working_audio: bytes
+    silent_chunks: int
+    transcription_id: str
+    transcription_ts: int
+    all_final: str
+    long_silence: bool
+    chunk_count: int
+    STARTED_STREAMING: int
+    user_time: float
 
     def __init__(
         self,
@@ -30,8 +31,17 @@ class State:
         force_final_duration_threshold: int = 29,
         perform_final_after_silent_seconds: float = 0.8,
     ):
+        self.transcription_id = str(uuid6.uuid7())
+        self.transcription_ts = utils.now()
+        self.STARTED_STREAMING = utils.now()
         self.participant_id = participant_id
+        self.silent_chunks = 0
+        self.working_audio = b''
         self.lang = lang
+        self.all_final = ''
+        self.long_silence = False
+        self.chunk_count = 0
+        self.user_time = 0.0
         # silence count before starting to drop incoming silent chunks
         self.silence_count_before_ignore = add_max_silent_chunks
         self.final_after_x_silent_chunks = final_after_x_silent_chunks
@@ -97,8 +107,12 @@ class State:
 
     async def process(self, chunk: bytes) -> List[utils.TranscriptionResponse] | None:
         self.chunk_count += 1
-        log.debug(f'Participant {self.participant_id}: received chunks {self.chunk_count}')
-        self.received_last_chunk = utils.now()
+        chunk_duration = utils.convert_bytes_to_seconds(chunk)
+        self.user_time += chunk_duration
+        log.debug(
+            f'Participant {self.participant_id}: chunk length {len(chunk)}bytes, '
+            f'duration {chunk_duration}s, audio received so far {self.user_time}s, total chunks {self.chunk_count}'
+        )
         self.add_to_store(chunk)
         working_audio_duration = utils.convert_bytes_to_seconds(self.working_audio)
         if self.should_transcribe(working_audio_duration):
