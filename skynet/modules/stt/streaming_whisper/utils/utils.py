@@ -38,6 +38,7 @@ class TranscriptionResponse(BaseModel):
     participant_id: str
     ts: int
     text: str
+    audio: str
     type: str
     variance: float
 
@@ -180,15 +181,8 @@ def convert_seconds_to_bytes(cut_mark: float) -> int:
     return int(cut_mark / cfg.one_byte_s)
 
 
-def determine_chunk_duration(chunk: bytes) -> float:
-    chunk_duration = round((len(chunk) * cfg.chunk_duration_s) / 8192, 3)
-    log.debug(f'Chunk\'s length in bytes: {len(chunk)}')
-    log.debug(f'Determined the chunk\'s duration to be {chunk_duration} seconds')
-    return chunk_duration
-
-
 def is_silent(audio: bytes) -> Tuple[bool, iter]:
-    chunk_duration = determine_chunk_duration(audio)
+    chunk_duration = convert_bytes_to_seconds(audio)
     wav_header = get_wav_header([audio], chunk_duration_s=chunk_duration)
     stream = wav_header + b'' + audio
     audio = cfg.vad.read_audio(stream)
@@ -219,13 +213,16 @@ def get_last_silence_from_result(ts_result: WhisperResult, silence_threshold: fl
     # if the audio is longer than 10 seconds
     # force a final at the biggest gap between words found
     # instead of waiting for the silence_threshold
-    if len(ts_result.words) > 0 and ts_result.words[-1].end >= 10:
+    if not len(ts_result.words):
+        return result
+    if ts_result.words[-1].end >= 10:
         return find_biggest_gap_between_words(ts_result.words)
-    # otherwise find a gap at least silence_threshold big
-    for word in ts_result.words:
-        if last_word['start'] > 0 and (word.start - last_word['end']) >= silence_threshold:
-            result = {'start': last_word['end'], 'end': word.start}
-        last_word = {'start': word.start, 'end': word.end}
+    else:
+        # try to find a gap at least silence_threshold big
+        for word in ts_result.words:
+            if last_word['start'] > 0 and (word.start - last_word['end']) >= silence_threshold:
+                result = {'start': last_word['end'], 'end': word.start}
+            last_word = {'start': word.start, 'end': word.end}
     return result
 
 

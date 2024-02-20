@@ -42,4 +42,3 @@ model = WhisperModel(
 )
 
 one_byte_s = 0.00003125  # the equivalent of one byte in seconds
-chunk_duration_s = 0.256  # 8192 bytes
