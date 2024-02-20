@@ -56,9 +56,17 @@
       <div class="container is-max-desktop" id="finalcontainer">
       </div>
   </section>
+  <audio controls="controls" id="aud" style="display: none"><source src="data:audio/wav;base64," type="audio/wav"></audio>
     <script>
+        let orderedFinals = []
+        function setAndPlay(idx) {
+            var audio = document.getElementById('aud')
+            audio.src = 'data:audio/wav;base64,' + orderedFinals[idx].audio
+            audio.play()
+        }
         // mostly taken from https://dev.to/louisgv/quick-guide-to-audioworklet-30df
         const main = async () => {
+            let finals = []
             const CLIENTID = crypto.randomUUID()
             const MEETINGID = crypto.randomUUID()
             const context = new AudioContext({ sampleRate: 16000 })
@@ -87,6 +95,29 @@
 
             source.connect(recorder).connect(context.destination)
 
+            function renderFinals() {
+                final.innerHTML = ''
+                orderedFinals = finals.sort((a, b) => a.ts - b.ts)
+                playerHidden = true
+                for (let [index, msg] of orderedFinals.entries()) {
+                    d = new Date(msg.ts)
+                    h = d.getHours()
+                    m = d.getMinutes()
+                    s = d.getSeconds()
+                    ms = d.getMilliseconds()
+                    playButton = ''
+                    if (msg.audio !== '') {
+                        playButton = '&nbsp;<button class="button is-small" onclick="setAndPlay(' + index + ')">&#9658;</button>'
+                    }
+
+                    final.innerHTML += '<div class="columns">' +
+                                         '<div class="column"><span class="tag is-info is-light is-family-monospace">' +
+                                          h + ':' + m + ':' + s + '.' + ms + '</span>' + playButton + '</div>' +
+                                         '<div class="column is-three-fifths"><span class="transcript">' + msg.text + '</span>' +
+                                         '</div></div>'
+                }
+            }
+
             function convertFloat32To16BitPCM(input) {
                 const output = new Int16Array(input.length)
                 for (let i = 0; i < input.length; i++) {
@@ -103,7 +134,8 @@
                     if (msg.type === 'interim') {
                         output.innerHTML = '<p>' + msg.text + '</p>'
                     } else {
-                        final.innerHTML += '<article class="media">' + msg.text + '</article>'
+                        finals.push(msg)
+                        renderFinals()
                     }
                 }
             }
