@@ -2,8 +2,6 @@ import asyncio
 import base64
 from typing import List
 
-import uuid6
-
 from skynet.env import whisper_return_transcribed_audio as return_audio
 
 from skynet.logs import get_logger
@@ -33,7 +31,7 @@ class State:
         force_final_duration_threshold: int = 15,
         perform_final_after_silent_seconds: float = 0.8,
     ):
-        self.transcription_id = str(uuid6.uuid7())
+        self.transcription_id = str(utils.uuid_from_time(utils.now()))
         self.received_timestamp_from_chunk = utils.now()
         self.working_audio_starts_at = 0
         self.participant_id = participant_id
@@ -70,7 +68,7 @@ class State:
                     final_audio_length = utils.convert_bytes_to_seconds(self.working_audio)
                     final_audio = utils.get_wav_header([self.working_audio], final_audio_length) + self.working_audio
                 results.append(self.get_response_payload(ts_result.text, start_timestamp, final_audio, True))
-                self.reset(True)
+                self.reset()
                 return results
         if self.silent_chunks > self.final_after_x_silent_chunks:
             self.long_silence = True
@@ -103,7 +101,6 @@ class State:
                 results.append(self.get_response_payload(final, final_start_timestamp, final_audio, True))
                 # advance the start timestamp of the working audio to the start of the interim,
                 self.working_audio_starts_at += int(last_pause['end'] * 1000)
-                self.reset()
             else:
                 # return everything as interim if failed to slice and acquire cut mark
                 results.append(
@@ -181,7 +178,7 @@ class State:
         self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False
     ) -> utils.TranscriptionResponse:
         return utils.TranscriptionResponse(
-            id=self.transcription_id,
+            id=str(utils.uuid_from_time(start_timestamp)),
             participant_id=self.participant_id,
             ts=start_timestamp,
             text=transcription,
@@ -190,13 +187,13 @@ class State:
             variance=1.0 if final else 0.5,
         )
 
-    def reset(self, flush_working_audio: bool = False):
-        self.transcription_id = str(uuid6.uuid7())
-        # empty working audio
-        if flush_working_audio:
-            log.debug(f'Participant {self.participant_id}: flushing working audio')
-            self.working_audio_starts_at = 0
-            self.working_audio = b''
+    def reset(self):
+        """
+        Empties the working audio buffer
+        """
+        log.debug(f'Participant {self.participant_id}: flushing working audio')
+        self.working_audio_starts_at = 0
+        self.working_audio = b''
 
     @staticmethod
     def get_num_bytes_for_slicing(cut_mark: float) -> int:

@@ -1,3 +1,5 @@
+import random
+import uuid
 from datetime import datetime, timezone
 from typing import List, Tuple
 
@@ -283,3 +285,27 @@ def get_lang(lang: str, short=True) -> str:
         split_key = lang.split('-')[0]
         return LANGUAGES.get(split_key, 'english').lower().strip()
     return lang.lower().strip()
+
+
+def uuid_from_time(time_arg: int) -> uuid.UUID:
+    """
+    Roughly adapted from the Cassandra Python driver. It generates a type 1 UUID from a timestamp in milliseconds.
+
+    :param time_arg: The time to use for the timestamp portion of the UUID expressed in milliseconds since the epoch.
+    :type int: time_arg
+
+    :rtype: :class:`uuid.UUID`
+    """
+
+    microseconds = int(time_arg * 1000)
+    # 0x01b21dd213814000 is the number of 100-ns intervals between the
+    # UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
+    intervals = int(microseconds * 10) + 0x01B21DD213814000
+    time_low = intervals & 0xFFFFFFFF
+    time_mid = (intervals >> 32) & 0xFFFF
+    time_hi_version = (intervals >> 48) & 0x0FFF
+    clock_seq = random.getrandbits(14)
+    clock_seq_low = clock_seq & 0xFF
+    clock_seq_hi_variant = 0x80 | ((clock_seq >> 8) & 0x3F)
+    node = random.getrandbits(48)
+    return uuid.UUID(fields=(time_low, time_mid, time_hi_version, clock_seq_hi_variant, clock_seq_low, node), version=1)
