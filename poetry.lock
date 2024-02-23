@@ -853,18 +853,19 @@ natsort = "==8.*"
 
 [[package]]
 name = "faster-whisper"
-version = "0.10.0"
+version = "0.10.1"
 description = "Faster Whisper transcription with CTranslate2"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "faster-whisper-0.10.0.tar.gz", hash = "sha256:591809328b93c8e4594d52097ec6352a270a81fbb7b956254967f28700f7e4da"},
+    {file = "faster-whisper-0.10.1.tar.gz", hash = "sha256:48efa06023a2676eaa98254ebfd66ef76fe630918ccf2d02f8d58654ae292675"},
+    {file = "faster_whisper-0.10.1-py3-none-any.whl", hash = "sha256:27935ef45598ed53ae954d42e6c696852b4f675daf080cd8d958238136309ff8"},
 ]
 
 [package.dependencies]
 av = "==10.*"
 ctranslate2 = ">=3.22,<4"
-huggingface_hub = ">=0.13"
+huggingface-hub = ">=0.13"
 onnxruntime = ">=1.14,<2"
 tokenizers = ">=0.13,<0.16"
 
@@ -3675,4 +3676,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "cd7417b296c6aed8d96ff05bc41c608a57c1d6203ef0cfc75ba598925aeb7394"
+content-hash = "8fedf350e99d6bd8e71f263cc212253d0e7e9f35d0abe6ea54275e23bc2c1563"
