@@ -31,10 +31,11 @@ class BaseJob(BaseModel):
 
 # since private fields are not serialized, use a different model with required internals
 class Job(BaseJob):
-    end: float | None = None
     created: float = Field(default_factory=time.time)
-    start: float | None = None
+    customer_id: str | None = None
+    end: float | None = None
     payload: DocumentPayload
+    start: float | None = None
     worker_id: int | None = None
 
     @computed_field

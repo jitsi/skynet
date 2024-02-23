@@ -1,5 +1,8 @@
-from fastapi import HTTPException
+from fastapi import Header, HTTPException, Request
 from fastapi_versionizer.versionizer import api_version
+
+from skynet.auth.bearer import JWTBearer
+from skynet.auth.jwt import authorize
 
 from skynet.utils import get_router
 
@@ -16,17 +19,21 @@ async def get_action_items(payload: DocumentPayload) -> JobId:
     Starts a job to extract action items from the given payload.
     """
 
-    return await create_job(job_type=JobType.ACTION_ITEMS, payload=payload)
+    return create_job(job_type=JobType.ACTION_ITEMS, payload=payload)
 
 
 @api_version(1)
 @router.post("/summary")
-async def get_summary(payload: DocumentPayload) -> JobId:
+async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
     """
     Starts a job to summarize the given payload.
     """
 
-    return await create_job(job_type=JobType.SUMMARY, payload=payload)
+    bearer_jwt: JWTBearer = await JWTBearer().__call__(request)
+    decoded_jwt = await authorize(bearer_jwt)
+    customer_id = decoded_jwt.get("cid")
+
+    return create_job(job_type=JobType.SUMMARY, payload=payload, customer_id=customer_id)
 
 
 @api_version(1)

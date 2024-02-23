@@ -12,18 +12,16 @@ enabled_modules = set(
 modules = supported_modules.intersection(enabled_modules)
 
 # models
+
+# https://github.com/abetlen/llama-cpp-python/blob/main/llama_cpp/llama_chat_format.py#L622C24-L622C31
+model_chat_format = os.environ.get('MODEL_CHAT_FORMAT', 'llama-2')
 llama_path = os.environ.get('LLAMA_PATH')
 llama_n_ctx = os.environ.get('LLAMA_N_CTX', 4096)
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 40))
 llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
 
 # openai api
-openai_api_key = os.environ.get('OPENAI_API_KEY')
-openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL')
-
-if not openai_api_key and not openai_api_base_url:
-    raise RuntimeError('The OpenAI API key or an OpenAI compatible API base url must be set')
-
+openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', 'http://localhost:8000/openai-api/v1')
 
 # auth
 bypass_auth = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'

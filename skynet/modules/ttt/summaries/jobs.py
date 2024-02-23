@@ -58,12 +58,12 @@ async def restore_stale_jobs() -> list[Job]:
         await update_summary_queue_metric()
 
 
-async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
+async def create_job(job_type: JobType, payload: DocumentPayload, customer_id: str) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
     job_id = str(uuid.uuid4())
 
-    job = Job(id=job_id, payload=payload, type=job_type)
+    job = Job(id=job_id, payload=payload, type=job_type, customer_id=customer_id)
 
     await db.set(job_id, Job.model_dump_json(job))
 
@@ -119,7 +119,10 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(exit_on_timeout())
 
         try:
-            result = await process(job)
+            # if there's a customer id, retrieve potential OpenAI API key from OCI
+            # if there is an API key, use it to process the job with OpenAI
+
+            result = await process(job.payload.text, job.type)
         except Exception as e:
             log.warning(f"Job {job.id} failed: {e}")
 
