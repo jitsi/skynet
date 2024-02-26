@@ -18,7 +18,7 @@ from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
 
 log = get_logger(__name__)
 
-TIME_BETWEEN_JOBS_CHECK = 3
+TIME_BETWEEN_JOBS_CHECK = 2
 PENDING_JOBS_KEY = "jobs:pending"
 RUNNING_JOBS_KEY = "jobs:running"
 
@@ -67,13 +67,10 @@ async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
 
     await db.set(job_id, Job.model_dump_json(job))
 
-    log.info(f"Created job {job.id}")
+    log.info(f"Created job {job.id}.")
 
-    if can_run_next_job():
-        create_run_job_task(job)
-    else:
-        await db.rpush(PENDING_JOBS_KEY, job_id)
-        await update_summary_queue_metric()
+    await db.rpush(PENDING_JOBS_KEY, job_id)
+    await update_summary_queue_metric()
 
     return JobId(id=job_id)
 

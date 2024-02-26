@@ -17,19 +17,6 @@ def default_session_fixture() -> Iterator[None]:
 
 class TestCreateJob:
     @pytest.mark.asyncio
-    async def test_creates_run_job(self, mocker):
-        '''Test that a job run task is created.'''
-
-        mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
-
-        from skynet.modules.ttt.summaries.jobs import create_job, create_run_job_task
-
-        job_id = await create_job(JobType.SUMMARY, DocumentPayload(text='test'))
-
-        create_run_job_task.assert_called_once()
-        assert job_id.id is not None
-
-    @pytest.mark.asyncio
     async def test_queues_job(self, mocker):
         '''Test that a job is queued and queue size metric is updated.'''
 
