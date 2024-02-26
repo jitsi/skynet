@@ -5,6 +5,7 @@ from typing import List
 from skynet.env import whisper_return_transcribed_audio as return_audio
 
 from skynet.logs import get_logger
+from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
@@ -16,7 +17,6 @@ class State:
     transcription_id: str
     long_silence: bool
     chunk_count: int
-    received_timestamp_from_chunk: int
     working_audio_starts_at: int
     chunk_duration: float
 
@@ -32,7 +32,6 @@ class State:
         perform_final_after_silent_seconds: float = 0.8,
     ):
         self.transcription_id = str(utils.uuid_from_time(utils.now()))
-        self.received_timestamp_from_chunk = utils.now()
         self.working_audio_starts_at = 0
         self.participant_id = participant_id
         self.silent_chunks = 0
@@ -124,14 +123,13 @@ class State:
             return True
         return False
 
-    async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
+    async def process(self, chunk: Chunk) -> List[utils.TranscriptionResponse] | None:
         self.chunk_count += 1
         if self.chunk_duration == 0:
-            self.chunk_duration = utils.convert_bytes_to_seconds(chunk)
-        self.received_timestamp_from_chunk = chunk_timestamp
+            self.chunk_duration = chunk.duration
         log.debug(
-            f'Participant {self.participant_id}: chunk length {len(chunk)} bytes, '
-            f'duration {self.chunk_duration}s, '
+            f'Participant {self.participant_id}: chunk length {chunk.size} bytes, '
+            f'duration {chunk.duration}s, '
             f'total chunks {self.chunk_count}.'
         )
         self.add_to_store(chunk)
@@ -144,20 +142,19 @@ class State:
         log.debug(f'Participant {self.participant_id}: no ts results')
         return None
 
-    def add_to_store(self, chunk: bytes):
-        is_silent, _ = utils.is_silent(chunk)
-        if not is_silent or (is_silent and self.silent_chunks < self.silence_count_before_ignore):
-            self.working_audio += chunk
+    def add_to_store(self, chunk: Chunk):
+        if not chunk.silent or (chunk.silent and self.silent_chunks < self.silence_count_before_ignore):
+            self.working_audio += chunk.raw
             log.debug(
                 f'Participant {self.participant_id}: the audio buffer is '
                 + f'{utils.convert_bytes_to_seconds(self.working_audio)}s long'
             )
-        if is_silent:
+        if chunk.silent:
             log.debug(f'Participant {self.participant_id}: the chunk is silent.')
             self.silent_chunks += 1
         else:
             if self.working_audio_starts_at == 0:
-                self.working_audio_starts_at = self.received_timestamp_from_chunk - int(self.chunk_duration * 1000)
+                self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
             self.long_silence = False
             self.silent_chunks = 0
 
