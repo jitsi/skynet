@@ -1,9 +1,10 @@
+import time
 from fastapi import WebSocket, WebSocketDisconnect
 
 from skynet.auth.jwt import authorize
 from skynet.env import bypass_auth
 from skynet.logs import get_logger
-from skynet.modules.monitoring import CONNECTIONS_METRIC
+from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_DURATION_METRIC
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
 
@@ -14,7 +15,7 @@ class ConnectionManager:
     connections: dict[str, MeetingConnection]
 
     def __init__(self):
-        self.connections = {}
+        self.connections: dict[str, MeetingConnection] = {}
 
     async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None):
         if not bypass_auth:
@@ -23,9 +24,7 @@ class ConnectionManager:
                 await websocket.close(401, 'Bad JWT token')
                 return
         await websocket.accept()
-
         self.connections[meeting_id] = MeetingConnection(websocket)
-
         CONNECTIONS_METRIC.set(len(self.connections))
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
@@ -34,7 +33,11 @@ class ConnectionManager:
         if meeting_id not in self.connections:
             log.warning(f'No such meeting id {meeting_id}, the connection was probably closed.')
             return
+        start = time.perf_counter_ns()
         results = await self.connections[meeting_id].process(chunk, chunk_timestamp)
+        end = time.perf_counter_ns()
+        processing_time = (end - start) / 1e6 / 1000
+        TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         if results is not None:
             for result in results:
                 await self.send(meeting_id, result)

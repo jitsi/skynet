@@ -1,10 +1,8 @@
-import time
 from typing import List
 
 from starlette.websockets import WebSocket
 
 from skynet.logs import get_logger
-from skynet.modules.monitoring import TRANSCRIBE_DURATION_METRIC
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
 
@@ -33,16 +31,9 @@ class MeetingConnection:
 
     async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
         participant_id, lang, audio_chunk = self._extract_from_chunk(chunk)
-        log.debug(
-            f'Extracted from chunk: participant={participant_id} with '
-            f'language={lang} at {chunk_timestamp}, len_chunk={len(audio_chunk)}'
-        )
+        log.debug(f'Extracted from chunk: participant={participant_id}, language={lang}, len_chunk={len(audio_chunk)}')
         if participant_id not in self.participants:
             log.debug(f'The participant {participant_id} is not in the participants list, creating a new state.')
             self.participants[participant_id] = State(participant_id, lang)
-        start = time.perf_counter_ns()
         payloads = await self.participants[participant_id].process(audio_chunk, chunk_timestamp)
-        end = time.perf_counter_ns()
-        processing_time = (end - start) / 1e6 / 1000
-        TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         return payloads
