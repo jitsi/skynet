@@ -11,5 +11,6 @@ class JWTBearer(HTTPBearer):
     async def __call__(self, request: Request):
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)
 
-        if credentials and await authorize(credentials.credentials):
-            return credentials.credentials
+        request.state.decoded_jwt = await authorize(credentials.credentials)
+
+        return credentials.credentials

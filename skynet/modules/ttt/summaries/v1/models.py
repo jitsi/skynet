@@ -3,9 +3,21 @@ from enum import Enum
 
 from pydantic import BaseModel, computed_field, Field
 
+from skynet.env import summary_default_hint_type
+
+
+class HintType(Enum):
+    CONVERSATION = 'conversation'
+    TEXT = 'text'
+
 
 class DocumentPayload(BaseModel):
     text: str
+    hint: HintType = summary_default_hint_type
+
+
+class DocumentMetadata(BaseModel):
+    customer_id: str | None = None
 
 
 class JobType(Enum):

@@ -14,7 +14,7 @@ from skynet.utils import kill_process
 
 from .persistence import db
 from .processor import process
-from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
+from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType
 
 log = get_logger(__name__)
 
@@ -58,12 +58,12 @@ async def restore_stale_jobs() -> list[Job]:
         await update_summary_queue_metric()
 
 
-async def create_job(job_type: JobType, payload: DocumentPayload, customer_id: str) -> JobId:
+async def create_job(job_type: JobType, payload: DocumentPayload, metadata: DocumentMetadata) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
     job_id = str(uuid.uuid4())
 
-    job = Job(id=job_id, payload=payload, type=job_type, customer_id=customer_id)
+    job = Job(id=job_id, payload=payload, type=job_type, metadata=metadata)
 
     await db.set(job_id, Job.model_dump_json(job))
 
@@ -122,7 +122,7 @@ async def run_job(job: Job) -> None:
             # if there's a customer id, retrieve potential OpenAI API key from OCI
             # if there is an API key, use it to process the job with OpenAI
 
-            result = await process(job.payload.text, job.type)
+            result = await process(job.payload, job.type)
         except Exception as e:
             log.warning(f"Job {job.id} failed: {e}")
 

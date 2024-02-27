@@ -7,13 +7,25 @@ from langchain_openai import ChatOpenAI
 from skynet.env import openai_api_base_url
 from skynet.logs import get_logger
 
-from .prompts.action_items import action_items_system_message
-from .prompts.summary import summary_system_message
-from .v1.models import JobType
+from .prompts.action_items import action_items_conversation_prompt, action_items_text_prompt
+from .prompts.summary import summary_conversation_prompt, summary_text_prompt
+from .v1.models import DocumentPayload, HintType, JobType
 
 llm = None
 map_reduce_threshold = 12000
 log = get_logger(__name__)
+
+
+hint_type_to_prompt = {
+    JobType.SUMMARY: {
+        HintType.CONVERSATION: summary_conversation_prompt,
+        HintType.TEXT: summary_text_prompt,
+    },
+    JobType.ACTION_ITEMS: {
+        HintType.CONVERSATION: action_items_conversation_prompt,
+        HintType.TEXT: action_items_text_prompt,
+    },
+}
 
 
 def initialize():
@@ -26,14 +38,15 @@ def initialize():
     )
 
 
-async def process(text: str, job_type: JobType, model: ChatOpenAI = None) -> str:
+async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI = None) -> str:
     current_model = model or llm
     chain = None
+    text = payload.text
 
     if not text:
         return ""
 
-    system_message = summary_system_message if job_type is JobType.SUMMARY else action_items_system_message
+    system_message = hint_type_to_prompt[job_type][payload.hint]
     prompt = ChatPromptTemplate.from_messages([("system", system_message), ("user", "{text}")])
 
     if len(text) < map_reduce_threshold:
@@ -49,10 +62,10 @@ async def process(text: str, job_type: JobType, model: ChatOpenAI = None) -> str
     return result['output_text'].strip()
 
 
-async def process_open_ai(text: str, job_type: JobType, api_key: str) -> str:
+async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str) -> str:
     llm = ChatOpenAI(
         api_key=api_key,
         temperature=0,
     )
 
-    return await process(text, job_type, llm)
+    return await process(payload, job_type, llm)

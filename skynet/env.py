@@ -6,9 +6,7 @@ is_mac = sys.platform == 'darwin'
 # general
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
-enabled_modules = set(
-    os.environ.get('ENABLED_MODULES', 'openai-api,summaries:dispatcher,summaries:executor').split(',')
-)
+enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
 
 # models
@@ -64,6 +62,7 @@ whisper_model_path = os.getenv('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/stre
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 10))  # 10 minutes default
 
 # summaries
+summary_default_hint_type = os.environ.get('SUMMARY_DEFAULT_HINT_TYPE', 'text')
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
 
 # monitoring

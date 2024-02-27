@@ -1,25 +1,26 @@
-from fastapi import Header, HTTPException, Request
+from fastapi import HTTPException, Request
 from fastapi_versionizer.versionizer import api_version
-
-from skynet.auth.bearer import JWTBearer
-from skynet.auth.jwt import authorize
 
 from skynet.utils import get_router
 
 from ..jobs import create_job, get_job as get_job
-from .models import BaseJob, DocumentPayload, JobId, JobType
+from .models import BaseJob, DocumentMetadata, DocumentPayload, JobId, JobType
 
 router = get_router()
 
 
 @api_version(1)
 @router.post("/action-items")
-async def get_action_items(payload: DocumentPayload) -> JobId:
+async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
     """
     Starts a job to extract action items from the given payload.
     """
 
-    return create_job(job_type=JobType.ACTION_ITEMS, payload=payload)
+    customer_id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
+
+    return await create_job(
+        job_type=JobType.ACTION_ITEMS, payload=payload, metadata=DocumentMetadata(customer_id=customer_id)
+    )
 
 
 @api_version(1)
@@ -29,11 +30,11 @@ async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
     Starts a job to summarize the given payload.
     """
 
-    bearer_jwt: JWTBearer = await JWTBearer().__call__(request)
-    decoded_jwt = await authorize(bearer_jwt)
-    customer_id = decoded_jwt.get("cid")
+    customer_id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
 
-    return create_job(job_type=JobType.SUMMARY, payload=payload, customer_id=customer_id)
+    return await create_job(
+        job_type=JobType.SUMMARY, payload=payload, metadata=DocumentMetadata(customer_id=customer_id)
+    )
 
 
 @api_version(1)

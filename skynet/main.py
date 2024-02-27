@@ -44,8 +44,10 @@ async def lifespan(main_app: FastAPI):
         await summaries_startup()
 
     if 'summaries:executor' in modules:
+        from skynet.modules.ttt.openai_api.app import app as openai_api_app
         from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
 
+        main_app.mount('/openai-api', openai_api_app)
         await executor_startup()
     yield
 
