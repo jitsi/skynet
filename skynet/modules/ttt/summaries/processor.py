@@ -4,7 +4,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 
-from skynet.env import openai_api_base_url
+from skynet.env import app_uuid, openai_api_base_url
 from skynet.logs import get_logger
 
 from .prompts.action_items import action_items_conversation_prompt, action_items_text_prompt
@@ -34,6 +34,7 @@ def initialize():
     llm = ChatOpenAI(
         api_key='placeholder',  # use a placeholder value to bypass validation, and allow the custom base url to be used
         base_url=openai_api_base_url,
+        default_headers={"X-Skynet-UUID": app_uuid},
         temperature=0,
     )
 

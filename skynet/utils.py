@@ -4,14 +4,13 @@ import uvicorn
 from fastapi import APIRouter, Depends
 
 from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, bypass_openai_api_auth
+from skynet.env import bypass_auth
 from skynet.logs import get_logger, uvicorn_log_config
 from skynet.modules.monitoring import FORCED_EXIT_COUNTER
 
 log = get_logger(__name__)
 
 dependencies = [] if bypass_auth else [Depends(JWTBearer())]
-openai_api_dependencies = [] if bypass_openai_api_auth else [Depends(JWTBearer())]
 
 responses = (
     {}

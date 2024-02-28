@@ -1,5 +1,8 @@
 import os
 import sys
+import uuid
+
+app_uuid = str(uuid.uuid4())
 
 is_mac = sys.platform == 'darwin'
 
@@ -23,7 +26,6 @@ openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', 'http://localhost:80
 
 # auth
 bypass_auth = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
-bypass_openai_api_auth = os.environ.get('BYPASS_OPENAI_API_AUTHORIZATION', "True").lower() == 'true'
 asap_pub_keys_url = os.getenv('ASAP_PUB_KEYS_REPO_URL', None)
 asap_pub_keys_folder = os.getenv('ASAP_PUB_KEYS_FOLDER', None)
 asap_pub_keys_auds = os.getenv('ASAP_PUB_KEYS_AUDS', '').strip().split(',')

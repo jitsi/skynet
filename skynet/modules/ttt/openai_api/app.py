@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from llama_cpp.server.app import create_app as create_llama_cpp_app, router as llama_router, Settings
 
 from skynet.env import llama_n_batch, llama_n_ctx, llama_n_gpu_layers, llama_path, model_chat_format
-from skynet.utils import openai_api_dependencies, responses
+from skynet.utils import dependencies, responses
 
 create_llama_cpp_app(
     Settings(
@@ -16,7 +16,7 @@ create_llama_cpp_app(
 )
 
 app = FastAPI()
-app.include_router(llama_router, dependencies=openai_api_dependencies, responses=responses)
+app.include_router(llama_router, dependencies=dependencies, responses=responses)
 
 
 @app.get("/")
