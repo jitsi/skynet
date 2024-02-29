@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from skynet.modules.ttt.summaries.persistence import db
-from skynet.modules.ttt.summaries.v1.models import DocumentPayload, Job, JobType
+from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, Job, JobType
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -26,7 +26,7 @@ class TestCreateJob:
 
         from skynet.modules.ttt.summaries.jobs import create_job, PENDING_JOBS_KEY, update_summary_queue_metric
 
-        job_id = await create_job(JobType.SUMMARY, DocumentPayload(text='test'))
+        job_id = await create_job(JobType.SUMMARY, DocumentPayload(text='test'), DocumentMetadata(customer_id='test'))
 
         db.rpush.assert_called_once_with(PENDING_JOBS_KEY, job_id.id)
         update_summary_queue_metric.assert_called_once()
@@ -37,9 +37,10 @@ def run_job_fixture(mocker):
     mocker.patch('skynet.modules.ttt.summaries.jobs.SUMMARY_DURATION_METRIC.observe')
     mocker.patch('skynet.modules.ttt.summaries.jobs.update_job')
     mocker.patch('skynet.modules.ttt.summaries.jobs.process')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.process_open_ai')
     mocker.patch('skynet.modules.ttt.summaries.jobs.db.db')
 
-    yield 'run_job_fixture'
+    return mocker
 
 
 class TestRunJob:
@@ -50,7 +51,12 @@ class TestRunJob:
         from skynet.modules.ttt.summaries.jobs import process, run_job
 
         await run_job(
-            Job(payload=DocumentPayload(text="Hello. It’s me . . . Where are you?"), type=JobType.SUMMARY, id='job_id')
+            Job(
+                payload=DocumentPayload(text="Hello. It’s me . . . Where are you?"),
+                type=JobType.SUMMARY,
+                id='job_id',
+                metadata=DocumentMetadata(customer_id='test'),
+            )
         )
 
         process.assert_not_called()
@@ -66,12 +72,34 @@ class TestRunJob:
                 payload=DocumentPayload(
                     text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
                 ),
+                metadata=DocumentMetadata(customer_id=None),
                 type=JobType.SUMMARY,
                 id='job_id',
             )
         )
 
         process.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_run_job_with_open_ai(self, run_job_fixture):
+        '''Test that a job is sent for inference to openai if there is a customer id with a valid api key.'''
+
+        from skynet.modules.ttt.summaries.jobs import process_open_ai, run_job
+
+        run_job_fixture.patch('skynet.modules.ttt.summaries.jobs.get_credentials', return_value={'api_key': 'api_key'})
+
+        await run_job(
+            Job(
+                payload=DocumentPayload(
+                    text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+                ),
+                metadata=DocumentMetadata(customer_id='test'),
+                type=JobType.SUMMARY,
+                id='job_id',
+            )
+        )
+
+        process_open_ai.assert_called_once()
 
 
 class TestCanRunNextJob:
@@ -101,9 +129,27 @@ class TestRestoreStaleJobs:
 
         from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY, restore_stale_jobs
 
-        job_1 = Job(id='job_id_1', payload=DocumentPayload(text='some text'), type='summary', worker_id=1)
-        job_2 = Job(id='job_id_2', payload=DocumentPayload(text='some text'), type='summary', worker_id=2)
-        job_3 = Job(id='job_id_3', payload=DocumentPayload(text='some text'), type='summary', worker_id=2)
+        job_1 = Job(
+            id='job_id_1',
+            payload=DocumentPayload(text='some text'),
+            type='summary',
+            worker_id=1,
+            metadata=DocumentMetadata(customer_id='test'),
+        )
+        job_2 = Job(
+            id='job_id_2',
+            payload=DocumentPayload(text='some text'),
+            type='summary',
+            worker_id=2,
+            metadata=DocumentMetadata(customer_id='test'),
+        )
+        job_3 = Job(
+            id='job_id_3',
+            payload=DocumentPayload(text='some text'),
+            type='summary',
+            worker_id=2,
+            metadata=DocumentMetadata(customer_id='test'),
+        )
         job_1_json = Job.model_dump_json(job_1)
         job_2_json = Job.model_dump_json(job_2)
         job_3_json = Job.model_dump_json(job_3)

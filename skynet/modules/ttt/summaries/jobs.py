@@ -2,6 +2,8 @@ import asyncio
 import time
 import uuid
 
+from skynet.auth.openai import get_credentials
+
 from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -13,7 +15,7 @@ from skynet.modules.monitoring import (
 from skynet.utils import kill_process
 
 from .persistence import db
-from .processor import process
+from .processor import process, process_open_ai
 from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType
 
 log = get_logger(__name__)
@@ -119,10 +121,17 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(exit_on_timeout())
 
         try:
-            # if there's a customer id, retrieve potential OpenAI API key from OCI
-            # if there is an API key, use it to process the job with OpenAI
+            if job.metadata.customer_id:
+                options = get_credentials(job.metadata.customer_id)
 
-            result = await process(job.payload, job.type)
+                if options and options.get('api_key'):
+                    log.info(f"Forwarding inference to OpenAI for customer {job.metadata.customer_id}")
+
+                    result = await process_open_ai(
+                        job.payload, job.type, options['api_key'], model_name=options.get('model_name')
+                    )
+            else:
+                result = await process(job.payload, job.type)
         except Exception as e:
             log.warning(f"Job {job.id} failed: {e}")
 

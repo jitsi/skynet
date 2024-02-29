@@ -63,9 +63,10 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
     return result['output_text'].strip()
 
 
-async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str) -> str:
+async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str, model_name=None) -> str:
     llm = ChatOpenAI(
         api_key=api_key,
+        model_name=model_name,
         temperature=0,
     )
 

@@ -11,6 +11,7 @@ log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
+file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
 # models
 
@@ -23,6 +24,9 @@ llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
 
 # openai api
 openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', 'http://localhost:8000/openai-api/v1')
+
+# openai
+openai_credentials_file = os.environ.get('SKYNET_CREDENTIALS_PATH')
 
 # auth
 bypass_auth = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
