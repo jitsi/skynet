@@ -121,15 +121,14 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(exit_on_timeout())
 
         try:
-            if job.metadata.customer_id:
-                options = get_credentials(job.metadata.customer_id)
+            options = get_credentials(job.metadata.customer_id) if job.metadata.customer_id else {}
+            api_key = options.get('api_key')
+            model_name = options.get('model_name')
 
-                if options and options.get('api_key'):
-                    log.info(f"Forwarding inference to OpenAI for customer {job.metadata.customer_id}")
+            if api_key:
+                log.info(f"Forwarding inference to OpenAI for customer {job.metadata.customer_id}")
 
-                    result = await process_open_ai(
-                        job.payload, job.type, options['api_key'], model_name=options.get('model_name')
-                    )
+                result = await process_open_ai(job.payload, job.type, api_key, model_name)
             else:
                 result = await process(job.payload, job.type)
         except Exception as e:

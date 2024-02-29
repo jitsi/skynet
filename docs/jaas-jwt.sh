@@ -27,6 +27,7 @@ header='{
 payload='{
     "aud": "jitsi",
     "iss": "skynet",
+    "cid": "tudor",
     "sub": "'$APP_ID'",
     "exp": '$(($timeNow+$expTimeDelay))'
 }'

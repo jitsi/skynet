@@ -27,8 +27,7 @@ async def app_startup():
 
 
 async def executor_startup():
-    setup_credentials()
-    log.info('Credentials set. Watching for changes...')
+    await setup_credentials()
 
     initialize_summaries()
     log.info('summaries:executor module initialized')
