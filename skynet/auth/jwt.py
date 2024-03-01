@@ -20,7 +20,7 @@ async def get_public_key(path: str) -> str:
     return await http_client.get(url)
 
 
-async def authorize(jwt_incoming: str) -> bool:
+async def authorize(jwt_incoming: str) -> dict:
     try:
         token_header = jwt.get_unverified_header(jwt_incoming)
     except Exception:
@@ -43,8 +43,7 @@ async def authorize(jwt_incoming: str) -> bool:
         raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {pub_key_remote_filename}')
 
     try:
-        jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
-        return True
+        return jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Expired token.")
     except Exception:

@@ -2,6 +2,8 @@ import asyncio
 import time
 import uuid
 
+from skynet.auth.openai import get_credentials
+
 from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -13,8 +15,8 @@ from skynet.modules.monitoring import (
 from skynet.utils import kill_process
 
 from .persistence import db
-from .processor import process
-from .v1.models import DocumentPayload, Job, JobId, JobStatus, JobType
+from .processor import process, process_open_ai
+from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType
 
 log = get_logger(__name__)
 
@@ -58,12 +60,12 @@ async def restore_stale_jobs() -> list[Job]:
         await update_summary_queue_metric()
 
 
-async def create_job(job_type: JobType, payload: DocumentPayload) -> JobId:
+async def create_job(job_type: JobType, payload: DocumentPayload, metadata: DocumentMetadata) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
     job_id = str(uuid.uuid4())
 
-    job = Job(id=job_id, payload=payload, type=job_type)
+    job = Job(id=job_id, payload=payload, type=job_type, metadata=metadata)
 
     await db.set(job_id, Job.model_dump_json(job))
 
@@ -119,7 +121,16 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(exit_on_timeout())
 
         try:
-            result = await process(job)
+            options = get_credentials(job.metadata.customer_id) if job.metadata.customer_id else {}
+            api_key = options.get('api_key')
+            model_name = options.get('model_name')
+
+            if api_key:
+                log.info(f"Forwarding inference to OpenAI for customer {job.metadata.customer_id}")
+
+                result = await process_open_ai(job.payload, job.type, api_key, model_name)
+            else:
+                result = await process(job.payload, job.type)
         except Exception as e:
             log.warning(f"Job {job.id} failed: {e}")
 

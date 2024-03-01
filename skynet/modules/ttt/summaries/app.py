@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi_versionizer.versionizer import Versionizer
 
+from skynet.auth.openai import setup_credentials
+
 from skynet.logs import get_logger
 
 from .jobs import start_monitoring_jobs
@@ -25,6 +27,8 @@ async def app_startup():
 
 
 async def executor_startup():
+    await setup_credentials()
+
     initialize_summaries()
     log.info('summaries:executor module initialized')
 
@@ -32,6 +36,7 @@ async def executor_startup():
     log.info('Persistence initialized')
 
     start_monitoring_jobs()
+    log.info('Jobs monitoring started')
 
 
 __all__ = ['app', 'executor_startup', 'app_startup']
