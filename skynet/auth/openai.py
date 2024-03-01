@@ -29,6 +29,8 @@ async def setup_credentials():
     if not openai_credentials_file:
         return
 
+    log.info('Setting up credentials.')
+
     await open_credentials_yaml()
     file_watcher = FileWatcher(openai_credentials_file, open_credentials_yaml)
 
