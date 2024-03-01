@@ -29,14 +29,14 @@ async def lifespan(main_app: FastAPI):
         main_app.mount('/streaming-whisper', streaming_whisper_app)
 
     if 'summaries:dispatcher' in modules:
-        from skynet.modules.ttt.summaries.app import app as summaries_app, app_startup as summaries_startup
+        from skynet.modules.ttt.summaries.app import dispatcher_startup
 
+        summaries_app = await dispatcher_startup()
         main_app.mount('/summaries', summaries_app)
-        await summaries_startup()
 
     if 'summaries:executor' in modules:
         from skynet.modules.ttt.openai_api.app import app as openai_api_app
-        from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
+        from skynet.modules.ttt.summaries.app import executor_startup
 
         main_app.mount('/openai-api', openai_api_app)
         await executor_startup()
