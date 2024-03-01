@@ -13,19 +13,17 @@ from .v1.router import router as v1_router
 
 log = get_logger(__name__)
 
+app = FastAPI()
+app.include_router(v1_router)
 
-async def dispatcher_startup():
-    app = FastAPI()
-    app.include_router(v1_router)
+Versionizer(app=app, prefix_format='/v{major}', sort_routes=True).versionize()
 
-    Versionizer(app=app, prefix_format='/v{major}', sort_routes=True).versionize()
 
+async def app_startup():
     log.info('summaries:dispatcher module initialized')
 
     await db.initialize()
     log.info('Persistence initialized')
-
-    return app
 
 
 async def executor_startup():
