@@ -2,11 +2,11 @@ import secrets
 import time
 from datetime import datetime, timezone
 from typing import List, Tuple
-from uuid6 import UUID
 
 import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
+from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
 from skynet.env import whisper_beam_size
