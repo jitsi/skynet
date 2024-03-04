@@ -3215,6 +3215,17 @@ toml = ">=0.10.0"
 trailrunner = ">=1.0"
 
 [[package]]
+name = "uuid6"
+version = "2024.1.12"
+description = "New time-based UUID formats which are suited for use as a database key"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "uuid6-2024.1.12-py3-none-any.whl", hash = "sha256:8150093c8d05a331bc0535bc5ef6cf57ac6eceb2404fd319bc10caee2e02c065"},
+    {file = "uuid6-2024.1.12.tar.gz", hash = "sha256:ed0afb3a973057575f9883201baefe402787ca5e11e1d24e377190f0c43f1993"},
+]
+
+[[package]]
 name = "uvicorn"
 version = "0.26.0"
 description = "The lightning-fast ASGI server."
@@ -3676,4 +3687,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "8fedf350e99d6bd8e71f263cc212253d0e7e9f35d0abe6ea54275e23bc2c1563"
+content-hash = "c3987ad155a2a04aa93556971c13d2ff8b8169347238b55b79aaf4faa6236426"

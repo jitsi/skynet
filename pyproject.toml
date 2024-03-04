@@ -34,6 +34,7 @@ redis = "5.0.1"
 torch = ">=2.0.0,<2.1.0"
 torchaudio = ">=2.0.1,<2.1.0"
 uvicorn = {extras = ["standard"], version = "^0.26.0"}
+uuid6 = "^2024.1.12"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

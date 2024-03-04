@@ -31,7 +31,6 @@ class State:
         force_final_duration_threshold: int = 15,
         perform_final_after_silent_seconds: float = 0.8,
     ):
-        self.transcription_id = str(utils.uuid_from_time(utils.now()))
         self.working_audio_starts_at = 0
         self.participant_id = participant_id
         self.silent_chunks = 0
@@ -45,6 +44,8 @@ class State:
         self.final_after_x_silent_chunks = final_after_x_silent_chunks
         self.force_final_duration_threshold = force_final_duration_threshold
         self.perform_final_after_silent_seconds = perform_final_after_silent_seconds
+        self.uuid = utils.Uuid7()
+        self.transcription_id = str(self.uuid.get())
 
     def _extract_transcriptions(
         self, last_pause: dict, ts_result: utils.WhisperResult
@@ -174,8 +175,10 @@ class State:
     def get_response_payload(
         self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False
     ) -> utils.TranscriptionResponse:
+        if final:
+            self.transcription_id = str(self.uuid.get(start_timestamp))
         return utils.TranscriptionResponse(
-            id=str(utils.uuid_from_time(start_timestamp)),
+            id=self.transcription_id,
             participant_id=self.participant_id,
             ts=start_timestamp,
             text=transcription,
