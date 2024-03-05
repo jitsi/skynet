@@ -11,6 +11,7 @@ from skynet.modules.monitoring import FORCED_EXIT_COUNTER
 log = get_logger(__name__)
 
 dependencies = [] if bypass_auth else [Depends(JWTBearer())]
+
 responses = (
     {}
     if bypass_auth

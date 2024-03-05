@@ -1,5 +1,8 @@
 import os
 import sys
+import uuid
+
+app_uuid = str(uuid.uuid4())
 
 is_mac = sys.platform == 'darwin'
 
@@ -8,12 +11,22 @@ log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
+file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
 # models
+
+# https://github.com/abetlen/llama-cpp-python/blob/main/llama_cpp/llama_chat_format.py#L622C24-L622C31
+model_chat_format = os.environ.get('MODEL_CHAT_FORMAT', 'llama-2')
 llama_path = os.environ.get('LLAMA_PATH')
-llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', 1 if is_mac else 40))
+llama_n_ctx = os.environ.get('LLAMA_N_CTX', 4096)
+llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 40))
 llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
 
+# openai api
+openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', 'http://localhost:8000/openai-api/v1')
+
+# openai
+openai_credentials_file = os.environ.get('SKYNET_CREDENTIALS_PATH')
 
 # auth
 bypass_auth = os.environ.get('BYPASS_AUTHORIZATION', "False").lower() == 'true'
@@ -56,6 +69,7 @@ whisper_return_transcribed_audio = os.getenv('WHISPER_RETURN_TRANSCRIBED_AUDIO',
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 10))  # 10 minutes default
 
 # summaries
+summary_default_hint_type = os.environ.get('SUMMARY_DEFAULT_HINT_TYPE', 'text')
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
 
 # monitoring
