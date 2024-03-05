@@ -61,6 +61,7 @@ whisper_compute_type = os.getenv('WHISPER_COMPUTE_TYPE', 'int8')
 whisper_gpu_indices = os.getenv('WHISPER_GPU_INDICES', None)
 whisper_device = os.getenv('WHISPER_DEVICE', 'auto')
 whisper_model_path = os.getenv('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/streaming_whisper')
+whisper_return_transcribed_audio = os.getenv('WHISPER_RETURN_TRANSCRIBED_AUDIO', 'false').lower().strip() == 'true'
 # whisper_max_connections = int(os.getenv('WHISPER_MAX_CONNECTIONS', 10))
 
 

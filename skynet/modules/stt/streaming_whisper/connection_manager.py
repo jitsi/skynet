@@ -13,6 +13,8 @@ log = get_logger(__name__)
 
 
 class ConnectionManager:
+    connections: dict[str, MeetingConnection]
+
     def __init__(self):
         self.connections: dict[str, MeetingConnection] = {}
 
@@ -27,13 +29,13 @@ class ConnectionManager:
         CONNECTIONS_METRIC.set(len(self.connections))
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
-    async def process(self, meeting_id: str, chunk: bytes):
+    async def process(self, meeting_id: str, chunk: bytes, chunk_timestamp: int):
         log.debug(f'Processing chunk for meeting {meeting_id}')
         if meeting_id not in self.connections:
             log.warning(f'No such meeting id {meeting_id}, the connection was probably closed.')
             return
         start = time.perf_counter_ns()
-        results = await self.connections[meeting_id].process(chunk)
+        results = await self.connections[meeting_id].process(chunk, chunk_timestamp)
         end = time.perf_counter_ns()
         processing_time = (end - start) / 1e6 / 1000
         TRANSCRIBE_DURATION_METRIC.observe(processing_time)

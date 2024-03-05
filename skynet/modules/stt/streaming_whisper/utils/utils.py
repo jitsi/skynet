@@ -1,9 +1,12 @@
+import secrets
+import time
 from datetime import datetime, timezone
 from typing import List, Tuple
 
 import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
+from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
 from skynet.env import whisper_beam_size
@@ -38,6 +41,7 @@ class TranscriptionResponse(BaseModel):
     participant_id: str
     ts: int
     text: str
+    audio: str
     type: str
     variance: float
 
@@ -180,15 +184,8 @@ def convert_seconds_to_bytes(cut_mark: float) -> int:
     return int(cut_mark / cfg.one_byte_s)
 
 
-def determine_chunk_duration(chunk: bytes) -> float:
-    chunk_duration = round((len(chunk) * cfg.chunk_duration_s) / 8192, 3)
-    log.debug(f'Chunk\'s length in bytes: {len(chunk)}')
-    log.debug(f'Determined the chunk\'s duration to be {chunk_duration} seconds')
-    return chunk_duration
-
-
 def is_silent(audio: bytes) -> Tuple[bool, iter]:
-    chunk_duration = determine_chunk_duration(audio)
+    chunk_duration = convert_bytes_to_seconds(audio)
     wav_header = get_wav_header([audio], chunk_duration_s=chunk_duration)
     stream = wav_header + b'' + audio
     audio = cfg.vad.read_audio(stream)
@@ -219,13 +216,16 @@ def get_last_silence_from_result(ts_result: WhisperResult, silence_threshold: fl
     # if the audio is longer than 10 seconds
     # force a final at the biggest gap between words found
     # instead of waiting for the silence_threshold
-    if len(ts_result.words) > 0 and ts_result.words[-1].end >= 10:
+    if not len(ts_result.words):
+        return result
+    if ts_result.words[-1].end >= 10:
         return find_biggest_gap_between_words(ts_result.words)
-    # otherwise find a gap at least silence_threshold big
-    for word in ts_result.words:
-        if last_word['start'] > 0 and (word.start - last_word['end']) >= silence_threshold:
-            result = {'start': last_word['end'], 'end': word.start}
-        last_word = {'start': word.start, 'end': word.end}
+    else:
+        # try to find a gap at least silence_threshold big
+        for word in ts_result.words:
+            if last_word['start'] > 0 and (word.start - last_word['end']) >= silence_threshold:
+                result = {'start': last_word['end'], 'end': word.start}
+            last_word = {'start': word.start, 'end': word.end}
     return result
 
 
@@ -286,3 +286,22 @@ def get_lang(lang: str, short=True) -> str:
         split_key = lang.split('-')[0]
         return LANGUAGES.get(split_key, 'english').lower().strip()
     return lang.lower().strip()
+
+
+class Uuid7:
+    def __init__(self):
+        self.last_v7_timestamp = None
+
+    def get(self, time_arg_millis: int = None) -> UUID:
+        nanoseconds = time.time_ns()
+        timestamp_ms = nanoseconds // 10**6
+
+        if time_arg_millis is not None:
+            timestamp_ms = time_arg_millis
+
+        if self.last_v7_timestamp is not None and timestamp_ms <= self.last_v7_timestamp:
+            timestamp_ms = self.last_v7_timestamp + 1
+        self.last_v7_timestamp = timestamp_ms
+        uuid_int = (timestamp_ms & 0xFFFFFFFFFFFF) << 80
+        uuid_int |= secrets.randbits(76)
+        return UUID(int=uuid_int, version=7)
