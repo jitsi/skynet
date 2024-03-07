@@ -1,5 +1,6 @@
 import asyncio
 import time
+from asyncio import Task
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -15,14 +16,12 @@ log = get_logger(__name__)
 
 class ConnectionManager:
     connections: dict[str, MeetingConnection]
-    flush_after_ms: int
+    FLUSH_AFTER_MS: int = 2000
+    flush_audio_task: Task | None
 
     def __init__(self):
         self.connections: dict[str, MeetingConnection] = {}
-        self.flush_after_ms = 2000
-        log.info('Starting the flush audio worker')
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.flush_working_audio_worker())
+        self.flush_audio_task = None
 
     async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None):
         if not bypass_auth:
@@ -32,6 +31,9 @@ class ConnectionManager:
                 return
         await websocket.accept()
         self.connections[meeting_id] = MeetingConnection(websocket)
+        if self.flush_audio_task is None:
+            loop = asyncio.get_running_loop()
+            self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
         CONNECTIONS_METRIC.set(len(self.connections))
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
@@ -68,15 +70,15 @@ class ConnectionManager:
     async def flush_working_audio_worker(self):
         """
         Will force a transcription for all participants that haven't received any chunks for more than `flush_after_ms`
-        but have accumulated some spoken audio without a transcription. This avoids having small utterances that are
-        merged to the next utterance when the participant resumes speaking at a later time.
+        but have accumulated some spoken audio without a transcription. This avoids merging un-transcribed "left-overs"
+        to the next utterance when the participant resumes speaking.
         """
         while True:
             for meeting_id in self.connections:
                 for participant in self.connections[meeting_id].participants:
                     now = utils.now()
                     last_received_chunk = self.connections[meeting_id].participants[participant].last_received_chunk
-                    is_due = now - last_received_chunk > self.flush_after_ms
+                    is_due = now - last_received_chunk > self.FLUSH_AFTER_MS
                     is_silent, _ = utils.is_silent(self.connections[meeting_id].participants[participant].working_audio)
                     if is_due and not is_silent:
                         log.info(f'Forcing a transcription in meeting {meeting_id} for {participant}')
