@@ -13,10 +13,11 @@ from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
 
+FLUSH_AFTER_MS = 2000
+
 
 class ConnectionManager:
     connections: dict[str, MeetingConnection]
-    FLUSH_AFTER_MS: int = 2000
     flush_audio_task: Task | None
 
     def __init__(self):
@@ -78,7 +79,7 @@ class ConnectionManager:
                 for participant in self.connections[meeting_id].participants:
                     now = utils.now()
                     last_received_chunk = self.connections[meeting_id].participants[participant].last_received_chunk
-                    is_due = now - last_received_chunk > self.FLUSH_AFTER_MS
+                    is_due = now - last_received_chunk > FLUSH_AFTER_MS
                     is_silent, _ = utils.is_silent(self.connections[meeting_id].participants[participant].working_audio)
                     if is_due and not is_silent:
                         log.info(f'Forcing a transcription in meeting {meeting_id} for {participant}')
