@@ -21,13 +21,14 @@
               <div class="field">
                   <div class="control">
                       <div class="field">
-                      <button class="button is-primary" id="transcribebtn">Transcribe</button>
-                      <button class="button" id="stopbtn" disabled>Stop</button>
-                      <div class="select is-disabled">
-                          <select id="langselector" name="langselector">
-                            <option value="en" selected="selected">English</option>
-                          </select>
-                      </div>
+                          <button class="button is-primary" id="transcribebtn">Transcribe</button>
+                          <button class="button" id="stopbtn" disabled>Stop</button>
+                          <div class="select is-disabled">
+                              <select id="langselector" name="langselector">
+                                <option value="en" selected="selected">English</option>
+                              </select>
+                          </div>
+                          <div class="button" id="mutebtn">Mute</div>
                       </div>
                       <div class="field">
                           <input type="text"
@@ -87,6 +88,20 @@
             const final = document.getElementById('finalcontainer')
             const jwt = document.getElementById('jwt')
             const wsHost = document.getElementById('wshost')
+            const muteBtn = document.getElementById('mutebtn')
+
+            let isMuted = false
+            muteBtn.addEventListener('click', () => {
+                if (isMuted) {
+                    microphone.getAudioTracks()[0].enabled = true
+                    isMuted = false
+                    muteBtn.innerHTML = 'Mute'
+                } else {
+                    microphone.getAudioTracks()[0].enabled = false
+                    isMuted = true
+                    muteBtn.innerHTML = 'Unmute'
+                }
+            })
 
             var isSpeaking = false
 
