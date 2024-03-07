@@ -19,6 +19,7 @@ class State:
     chunk_count: int
     working_audio_starts_at: int
     chunk_duration: float
+    last_received_chunk: int
 
     def __init__(
         self,
@@ -48,7 +49,7 @@ class State:
         self.transcription_id = str(self.uuid.get())
 
     def _extract_transcriptions(
-        self, last_pause: dict, ts_result: utils.WhisperResult
+        self, last_pause: dict, ts_result: utils.WhisperResult, force_final: bool = False
     ) -> List[utils.TranscriptionResponse]:
         if ts_result is None:
             return []
@@ -60,6 +61,7 @@ class State:
         if (
             self.silent_chunks >= self.final_after_x_silent_chunks
             or utils.convert_bytes_to_seconds(self.working_audio) > self.force_final_duration_threshold
+            or force_final
         ):
             if ts_result.text.strip() != '':
                 start_timestamp = int(ts_result.words[0].start * 1000) + self.working_audio_starts_at
@@ -124,7 +126,16 @@ class State:
             return True
         return False
 
+    async def force_transcription(self) -> List[utils.TranscriptionResponse] | None:
+        ts_result = await self.do_transcription(self.working_audio)
+        last_pause = utils.get_last_silence_from_result(ts_result, self.perform_final_after_silent_seconds)
+        results = self._extract_transcriptions(last_pause, ts_result, force_final=True)
+        if len(results) > 0:
+            return results
+        return None
+
     async def process(self, chunk: Chunk) -> List[utils.TranscriptionResponse] | None:
+        self.last_received_chunk = utils.now()
         self.chunk_count += 1
         if self.chunk_duration == 0:
             self.chunk_duration = chunk.duration
