@@ -14,9 +14,7 @@ log = get_logger(__name__)
 @alru_cache(maxsize=asap_pub_keys_max_cache_size)
 async def get_public_key(path: str) -> str:
     url = f'{asap_pub_keys_url}/{path}'
-
     log.info(f'Fetching public key from {url}')
-
     return await http_client.get(url)
 
 
@@ -30,11 +28,9 @@ async def authorize(jwt_incoming: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token. No kid header.")
 
     kid = token_header["kid"]
-    is_jaas = kid.startswith('vpaas-magic-cookie')
-    tenant = kid.split('/')[0] if is_jaas else None
-    folder = f'vpaas/{asap_pub_keys_folder}/{tenant}' if is_jaas else asap_pub_keys_folder
+    folder = asap_pub_keys_folder
 
-    encoded_pub_key_name = sha256((kid).encode('UTF-8')).hexdigest()
+    encoded_pub_key_name = sha256(kid.encode('UTF-8')).hexdigest()
     pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
 
     try:
