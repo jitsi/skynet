@@ -45,7 +45,7 @@ class BaseJob(BaseModel):
 class Job(BaseJob):
     created: float = Field(default_factory=time.time)
     end: float | None = None
-    metadata: DocumentMetadata
+    metadata: DocumentMetadata = DocumentMetadata()
     payload: DocumentPayload
     start: float | None = None
     worker_id: int | None = None
