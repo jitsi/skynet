@@ -21,6 +21,8 @@ from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus,
 log = get_logger(__name__)
 
 TIME_BETWEEN_JOBS_CHECK = 2
+TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
+
 PENDING_JOBS_KEY = "jobs:pending"
 RUNNING_JOBS_KEY = "jobs:running"
 
@@ -179,8 +181,12 @@ async def maybe_run_next_job() -> None:
 
 async def monitor_candidate_jobs() -> None:
     while True:
-        await maybe_run_next_job()
-        await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK)
+        try:
+            await maybe_run_next_job()
+            await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK)
+        except Exception as e:
+            log.error(f"Error in job monitoring: {e}")
+            await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK_ON_ERROR)
 
 
 async def exit_on_timeout() -> None:
