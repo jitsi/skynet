@@ -12,9 +12,14 @@ log = get_logger(__name__)
 
 
 @alru_cache(maxsize=asap_pub_keys_max_cache_size)
-async def get_public_key(path: str) -> str:
-    url = f'{asap_pub_keys_url}/{path}'
-    log.info(f'Fetching public key from {url}')
+async def get_public_key(kid: str) -> str:
+    encoded_pub_key_name = sha256(kid.encode('UTF-8')).hexdigest()
+    pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
+
+    url = f'{asap_pub_keys_url}/{asap_pub_keys_folder}/{pub_key_remote_filename}'
+
+    log.info(f'Fetching public key {kid} from {url}')
+
     return await http_client.get(url)
 
 
@@ -28,19 +33,15 @@ async def authorize(jwt_incoming: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token. No kid header.")
 
     kid = token_header["kid"]
-    folder = asap_pub_keys_folder
-
-    encoded_pub_key_name = sha256(kid.encode('UTF-8')).hexdigest()
-    pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
 
     try:
-        public_key = await get_public_key(f'{folder}/{pub_key_remote_filename}')
+        public_key = await get_public_key(kid)
     except Exception:
-        raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {pub_key_remote_filename}')
+        raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {kid}')
 
     try:
         return jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Expired token.")
     except Exception:
-        raise HTTPException(status_code=401, detail=f'Failed decoding JWT with public key {pub_key_remote_filename}')
+        raise HTTPException(status_code=401, detail=f'Failed decoding JWT with public key {kid}')
