@@ -1,7 +1,13 @@
 summary_conversation_prompt = """
-  The following text is a conversation between two or more people. Please provide a concise summary of the conversation.
+  Provide a summary of the following conversation. Do not start with things like 'Sure! Here is ...'. Just summarize it.
 
-  Here is the text:
+  Here is the conversation:
+
 """
 
-summary_text_prompt = "Provide a concise summary of the following text."
+summary_text_prompt = """
+    Provide a summary of the following text. Do not start with things like 'Sure! Here is ...'. Just summarize it.
+    
+    Here is the text:
+
+"""
