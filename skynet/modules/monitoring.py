@@ -51,6 +51,13 @@ CONNECTIONS_METRIC = Gauge(
     subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
 )
 
+TRANSCRIBE_CONNECTIONS_COUNTER = Counter(
+    'LiveWsConnectionsCounter',
+    documentation='Number of active WS connections',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
+)
+
 TRANSCRIBE_DURATION_METRIC = Histogram(
     'WhisperTranscriptionDuration',
     documentation='Measures the duration of the transcription process in seconds',

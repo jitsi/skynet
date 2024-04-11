@@ -1,5 +1,4 @@
 import asyncio
-import time
 from asyncio import Task
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -7,7 +6,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from skynet.auth.jwt import authorize
 from skynet.env import bypass_auth
 from skynet.logs import get_logger
-from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_DURATION_METRIC
+from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
 
@@ -36,6 +35,7 @@ class ConnectionManager:
             loop = asyncio.get_running_loop()
             self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
         CONNECTIONS_METRIC.set(len(self.connections))
+        TRANSCRIBE_CONNECTIONS_COUNTER.inc()
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
     async def process(self, meeting_id: str, chunk: bytes, chunk_timestamp: int):
@@ -43,11 +43,7 @@ class ConnectionManager:
         if meeting_id not in self.connections:
             log.warning(f'No such meeting id {meeting_id}, the connection was probably closed.')
             return
-        start = time.perf_counter_ns()
         results = await self.connections[meeting_id].process(chunk, chunk_timestamp)
-        end = time.perf_counter_ns()
-        processing_time = (end - start) / 1e6 / 1000
-        TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         await self.send(meeting_id, results)
 
     async def send(self, meeting_id: str, results: list[utils.TranscriptionResponse] | None):
