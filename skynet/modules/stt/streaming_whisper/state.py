@@ -1,10 +1,12 @@
 import asyncio
 import base64
+import time
 from typing import List
 
 from skynet.env import whisper_return_transcribed_audio as return_audio
 
 from skynet.logs import get_logger
+from skynet.modules.monitoring import TRANSCRIBE_DURATION_METRIC
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.utils import utils
 
@@ -216,6 +218,7 @@ class State:
         return sliceable_bytes
 
     async def do_transcription(self, audio: bytes) -> utils.WhisperResult | None:
+        start = time.perf_counter_ns()
         loop = asyncio.get_running_loop()
         log.debug(f'Participant {self.participant_id}: starting transcription of {len(audio)} bytes.')
         try:
@@ -223,5 +226,8 @@ class State:
         except RuntimeError as e:
             log.error(f'Participant {self.participant_id}: failed to transcribe {e}')
             return None
+        end = time.perf_counter_ns()
+        processing_time = (end - start) / 1e6 / 1000
+        TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         log.debug(ts_result)
         return ts_result
