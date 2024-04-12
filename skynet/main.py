@@ -64,7 +64,7 @@ async def main():
     if enable_metrics:
         tasks.insert(0, asyncio.create_task(create_webserver('skynet.metrics:metrics', port=8001)))
 
-    if enable_haproxy_agent:
+    if enable_haproxy_agent and 'streaming_whisper' in modules:
         tasks.insert(0, asyncio.create_task(create_tcpserver(port=8002)))
 
     await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
