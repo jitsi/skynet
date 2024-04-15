@@ -6,7 +6,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
-from skynet.env import enable_metrics, modules
+from skynet.agent import create_tcpserver
+
+from skynet.env import enable_haproxy_agent, enable_metrics, modules
 from skynet.logs import get_logger
 from skynet.utils import create_webserver
 
@@ -62,6 +64,9 @@ async def main():
 
     if enable_metrics:
         tasks.insert(0, asyncio.create_task(create_webserver('skynet.metrics:metrics', port=8001)))
+
+    if enable_haproxy_agent and 'streaming_whisper' in modules:
+        tasks.insert(0, asyncio.create_task(create_tcpserver(port=8002)))
 
     await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 

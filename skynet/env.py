@@ -62,7 +62,7 @@ whisper_gpu_indices = os.getenv('WHISPER_GPU_INDICES', None)
 whisper_device = os.getenv('WHISPER_DEVICE', 'auto')
 whisper_model_path = os.getenv('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/streaming_whisper')
 whisper_return_transcribed_audio = os.getenv('WHISPER_RETURN_TRANSCRIBED_AUDIO', 'false').lower().strip() == 'true'
-# whisper_max_connections = int(os.getenv('WHISPER_MAX_CONNECTIONS', 10))
+whisper_max_connections = int(os.getenv('WHISPER_MAX_CONNECTIONS', 10))
 
 
 # jobs
@@ -74,3 +74,6 @@ summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LEN
 
 # monitoring
 enable_metrics = os.environ.get('ENABLE_METRICS', 'true').lower() == 'true'
+
+# load balancing
+enable_haproxy_agent = os.environ.get('ENABLE_HAPROXY_AGENT', 'false').lower() == 'true'
