@@ -6,10 +6,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
-from skynet.env import enable_metrics, enable_haproxy_agent, modules
+from skynet.agent import create_tcpserver
+
+from skynet.env import enable_haproxy_agent, enable_metrics, modules
 from skynet.logs import get_logger
 from skynet.utils import create_webserver
-from skynet.agent import create_tcpserver
 
 log = get_logger(__name__)
 

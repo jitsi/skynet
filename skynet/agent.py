@@ -2,11 +2,11 @@ import asyncio
 import math
 
 from skynet.logs import get_logger
+from skynet.env import whisper_max_connections
+from skynet.modules.monitoring import CONNECTIONS_METRIC
 
 log = get_logger(__name__)
 
-from skynet.env import whisper_max_connections
-from skynet.modules.monitoring import CONNECTIONS_METRIC
 
 async def calc_percentage():
     conns = CONNECTIONS_METRIC._value.get()
@@ -34,9 +34,9 @@ async def handle_tcp_request(reader: asyncio.StreamReader, writer: asyncio.Strea
             return
     log.debug('The TCP writer is null!')
 
+
 async def create_tcpserver(port):
-    tcpserver = await asyncio.start_server(
-        handle_tcp_request, '0.0.0.0', port)
+    tcpserver = await asyncio.start_server(handle_tcp_request, '0.0.0.0', port)
     log.info(f'HaProxy Agent Check TCP Server listening on 0.0.0.0:{port}')
     try:
         await tcpserver.serve_forever()
