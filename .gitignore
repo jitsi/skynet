@@ -1,5 +1,6 @@
 __pycache__
 llm
+models
 .DS_Store
 .env
 .idea
