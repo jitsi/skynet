@@ -1,8 +1,9 @@
 import asyncio
 import math
 
-from skynet.logs import get_logger
 from skynet.env import whisper_max_connections
+
+from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC
 
 log = get_logger(__name__)
