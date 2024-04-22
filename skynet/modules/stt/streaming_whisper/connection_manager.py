@@ -64,6 +64,7 @@ class ConnectionManager:
         except KeyError:
             log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
         CONNECTIONS_METRIC.set(len(self.connections))
+        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections)/whisper_max_connections)
 
     async def flush_working_audio_worker(self):
         """
