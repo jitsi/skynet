@@ -18,7 +18,18 @@ class AccessLogSuppressor(Filter):
         return not is_excluded
 
 
+class FasterWhisperProcessingAudioSuppressor(Filter):
+    exclude_messages = ('Processing audio with duration',)
+
+    def filter(self, record: LogRecord) -> bool:
+        log_msg = record.getMessage()
+        is_excluded = log_msg.startswith(log_msg)
+
+        return not is_excluded
+
+
 logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
+logging.getLogger('faster_whisper').addFilter(FasterWhisperProcessingAudioSuppressor())
 
 
 sh = logging.StreamHandler(sys.stdout)
