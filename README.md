@@ -16,17 +16,20 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 ## Summaries Quickstart
 
 ```bash
-# Download the preferred GGUF llama model (e.g. https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF) and point LLAMA_PATH to it
+# Download the preferred GGUF llama model
 mkdir "$HOME/models"
 
-wget -q --show-progress "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf?download=true" -O "$HOME/models/llama-2-7b-chat.Q4_K_M.gguf"
+wget -q --show-progress "https://huggingface.co/FaradayDotDev/llama-3-8b-Instruct-GGUF/resolve/main/llama-3-8b-Instruct.Q4_K_M.gguf?download=true" -O "$HOME/models/llama-3-8b-Instruct.Q4_K_M.gguf"
 
-export LLAMA_PATH="$HOME/models/llama-2-7b-chat.Q4_K_M.gguf"
+export LLAMA_PATH="$HOME/models/llama-3-8b-Instruct.Q4_K_M.gguf"
+export LLAMA_N_CTX=8192
+# Optional for llama-3 since it's auto-detected:
+export MODEL_CHAT_FORMAT=llama-3
 
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
 
-# disable authorization
+# disable authorization (for testing)
 export BYPASS_AUTHORIZATION="true"
 
 poetry install

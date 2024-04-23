@@ -15,8 +15,8 @@ file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
 # models
 
-# https://github.com/abetlen/llama-cpp-python/blob/main/llama_cpp/llama_chat_format.py#L622C24-L622C31
-model_chat_format = os.environ.get('MODEL_CHAT_FORMAT', 'llama-2')
+# Some formats are auto-detected: https://github.com/abetlen/llama-cpp-python/blob/c50d3300d2a09c98765be7f2c05b7e4fd0b4232e/llama_cpp/llama_chat_format.py#L724
+model_chat_format = os.environ.get('MODEL_CHAT_FORMAT', None)
 llama_path = os.environ.get('LLAMA_PATH')
 llama_n_ctx = os.environ.get('LLAMA_N_CTX', 4096)
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 40))
