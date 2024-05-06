@@ -35,7 +35,7 @@ class ConnectionManager:
             loop = asyncio.get_running_loop()
             self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
         CONNECTIONS_METRIC.set(len(self.connections))
-        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections)/whisper_max_connections)
+        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections) / whisper_max_connections)
         TRANSCRIBE_CONNECTIONS_COUNTER.inc()
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
@@ -64,7 +64,7 @@ class ConnectionManager:
         except KeyError:
             log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
         CONNECTIONS_METRIC.set(len(self.connections))
-        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections)/whisper_max_connections)
+        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections) / whisper_max_connections)
 
     async def flush_working_audio_worker(self):
         """
