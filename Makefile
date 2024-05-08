@@ -5,6 +5,7 @@ endif
 GIT_HASH ?= $(shell git rev-parse --short HEAD)
 PLATFORMS ?= linux/amd64
 CACHE_DIR ?= /tmp/docker-cache
+DOCKER_TAG ?= ${GIT_HASH}
 
 _login:
 	${DOCKER_LOGIN_CMD}
@@ -18,7 +19,7 @@ build-summaries : _login
 	--platform ${PLATFORMS} \
 	--cache-from type=local,src=${CACHE_DIR} \
 	--cache-to type=local,dest=${CACHE_DIR},mode=max \
-	-t ${IMAGE_REGISTRY}/skynet:summaries-${GIT_HASH} .
+	-t ${IMAGE_REGISTRY}/skynet:summaries-${DOCKER_TAG} .
 
 build-whisper : _login
 	docker buildx build \
@@ -29,4 +30,4 @@ build-whisper : _login
 	--push \
 	--cache-from type=local,src=${CACHE_DIR} \
 	--cache-to type=local,dest=${CACHE_DIR},mode=max \
-	-t ${IMAGE_REGISTRY}/skynet:whisper-${GIT_HASH} .
+	-t ${IMAGE_REGISTRY}/skynet:whisper-${DOCKER_TAG} .
