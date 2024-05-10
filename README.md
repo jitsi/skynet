@@ -51,7 +51,7 @@ poetry install
 ./run.sh
 ```
 ### Test it from Github Pages
-Go to [https://jitsi.github.io/skynet/](Streaming Whisper Demo) to test your deployment from a browser
+Go to [Streaming Whisper Demo](https://jitsi.github.io/skynet/) to test your deployment from a browser
 
 OR 
 
