@@ -50,6 +50,12 @@ export WHISPER_MODEL_PATH="$HOME/models/streaming-whisper"
 poetry install
 ./run.sh
 ```
+### Test it from Github Pages
+Go to [https://jitsi.github.io/skynet/](Streaming Whisper Demo) to test your deployment from a browser
+
+OR 
+
+### Run the demo yourself
 
 Go to [demos/streaming-whisper/](demos/streaming-whisper/) and start a Python http server.
 
