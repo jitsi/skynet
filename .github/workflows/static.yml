@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload only streaming whisper demo
-          path: './demo/streaming-whisper'
+          path: './demos/streaming-whisper'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
