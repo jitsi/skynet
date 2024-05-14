@@ -1605,12 +1605,12 @@ dev = ["Sphinx (>=5.1.1)", "black (==23.12.1)", "build (>=0.10.0)", "coverage (>
 
 [[package]]
 name = "llama-cpp-python"
-version = "0.2.64"
+version = "0.2.74"
 description = "Python bindings for the llama.cpp library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "llama_cpp_python-0.2.64.tar.gz", hash = "sha256:a638fe6b0d36d62db01c8e872ae25a31f2fd483438ed4f0096f8ac281c940201"},
+    {file = "llama_cpp_python-0.2.74.tar.gz", hash = "sha256:2da38f4e58cfd1d742da2d944d1e3cc0256a8c466698920230497d7e361287c8"},
 ]
 
 [package.dependencies]
@@ -4020,4 +4020,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "5f8b7df1392711d8ac11b17f63cce734a8a11f178b6d32a9d0067e2b72674458"
+content-hash = "bc73c80fc3b251116979c249085e1d7a021fdd2b075fe25e4035b2ff86032320"
