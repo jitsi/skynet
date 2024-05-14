@@ -60,6 +60,9 @@ class Redis:
         except Exception as e:
             raise RuntimeError(f'Failed to initialize Redis: {e}')
 
+    async def close(self):
+        await self.db.close()
+
     async def client_list(self):
         return await self.db.client_list()
 

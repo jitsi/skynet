@@ -39,4 +39,9 @@ async def executor_startup():
     log.info('Jobs monitoring started')
 
 
-__all__ = ['app', 'executor_startup', 'app_startup']
+async def executor_shutdown():
+    await db.close()
+    log.info('Persistence shutdown')
+
+
+__all__ = ['app', 'executor_startup', 'executor_shutdown', 'app_startup']
