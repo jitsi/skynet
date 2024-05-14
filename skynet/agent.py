@@ -32,8 +32,6 @@ async def handle_tcp_request(reader: asyncio.StreamReader, writer: asyncio.Strea
             writer.close()
             await writer.wait_closed()
             log.debug('HAProxy agent socket closed.')
-            return
-    log.debug('The TCP writer is null!')
 
 
 async def create_tcpserver(port):
