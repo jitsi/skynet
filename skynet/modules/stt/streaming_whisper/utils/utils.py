@@ -305,3 +305,12 @@ class Uuid7:
         uuid_int = (timestamp_ms & 0xFFFFFFFFFFFF) << 80
         uuid_int |= secrets.randbits(76)
         return UUID(int=uuid_int, version=7)
+
+
+def get_jwt(ws_headers, ws_url_param=None) -> str:
+    jwt = ws_url_param if ws_url_param else ''
+    if 'authorization' in ws_headers:
+        auth_header = ws_headers.get('authorization', None)
+        if auth_header:
+            jwt = auth_header.split(' ')[-1]
+    return jwt
