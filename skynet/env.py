@@ -74,6 +74,10 @@ whisper_device = os.environ.get('WHISPER_DEVICE', 'auto')
 whisper_model_path = os.environ.get('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/streaming_whisper')
 whisper_return_transcribed_audio = tobool(os.environ.get('WHISPER_RETURN_TRANSCRIBED_AUDIO'))
 whisper_max_connections = int(os.environ.get('WHISPER_MAX_CONNECTIONS', 10))
+ws_max_size_bytes = int(os.environ.get('WS_MAX_SIZE_BYTES', 1000000))
+ws_max_queue_size = int(os.environ.get('WS_MAX_QUEUE_SIZE', 3000))
+ws_max_ping_interval = int(os.environ.get('WS_MAX_PING_INTERVAL', 30))
+ws_max_ping_timeout = int(os.environ.get('WS_MAX_PING_TIMEOUT', 30))
 
 
 # jobs
