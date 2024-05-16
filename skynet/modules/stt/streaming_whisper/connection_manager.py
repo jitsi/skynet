@@ -26,9 +26,7 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None):
         if not bypass_auth:
             jwt_token = utils.get_jwt(websocket.headers, auth_token)
-            authorized = await authorize(
-                jwt_token,
-            )
+            authorized = await authorize(jwt_token)
             if not authorized:
                 await websocket.close(401, 'Bad JWT token')
                 return
