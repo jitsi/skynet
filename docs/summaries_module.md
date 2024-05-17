@@ -25,9 +25,10 @@ All of the configuration is done via env vars. Check the [Skynet Environment Var
 # Download the preferred GGUF llama model
 mkdir "$HOME/models"
 
-wget -q --show-progress "https://huggingface.co/FaradayDotDev/llama-3-8b-Instruct-GGUF/resolve/main/llama-3-8b-Instruct.Q4_K_M.gguf?download=true" -O "$HOME/models/llama-3-8b-Instruct.Q4_K_M.gguf"
+wget -q --show-progress "https://huggingface.co/jitsi/Llama-3-8B-Instruct-GGUF/resolve/main/llama-3-8b-instruct-Q4_K_M.gguf?download=true" -O "$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
 
-export LLAMA_PATH="$HOME/models/llama-3-8b-Instruct.Q4_K_M.gguf"
+export LLAMA_PATH="$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
+# Optional for llama-3 since it's the default:
 export LLAMA_N_CTX=8192
 # Optional for llama-3 since it's auto-detected:
 export MODEL_CHAT_FORMAT=llama-3
@@ -36,7 +37,7 @@ export MODEL_CHAT_FORMAT=llama-3
 docker run -d --rm -p 6379:6379 redis 
 
 # disable authorization (for testing)
-export BYPASS_AUTHORIZATION="true"
+export BYPASS_AUTHORIZATION=1
 
 poetry install
 ./run.sh
