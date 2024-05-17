@@ -15,7 +15,7 @@ Enable the module by setting the `ENABLED_MODULES` env var to `streaming_whisper
 ```bash
 mkdir -p "$HOME/my-models-folder/streaming-whisper"
 export WHISPER_MODEL_NAME="tiny.en"
-export BYPASS_AUTHORIZATION="true"
+export BYPASS_AUTHORIZATION=1
 export ENABLED_MODULES="streaming_whisper"
 export WHISPER_MODEL_PATH="$HOME/my-models-folder/streaming-whisper"
 
@@ -138,10 +138,40 @@ docker buildx build --build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-deve
 
 When running the resulting image, make sure to mount a faster-whisper model under `/models` on the container fs and reference it in the `WHISPER_MODEL_PATH` environment variable.
 
+## Download models
+
 ```bash
 git clone git@hf.co:guillaumekln/faster-whisper-base.en "$HOME/my-models-folder/streaming-whisper"
-docker run -p 8000:8000 -e "BEAM_SIZE=1" -e "WHISPER_MODEL_PATH=/models/streaming-whisper" -e "ENABLED_MODULES=streaming_whisper" -e "BYPASS_AUTHORIZATION=true" -v "$HOME/my-models-folder":"/models" skynet:test-whisper
 ```
+
+or download any other whisper model with huggingface-cli
+
+```bash
+pip install huggingface_hub
+echo "export PATH=\$PATH:/home/$(whoami)/.local/bin" >> ~/.bashrc
+source ~/.bashrc
+huggingface-cli login
+huggingface-cli download openai/whisper-tiny.en --repo-type model --cache-dir $HOME/my-models-folder/streaming-whisper
+```
+
+## Run
+
+```bash
+docker run -p 8000:8000 \
+-u $(id -u):$(id -g) \
+-e "BEAM_SIZE=1" \
+-e "WHISPER_MODEL_PATH=/models/streaming-whisper" \
+-e "ENABLED_MODULES=streaming_whisper" \
+-e "BYPASS_AUTHORIZATION=1" \
+-v "$HOME/my-models-folder":"/models" \
+your-registry/skynet:your-tag
+```
+
+### Using GPU
+
+In order to allow docker access GPU, install nvidia container toolkit from [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt)
+Restart docker with `systemctl restart docker.service`
+When running the resulting image, pass `--gpus all` and look for `CUDA device found.` in log.
 
 ## Demo
 
