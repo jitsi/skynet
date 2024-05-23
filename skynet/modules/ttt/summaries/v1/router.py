@@ -9,6 +9,15 @@ from .models import BaseJob, DocumentMetadata, DocumentPayload, JobId, JobType
 router = get_router()
 
 
+def get_customer_id(request: Request) -> str:
+    id = request.query_params.get("customerId")
+
+    if not id:
+        id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
+
+    return id
+
+
 @api_version(1)
 @router.post("/action-items")
 async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
@@ -16,10 +25,8 @@ async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
     Starts a job to extract action items from the given payload.
     """
 
-    customer_id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
-
     return await create_job(
-        job_type=JobType.ACTION_ITEMS, payload=payload, metadata=DocumentMetadata(customer_id=customer_id)
+        job_type=JobType.ACTION_ITEMS, payload=payload, metadata=DocumentMetadata(customer_id=get_customer_id(request))
     )
 
 
@@ -30,10 +37,8 @@ async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
     Starts a job to summarize the given payload.
     """
 
-    customer_id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
-
     return await create_job(
-        job_type=JobType.SUMMARY, payload=payload, metadata=DocumentMetadata(customer_id=customer_id)
+        job_type=JobType.SUMMARY, payload=payload, metadata=DocumentMetadata(customer_id=get_customer_id(request))
     )
 
 
