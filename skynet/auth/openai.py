@@ -36,6 +36,9 @@ async def setup_credentials():
 
     file_watcher.start()
 
+    # temp debugging log
+    log.info(f'Credentials: {credentials}')
+
     log.info('Credentials set. Watching for changes...')
 
 
