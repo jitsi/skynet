@@ -125,8 +125,8 @@ async def run_job(job: Job) -> None:
         try:
             customer_id = job.metadata.customer_id
             options = get_credentials(customer_id) if customer_id else {}
-            api_key = options.get('api_key')
-            model_name = options.get('model_name')
+            api_key = options.get('secret')
+            model_name = options.get('model')
 
             if api_key:
                 log.info(f"Forwarding inference to OpenAI for customer {job.metadata.customer_id}")
