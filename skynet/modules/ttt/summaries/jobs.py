@@ -123,7 +123,8 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(exit_on_timeout())
 
         try:
-            options = get_credentials(job.metadata.customer_id) if job.metadata.customer_id else {}
+            customer_id = job.metadata.customer_id
+            options = get_credentials(customer_id) if customer_id else {}
             api_key = options.get('api_key')
             model_name = options.get('model_name')
 
@@ -132,6 +133,9 @@ async def run_job(job: Job) -> None:
 
                 result = await process_open_ai(job.payload, job.type, api_key, model_name)
             else:
+                if customer_id:
+                    log.warning(f'Customer {customer_id} has no API key configured, falling back to local processing')
+
                 result = await process(job.payload, job.type)
         except Exception as e:
             log.warning(f"Job {job.id} failed: {e}")
