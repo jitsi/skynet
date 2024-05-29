@@ -28,7 +28,7 @@ ENV LLAMA_CPP_RELEASE=b3033
 RUN \
     git clone https://github.com/ggerganov/llama.cpp.git --depth=1 --branch $LLAMA_CPP_RELEASE && \
     cd llama.cpp && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DLLAMA_CUDA=ON && \
     cmake --build build --config Release --target server -j`getconf _NPROCESSORS_ONLN`
 
 COPY requirements.txt /app/
