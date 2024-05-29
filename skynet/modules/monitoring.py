@@ -3,7 +3,6 @@ from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
-PROMETHEUS_OPENAI_API_SUBSYSTEM = 'OpenAI_API'
 PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM = 'Streaming_Whisper'
 
 REDIS_CONNECTION_STATUS = Gauge(

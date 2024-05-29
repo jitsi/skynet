@@ -5,7 +5,6 @@ from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     instrumentator,
     PROMETHEUS_NAMESPACE,
-    PROMETHEUS_OPENAI_API_SUBSYSTEM,
     PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
     PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
@@ -33,13 +32,6 @@ if enable_metrics:
 
         queue_size = await db.llen(PENDING_JOBS_KEY)
         return {'queueSize': queue_size}
-
-    if 'openai-api' in modules:
-        from skynet.modules.ttt.openai_api.app import app as openai_api_app
-
-        instrumentator.instrument(
-            openai_api_app, metric_namespace=PROMETHEUS_NAMESPACE, metric_subsystem=PROMETHEUS_OPENAI_API_SUBSYSTEM
-        ).expose(metrics)
 
     if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.summaries.app import app as summaries_app

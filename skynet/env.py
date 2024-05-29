@@ -19,22 +19,21 @@ def tobool(val: str | None):
 
 # general
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
-supported_modules = {'summaries:dispatcher', 'summaries:executor', 'openai-api', 'streaming_whisper'}
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
 # models
-
-# Some formats are auto-detected: https://github.com/abetlen/llama-cpp-python/blob/c50d3300d2a09c98765be7f2c05b7e4fd0b4232e/llama_cpp/llama_chat_format.py#L724
-model_chat_format = os.environ.get('MODEL_CHAT_FORMAT')
 llama_path = os.environ.get('LLAMA_PATH')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 8192))
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 40))
 llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
 
 # openai api
-openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', 'http://localhost:8000/openai-api/v1')
+openai_api_server_dir = os.environ.get('OPENAI_API_SERVER_DIR', '/app/llama.cpp/server')
+openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', 8002))
+openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}/v1')
 
 # openai
 openai_credentials_file = os.environ.get('SKYNET_CREDENTIALS_PATH')
