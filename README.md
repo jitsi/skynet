@@ -51,6 +51,18 @@ export WHISPER_MODEL_PATH="$HOME/models/streaming-whisper"
 poetry install
 ./run.sh
 ```
+
+## Testing docker changes
+```bash
+docker compose -f compose-dev.yaml up --build
+docker cp $HOME/models/llama-3-8b-instruct-Q8_0.gguf skynet-web-1:/models
+docker restart skynet-web-1
+
+# localhost:8000 for Skynet APIs
+# localhost:8001/metrics for Prometheus metrics
+# localhost:8002 for llama.cpp web server GUI
+```
+
 ### Test it from Github Pages
 Go to [Streaming Whisper Demo](https://jitsi.github.io/skynet/) to test your deployment from a browser
 
