@@ -71,7 +71,7 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     await db.set(job_id, Job.model_dump_json(job))
 
-    log.info(f"Created job {job.id}.")
+    log.info(f"Created job {job}.")
 
     await db.rpush(PENDING_JOBS_KEY, job_id)
     await update_summary_queue_metric()
