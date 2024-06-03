@@ -129,12 +129,12 @@ async def run_job(job: Job) -> None:
             model_name = options.get('model')
 
             if api_key:
-                log.info(f"Forwarding inference to OpenAI for customer {job.metadata.customer_id}")
+                log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
 
                 result = await process_open_ai(job.payload, job.type, api_key, model_name)
             else:
                 if customer_id:
-                    log.warning(f'Customer {customer_id} has no API key configured, falling back to local processing')
+                    log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
 
                 result = await process(job.payload, job.type)
         except Exception as e:

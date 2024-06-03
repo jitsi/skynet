@@ -40,4 +40,4 @@ async def setup_credentials():
 
 
 def get_credentials(customer_id):
-    return credentials.get(customer_id, {})
+    return credentials.get(customer_id, {}) or {}

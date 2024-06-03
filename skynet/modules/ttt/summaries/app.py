@@ -4,6 +4,7 @@ from fastapi_versionizer.versionizer import Versionizer
 from skynet.auth.openai import setup_credentials
 
 from skynet.logs import get_logger
+from skynet.modules.ttt.openai_api.app import destroy as destroy_openai_api, initialize as initialize_openai_api
 
 from .jobs import start_monitoring_jobs
 from .persistence import db
@@ -29,6 +30,8 @@ async def app_startup():
 async def executor_startup():
     await setup_credentials()
 
+    initialize_openai_api()
+
     initialize_summaries()
     log.info('summaries:executor module initialized')
 
@@ -40,6 +43,8 @@ async def executor_startup():
 
 
 async def executor_shutdown():
+    destroy_openai_api()
+
     await db.close()
     log.info('Persistence shutdown')
 

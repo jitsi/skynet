@@ -16,12 +16,16 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 ## Summaries Quickstart
 
 ```bash
+# Init and update submodules if you haven't already. This will add llama.cpp which provides the OpenAI api server
+git submodule update --init
+
 # Download the preferred GGUF llama model
 mkdir "$HOME/models"
 
 wget -q --show-progress "https://huggingface.co/jitsi/Llama-3-8B-Instruct-GGUF/resolve/main/llama-3-8b-instruct-Q4_K_M.gguf?download=true" -O "$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
 
 export LLAMA_PATH="$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
+export OPENAI_API_SERVER_PATH="$HOME/skynet/llama.cpp/server"
 
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
@@ -47,6 +51,18 @@ export WHISPER_MODEL_PATH="$HOME/models/streaming-whisper"
 poetry install
 ./run.sh
 ```
+
+## Testing docker changes
+```bash
+docker compose -f compose-dev.yaml up --build
+docker cp $HOME/models/llama-3-8b-instruct-Q8_0.gguf skynet-web-1:/models
+docker restart skynet-web-1
+
+# localhost:8000 for Skynet APIs
+# localhost:8001/metrics for Prometheus metrics
+# localhost:8002 for llama.cpp web server GUI
+```
+
 ### Test it from Github Pages
 Go to [Streaming Whisper Demo](https://jitsi.github.io/skynet/) to test your deployment from a browser
 

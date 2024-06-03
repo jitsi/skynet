@@ -1,0 +1,14 @@
+services:
+    web:
+        build:  .
+        environment:
+            - BYPASS_AUTHORIZATION=true
+            - REDIS_HOST=redis
+        platform: linux/amd64
+        ports:
+            - "8000:8000"
+            - "8001:8001"
+            - "8002:8002"
+    redis:
+        image: "redis:alpine"
+        platform: linux/amd64

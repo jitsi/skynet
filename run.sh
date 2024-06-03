@@ -1,3 +1,6 @@
 #!/bin/sh
+cd llama.cpp
+make server
+cd ..
 
-exec poetry run python skynet/main.py
+poetry run python -m uvicorn skynet.main:app --reload
