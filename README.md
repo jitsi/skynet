@@ -16,12 +16,16 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 ## Summaries Quickstart
 
 ```bash
+# Init and update submodules if you haven't already. This will add llama.cpp which provides the OpenAI api server
+git submodule update --init
+
 # Download the preferred GGUF llama model
 mkdir "$HOME/models"
 
 wget -q --show-progress "https://huggingface.co/jitsi/Llama-3-8B-Instruct-GGUF/resolve/main/llama-3-8b-instruct-Q4_K_M.gguf?download=true" -O "$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
 
 export LLAMA_PATH="$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
+export OPENAI_API_SERVER_PATH="$HOME/skynet/llama.cpp/server"
 
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
