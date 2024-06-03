@@ -15,21 +15,15 @@ COPY docker/rootfs/ /
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y git wget build-essential git python3.11 python3.11-venv && \
+    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv && \
     apt-cleanup
-
-RUN \
-    wget -nv -O cmake.sh https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-linux-x86_64.sh && \
-    sh cmake.sh --skip-license --prefix=/usr/local && \
-    rm cmake.sh
 
 ENV LLAMA_CPP_RELEASE=b3033
 
 RUN \
     git clone https://github.com/ggerganov/llama.cpp.git --depth=1 --branch $LLAMA_CPP_RELEASE && \
     cd llama.cpp && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DLLAMA_CUDA=ON -DLLAMA_NATIVE=OFF && \
-    cmake --build build --config Release --target server -j`getconf _NPROCESSORS_ONLN`
+    make server LLAMA_CUDA=1 -j`getconf _NPROCESSORS_ONLN`
 
 COPY requirements.txt /app/
 
@@ -57,7 +51,7 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 libcurl4-openssl-dev && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application
@@ -67,7 +61,7 @@ RUN \
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
-COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build/bin/server /app/llama.cpp/server
+COPY --chown=jitsi:jitsi --from=builder /llama.cpp/server /app/llama.cpp/server
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/

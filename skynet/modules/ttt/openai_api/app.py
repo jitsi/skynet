@@ -5,7 +5,7 @@ from skynet.env import (
     llama_n_ctx,
     llama_n_gpu_layers,
     llama_path,
-    openai_api_server_dir,
+    openai_api_server_path,
     openai_api_server_port,
 )
 from skynet.logs import get_logger
@@ -17,7 +17,7 @@ log = get_logger(__name__)
 def initialize():
     global proc
     proc = subprocess.Popen(
-        f'{openai_api_server_dir} \
+        f'{openai_api_server_path} \
             -m {llama_path} \
             -b {llama_n_batch} \
             -c {llama_n_ctx} \
@@ -27,9 +27,9 @@ def initialize():
     )
 
     if proc.poll() is not None:
-        log.error(f'Failed to start OpenAI API server from {openai_api_server_dir}')
+        log.error(f'Failed to start OpenAI API server from {openai_api_server_path}')
     else:
-        log.info(f'OpenAI API server started from {openai_api_server_dir}')
+        log.info(f'OpenAI API server started from {openai_api_server_path}')
 
 
 def destroy():

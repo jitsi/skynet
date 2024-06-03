@@ -31,7 +31,7 @@ llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 
 llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
 
 # openai api
-openai_api_server_dir = os.environ.get('OPENAI_API_SERVER_DIR', '/app/llama.cpp/server')
+openai_api_server_path = os.environ.get('OPENAI_API_SERVER_PATH', '/app/llama.cpp/server')
 openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', 8002))
 openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}/v1')
 
