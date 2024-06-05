@@ -35,6 +35,7 @@ def initialize():
         api_key='placeholder',  # use a placeholder value to bypass validation, and allow the custom base url to be used
         base_url=openai_api_base_url,
         default_headers={"X-Skynet-UUID": app_uuid},
+        max_retries=0,
         temperature=0,
     )
 
