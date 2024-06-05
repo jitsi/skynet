@@ -9,13 +9,18 @@ from skynet.env import (
     openai_api_server_port,
 )
 from skynet.logs import get_logger
+from skynet.modules.monitoring import OPENAI_API_RESTART_COUNTER
 
 proc = None
+
 log = get_logger(__name__)
 
 
 def initialize():
+    log.info('Starting OpenAI API server...')
+
     global proc
+
     proc = subprocess.Popen(
         f'{openai_api_server_path} \
             -m {llama_path} \
@@ -33,8 +38,18 @@ def initialize():
 
 
 def destroy():
+    log.info('Killing OpenAI API subprocess...')
+
     proc.kill()
-    log.info('OpenAI API subprocess destroyed')
 
 
-__all__ = ['destroy', 'initialize']
+def restart():
+    log.info('Restarting OpenAI API server...')
+
+    OPENAI_API_RESTART_COUNTER.inc()
+
+    destroy()
+    initialize()
+
+
+__all__ = ['destroy', 'initialize', 'restart']

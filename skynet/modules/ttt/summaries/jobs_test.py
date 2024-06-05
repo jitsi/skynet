@@ -86,7 +86,7 @@ class TestRunJob:
 
         from skynet.modules.ttt.summaries.jobs import process_open_ai, run_job
 
-        run_job_fixture.patch('skynet.modules.ttt.summaries.jobs.get_credentials', return_value={'api_key': 'api_key'})
+        run_job_fixture.patch('skynet.modules.ttt.summaries.jobs.get_credentials', return_value={'secret': 'api_key'})
 
         await run_job(
             Job(

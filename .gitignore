@@ -4,3 +4,5 @@ models
 .DS_Store
 .env
 .idea
+llama.log
+dump.rdb

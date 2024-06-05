@@ -8,11 +8,12 @@ from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     SUMMARY_DURATION_METRIC,
+    SUMMARY_ERROR_COUNTER,
     SUMMARY_INPUT_LENGTH_METRIC,
     SUMMARY_QUEUE_SIZE_METRIC,
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
-from skynet.utils import kill_process
+from skynet.modules.ttt.openai_api.app import restart as restart_openai_api
 
 from .persistence import db
 from .processor import process, process_open_ai
@@ -25,6 +26,7 @@ TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
 
 PENDING_JOBS_KEY = "jobs:pending"
 RUNNING_JOBS_KEY = "jobs:running"
+ERROR_JOBS_KEY = "jobs:error"
 
 background_task = None
 current_task = None
@@ -116,11 +118,11 @@ async def run_job(job: Job) -> None:
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
     if len(job.payload.text) < summary_minimum_payload_length:
-        log.warning(f"Job {job.id} failed because payload is too short: \"{job.payload.text}\"")
+        log.info(f"Summarisation for {job.id} did not run because payload is too short: \"{job.payload.text}\"")
 
         result = job.payload.text
     else:
-        exit_task = asyncio.create_task(exit_on_timeout())
+        exit_task = asyncio.create_task(restart_on_timeout(job))
 
         try:
             customer_id = job.metadata.customer_id
@@ -152,6 +154,10 @@ async def run_job(job: Job) -> None:
         status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
         result=result,
     )
+
+    if has_failed:
+        await db.rpush(ERROR_JOBS_KEY, job.id)
+        SUMMARY_ERROR_COUNTER.inc()
 
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
@@ -193,12 +199,12 @@ async def monitor_candidate_jobs() -> None:
             await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK_ON_ERROR)
 
 
-async def exit_on_timeout() -> None:
+async def restart_on_timeout(job: Job) -> None:
     await asyncio.sleep(job_timeout)
 
-    log.warning(f"Job timed out after {job_timeout} seconds, exiting...")
+    log.warning(f"Job {job.id} timed out after {job_timeout} seconds, restarting...")
 
-    kill_process()
+    restart_openai_api()
 
 
 def start_monitoring_jobs() -> None:
