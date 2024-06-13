@@ -1,3 +1,5 @@
+from enum import Enum
+
 import aiofiles
 import yaml
 
@@ -8,6 +10,11 @@ from skynet.modules.file_watcher import FileWatcher
 log = get_logger(__name__)
 
 credentials = dict()
+
+
+class CredentialsType(Enum):
+    OPENAI = 'OPENAI'
+    AZURE_OPENAI = 'AZURE_OPENAI'
 
 
 async def open_yaml(file_path):
@@ -40,4 +47,13 @@ async def setup_credentials():
 
 
 def get_credentials(customer_id):
-    return credentials.get(customer_id, {}) or {}
+    customer_credentials = credentials.get(customer_id, {}) or {}
+    multiple_credentials = customer_credentials.get('credentialsMap')
+
+    if multiple_credentials:
+        result = [val for val in multiple_credentials.values() if val['enabled'] == True]
+        return result[0] if result else {}
+
+    # backwards compatibility
+    customer_credentials.setdefault('type', CredentialsType.OPENAI.value)
+    return customer_credentials

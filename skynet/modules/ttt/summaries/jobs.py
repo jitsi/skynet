@@ -2,7 +2,7 @@ import asyncio
 import time
 import uuid
 
-from skynet.auth.openai import get_credentials
+from skynet.auth.openai import CredentialsType, get_credentials
 
 from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
 from skynet.logs import get_logger
@@ -16,7 +16,7 @@ from skynet.modules.monitoring import (
 from skynet.modules.ttt.openai_api.app import restart as restart_openai_api
 
 from .persistence import db
-from .processor import process, process_open_ai
+from .processor import process, process_azure, process_open_ai
 from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType
 
 log = get_logger(__name__)
@@ -125,15 +125,26 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(restart_on_timeout(job))
 
         try:
-            customer_id = job.metadata.customer_id
-            options = get_credentials(customer_id) if customer_id else {}
-            api_key = options.get('secret')
-            model_name = options.get('model')
+            customer_id = 'testCustomerId'
+            options = get_credentials(customer_id)
+            secret = options.get('secret')
+            api_type = options.get('type')
 
-            if api_key:
-                log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
+            if secret:
+                if api_type == CredentialsType.OPENAI.value:
+                    log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
 
-                result = await process_open_ai(job.payload, job.type, api_key, model_name)
+                    # needed for backwards compatibility
+                    model = options.get('model') or options.get('metadata').get('model')
+                    result = await process_open_ai(job.payload, job.type, secret, model)
+
+                elif api_type == CredentialsType.AZURE_OPENAI.value:
+                    log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
+
+                    metadata = options.get('metadata')
+                    result = await process_azure(
+                        job.payload, job.type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
+                    )
             else:
                 if customer_id:
                     log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
