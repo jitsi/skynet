@@ -2,9 +2,9 @@ from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
-from skynet.env import app_uuid, llama_n_ctx, openai_api_base_url
+from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, openai_api_base_url
 from skynet.logs import get_logger
 
 from .prompts.action_items import action_items_conversation_prompt, action_items_text_prompt
@@ -79,6 +79,20 @@ async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: 
     llm = ChatOpenAI(
         api_key=api_key,
         model_name=model_name,
+        temperature=0,
+    )
+
+    return await process(payload, job_type, llm)
+
+
+async def process_azure(
+    payload: DocumentPayload, job_type: JobType, api_key: str, endpoint: str, deployment_name: str
+) -> str:
+    llm = AzureChatOpenAI(
+        api_key=api_key,
+        api_version=azure_openai_api_version,
+        azure_endpoint=endpoint,
+        azure_deployment=deployment_name,
         temperature=0,
     )
 

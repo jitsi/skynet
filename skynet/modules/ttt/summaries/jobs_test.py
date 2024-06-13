@@ -38,6 +38,7 @@ def run_job_fixture(mocker):
     mocker.patch('skynet.modules.ttt.summaries.jobs.update_job')
     mocker.patch('skynet.modules.ttt.summaries.jobs.process')
     mocker.patch('skynet.modules.ttt.summaries.jobs.process_open_ai')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.process_azure')
     mocker.patch('skynet.modules.ttt.summaries.jobs.db.db')
 
     return mocker
@@ -86,20 +87,58 @@ class TestRunJob:
 
         from skynet.modules.ttt.summaries.jobs import process_open_ai, run_job
 
-        run_job_fixture.patch('skynet.modules.ttt.summaries.jobs.get_credentials', return_value={'secret': 'api_key'})
+        secret = 'secret'
+        model = 'gpt-3.5-turbo'
 
-        await run_job(
-            Job(
-                payload=DocumentPayload(
-                    text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
-                ),
-                metadata=DocumentMetadata(customer_id='test'),
-                type=JobType.SUMMARY,
-                id='job_id',
-            )
+        run_job_fixture.patch(
+            'skynet.modules.ttt.summaries.jobs.get_credentials',
+            return_value={'secret': secret, 'type': 'OPENAI', 'metadata': {'model': model}},
         )
 
-        process_open_ai.assert_called_once()
+        job = Job(
+            payload=DocumentPayload(
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+            ),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+            id='job_id',
+        )
+
+        await run_job(job)
+
+        process_open_ai.assert_called_once_with(job.payload, job.type, secret, model)
+
+    @pytest.mark.asyncio
+    async def test_run_job_with_azure_open_ai(self, run_job_fixture):
+        '''Test that a job is sent for inference to azure openai if there is a customer id with a valid api key.'''
+
+        from skynet.modules.ttt.summaries.jobs import process_azure, run_job
+
+        secret = 'secret'
+        deployment_name = 'gpt-3.5-turbo'
+        endpoint = 'https://myopenai.azure.com'
+
+        run_job_fixture.patch(
+            'skynet.modules.ttt.summaries.jobs.get_credentials',
+            return_value={
+                'secret': secret,
+                'type': 'AZURE_OPENAI',
+                'metadata': {'deploymentName': deployment_name, 'endpoint': endpoint},
+            },
+        )
+
+        job = Job(
+            payload=DocumentPayload(
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+            ),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+            id='job_id',
+        )
+
+        await run_job(job)
+
+        process_azure.assert_called_once_with(job.payload, job.type, secret, endpoint, deployment_name)
 
 
 class TestCanRunNextJob:
