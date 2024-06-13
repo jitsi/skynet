@@ -51,7 +51,7 @@ def get_credentials(customer_id):
     multiple_credentials = customer_credentials.get('credentialsMap')
 
     if multiple_credentials:
-        result = [val for val in multiple_credentials.values() if val['enabled'] == True]
+        result = [val for val in multiple_credentials.values() if val['enabled']]
         return result[0] if result else {}
 
     # backwards compatibility
