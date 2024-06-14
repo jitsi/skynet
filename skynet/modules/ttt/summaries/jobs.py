@@ -125,7 +125,7 @@ async def run_job(job: Job) -> None:
         exit_task = asyncio.create_task(restart_on_timeout(job))
 
         try:
-            customer_id = 'testCustomerId'
+            customer_id = job.metadata.customer_id
             options = get_credentials(customer_id)
             secret = options.get('secret')
             api_type = options.get('type')
