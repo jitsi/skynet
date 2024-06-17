@@ -25,6 +25,12 @@ class JobType(Enum):
     SUMMARY = 'summary'
 
 
+class Processors(Enum):
+    OPENAI = 'OPENAI'
+    AZURE = 'AZURE'
+    LOCAL = 'LOCAL'
+
+
 class JobStatus(Enum):
     PENDING = 'pending'
     RUNNING = 'running'
@@ -34,11 +40,12 @@ class JobStatus(Enum):
 
 # job model to expose to the API
 class BaseJob(BaseModel):
+    duration: float = 0.0
     id: str
+    processor: Processors = Processors.LOCAL
     result: str | None = None
     status: JobStatus = JobStatus.PENDING
     type: JobType
-    duration: float = 0.0
 
 
 # since private fields are not serialized, use a different model with required internals
