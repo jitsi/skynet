@@ -17,7 +17,7 @@ from skynet.modules.ttt.openai_api.app import restart as restart_openai_api
 
 from .persistence import db
 from .processor import process, process_azure, process_open_ai
-from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType
+from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Processors
 
 log = get_logger(__name__)
 
@@ -34,6 +34,20 @@ current_task = None
 
 def can_run_next_job() -> bool:
     return 'summaries:executor' in modules and (current_task is None or current_task.done())
+
+
+def get_job_processor(customer_id: str) -> str:
+    options = get_credentials(customer_id)
+    secret = options.get('secret')
+    api_type = options.get('type')
+
+    if secret:
+        if api_type == CredentialsType.OPENAI.value:
+            return Processors.OPENAI
+        elif api_type == CredentialsType.AZURE_OPENAI.value:
+            return Processors.AZURE
+
+    return Processors.LOCAL
 
 
 async def update_summary_queue_metric() -> None:
@@ -69,8 +83,9 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     job_id = str(uuid.uuid4())
 
-    job = Job(id=job_id, payload=payload, type=job_type, metadata=metadata)
-
+    job = Job(
+        id=job_id, payload=payload, type=job_type, metadata=metadata, processor=get_job_processor(metadata.customer_id)
+    )
     await db.set(job_id, Job.model_dump_json(job))
 
     log.info(f"Created job {job.id}.")
@@ -128,23 +143,21 @@ async def run_job(job: Job) -> None:
             customer_id = job.metadata.customer_id
             options = get_credentials(customer_id)
             secret = options.get('secret')
-            api_type = options.get('type')
+            processor = get_job_processor(customer_id)  # may have changed since job was created
 
-            if secret:
-                if api_type == CredentialsType.OPENAI.value:
-                    log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
+            if processor == Processors.OPENAI:
+                log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
 
-                    # needed for backwards compatibility
-                    model = options.get('model') or options.get('metadata').get('model')
-                    result = await process_open_ai(job.payload, job.type, secret, model)
+                # needed for backwards compatibility
+                model = options.get('model') or options.get('metadata').get('model')
+                result = await process_open_ai(job.payload, job.type, secret, model)
+            elif processor == Processors.AZURE:
+                log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
 
-                elif api_type == CredentialsType.AZURE_OPENAI.value:
-                    log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
-
-                    metadata = options.get('metadata')
-                    result = await process_azure(
-                        job.payload, job.type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
-                    )
+                metadata = options.get('metadata')
+                result = await process_azure(
+                    job.payload, job.type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
+                )
             else:
                 if customer_id:
                     log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
