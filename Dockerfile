@@ -15,21 +15,8 @@ COPY docker/rootfs/ /
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y wget build-essential python3.11 python3.11-venv && \
+    apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv && \
     apt-cleanup
-
-RUN \
-    wget -nv -O cmake.sh https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-linux-x86_64.sh && \
-    sh cmake.sh --skip-license --prefix=/usr/local && \
-    rm cmake.sh
-
-ENV LLAMA_CPP_RELEASE=b3070
-COPY llama.cpp llama.cpp
-RUN \
-    cd llama.cpp && \
-    rm -rf build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DLLAMA_CUDA=ON -DLLAMA_NATIVE=OFF && \
-    cmake --build build --target server -j`getconf _NPROCESSORS_ONLN`
 
 COPY requirements.txt /app/
 
@@ -40,7 +27,8 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=on
 RUN \
     python3.11 -m venv .venv && \
     . .venv/bin/activate && \
-    pip install -vvv -r requirements.txt
+    pip install -vvv -r requirements.txt && \
+    pip install -vvv vllm
 
 ## Production Image
 ##
@@ -67,7 +55,7 @@ RUN \
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
-COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build/bin/server /app/llama.cpp/server
+# COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build/bin/server /app/llama.cpp/server
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
@@ -78,6 +66,9 @@ ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
+    OUTLINES_CACHE_DIR=/app/vllm/outlines \
+    VLLM_CONFIG_ROOT=/app/vllm/config \
+    HF_HOME=/app/hf  \
     LLAMA_PATH="/models/llama-3-8b-instruct-Q8_0.gguf"
 
 VOLUME [ "/models" ]
