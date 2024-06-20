@@ -8,7 +8,7 @@ services:
         ports:
             - "8000:8000"
             - "8001:8001"
-            - "8002:8002"
+            - "8003:8003"
     redis:
         image: "redis:alpine"
         platform: linux/amd64

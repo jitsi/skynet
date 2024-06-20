@@ -60,7 +60,7 @@ docker restart skynet-web-1
 
 # localhost:8000 for Skynet APIs
 # localhost:8001/metrics for Prometheus metrics
-# localhost:8002 for llama.cpp web server GUI
+# localhost:8003 for llama.cpp web server GUI
 ```
 
 ### Test it from Github Pages
