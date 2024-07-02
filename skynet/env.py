@@ -19,7 +19,7 @@ def tobool(val: str | None):
 
 # general
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
-supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper'}
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
