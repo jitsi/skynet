@@ -31,7 +31,7 @@ def run(
             yield msg.text
         elif isinstance(msg, base.InferenceStats):
             stats = msg
-    
+
     print("\n")
 
     if first_token_time is None or stats is None:
