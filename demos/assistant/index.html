@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Skynet - Assistant Demo</title>
+    <link rel="stylesheet" href="bulma.min.css">
+</head>
+
+<body>
+  <section class="section">
+    <div class="container is-max-desktop has-text-centered">
+        <h1 class="title">Assistant Demo</h1>
+    </div>
+  </section>
+  <section class="section is-small">
+      <div class="container is-max-desktop">
+          <div class="box">
+              <div class="field">
+                  <div class="control">
+                      <div class="field">
+                          <button class="button is-primary" id="transcribebtn">Transcribe</button>
+                          <button class="button" id="stopbtn" disabled>Stop</button>
+                          <div class="select is-disabled">
+                              <select id="langselector" name="langselector">
+                                <option value="en" selected="selected">English</option>
+                              </select>
+                          </div>
+                          <div class="button" id="mutebtn">Mute</div>
+                      </div>
+                      <div class="field">
+                          <input type="text"
+                                 class="input"
+                                 id="wshost"
+                                 placeholder="wss://a10test.jitsi.net/assistant/ws"
+                                 value="wss://a10test.jitsi.net/assistant/ws"
+                          >
+                      </div>
+                      <div class="field">
+                          <input type="text" id="jwt" class="input" placeholder="some JWT if using auth">
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </section>
+  <section class="section">
+      <div class="container is-max-desktop">
+          <div class="box has-text-centered is-family-monospace has-text-grey" id="outputcontainer">
+              <p>I'm listening...</p>
+          </div>
+      </div>
+  </section>
+  <section class="section is-small">
+      <div class="container is-max-desktop" id="finalcontainer">
+        <div class="columns">
+            <div class="column">
+                <span class="tag is-info is-light is-family-monospace"></span>
+            </div>
+            <div class="column is-three-fifths">
+                <span class="transcript"></span>
+            </div>
+        </div>
+      </div>
+  </section>
+  <audio controls="controls" id="aud" style="display: none"><source src="data:audio/wav;base64," type="audio/wav"></audio>
+    <script>
+        let orderedFinals = []
+        function setAndPlay(idx) {
+            var audio = document.getElementById('aud')
+            audio.src = 'data:audio/wav;base64,' + orderedFinals[idx].audio
+            audio.play()
+        }
+        // mostly taken from https://dev.to/louisgv/quick-guide-to-audioworklet-30df
+        const main = async () => {
+            let messages = [{}]
+            const CLIENTID = crypto.randomUUID()
+            const MEETINGID = crypto.randomUUID()
+            const context = new AudioContext({ sampleRate: 16000 })
+            const microphone = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false
+            })
+
+            const source = context.createMediaStreamSource(microphone)
+            // load the worklet
+            await context.audioWorklet.addModule('recorder.worklet.js')
+            let ws = undefined
+
+            const langSel = document.getElementById('langselector')
+            const transcribeBtn = document.getElementById('transcribebtn')
+            const stopBtn = document.getElementById('stopbtn')
+            const output = document.getElementById('outputcontainer')
+            const final = document.getElementById('finalcontainer')
+            const jwt = document.getElementById('jwt')
+            const wsHost = document.getElementById('wshost')
+            const muteBtn = document.getElementById('mutebtn')
+
+            let isMuted = false
+            muteBtn.addEventListener('click', () => {
+                if (isMuted) {
+                    microphone.getAudioTracks()[0].enabled = true
+                    isMuted = false
+                    muteBtn.innerHTML = 'Mute'
+                } else {
+                    microphone.getAudioTracks()[0].enabled = false
+                    isMuted = true
+                    muteBtn.innerHTML = 'Unmute'
+                }
+            })
+
+            var isSpeaking = false
+
+            // create the recorder worklet
+            const recorder = new AudioWorkletNode(context, 'recorder.worklet')
+
+            source.connect(recorder).connect(context.destination)
+
+            function convertFloat32To16BitPCM(input) {
+                const output = new Int16Array(input.length)
+                for (let i = 0; i < input.length; i++) {
+                    const s = Math.max(-1, Math.min(1, input[i]))
+                    output[i] = s < 0 ? s * 0x8000 : s * 0x7fff
+                }
+                return output
+            }
+
+            function addMessage(msg) {
+                const text = msg.text
+
+                messages[messages.length - 1] = {
+                    text: (messages[messages.length - 1].text || '') + ' ' + text.replace('<|eot_id|>', ''),
+                    ts: messages[messages.length - 1].ts || msg.ts
+                }
+
+                const columns = final.querySelector('.columns:first-child')
+
+                const ts = columns.querySelector('.column:nth-child(1) .tag')
+                ts.innerHTML = ts.innerHTML || new Date(msg.ts).toLocaleTimeString()
+
+                const transcript = columns.querySelector('.column:nth-child(2) .transcript')
+                transcript.innerHTML = (transcript.innerHTML || '') + ' ' + text.replace('<|eot_id|>', '')
+
+                if (text.includes('<|eot_id|>')) {
+                    messages.push({}) // waiting for a new message
+
+                    final.insertAdjacentHTML('afterbegin', '<div class="columns"><div class="column"><span class="tag is-info is-light is-family-monospace">' +
+                        '</span>' + '</div>' +
+                        '<div class="column is-three-fifths"><span class="transcript"></span>' +
+                        '</div></div>')
+                }
+            }
+
+            // events
+            function setupWsEvents() {
+                ws.onmessage = (e) => {
+                    let msg = JSON.parse(e.data)
+                    addMessage(msg)
+                }
+            }
+
+            function wsConnect() {
+                let wsConnectionString = wsHost.value.trim() + '/' + MEETINGID
+                if (jwt.value.trim() != '') {
+                    wsConnectionString += '?auth_token=' + jwt.value.trim()
+                }
+                ws = new WebSocket(wsConnectionString)
+                ws.binaryType = 'blob'
+                setupWsEvents()
+            }
+
+            function wsDisconnect() {
+                if (ws != undefined) {
+                    ws.close()
+                }
+            }
+
+            function preparePayload(data) {
+                let lang = langSel.value
+                let str = CLIENTID + "|" + lang
+                if (str.length < 60) {
+                    str = str.padEnd(60, " ")
+                }
+                let utf8Encode = new TextEncoder()
+                let buffer = utf8Encode.encode(str)
+
+                let headerArr = new Uint16Array(buffer.buffer)
+
+                const payload = []
+
+                // headerArr.forEach(i => payload.push(i)) // maybe later
+                data.forEach(i => payload.push(i))
+
+                return Uint16Array.from(payload)
+            }
+
+            transcribeBtn.addEventListener("click", () => {
+                context.resume()
+                isSpeaking = true
+                transcribeBtn.disabled = true
+                stopBtn.disabled = false
+                langSel.disabled = true
+                wsConnect()
+            });
+            stopBtn.addEventListener('click', () => {
+                context.suspend()
+                isSpeaking = false
+                stopBtn.disabled = true;
+                transcribeBtn.disabled = false;
+                langSel.disabled = false
+                wsDisconnect()
+            });
+
+            recorder.port.onmessage = (e) => {
+                if (ws != undefined && isSpeaking) {
+                    const audio = convertFloat32To16BitPCM(e.data)
+                    const payload = preparePayload(audio)
+                    ws.send(payload)
+                }
+            }
+        }
+        main()
+    </script>
+</body>
+</html>
