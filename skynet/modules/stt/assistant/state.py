@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from typing import List
+from functools import reduce
 
 from skynet.logs import get_logger
 from skynet.modules.stt.assistant.chunk import Chunk
@@ -12,20 +13,15 @@ log = get_logger(__name__)
 
 class State:
     working_audio: bytes
-    silence: bool
+    speech_duration: int
 
     def __init__(self):
         self.working_audio = b''
-        self.silence = True
+        self.speech_duration = 0;
         self.uuid = utils.Uuid7()
 
     def should_respond(self) -> bool:
-        working_audio_duration = utils.convert_bytes_to_seconds(self.working_audio)
-
-        if working_audio_duration >= 1 and self.silence:
-            return True
-
-        return False
+        return self.speech_duration >= 1
 
     def process(self, chunk: Chunk) -> Iterator[AssistantResponse] | None:
         self.add_to_store(chunk)
@@ -43,10 +39,10 @@ class State:
 
     def add_to_store(self, chunk: Chunk):
         if chunk.silent:
-            self.silence = True
+            self.speech_duration = 0;
         else:
             self.working_audio += chunk.raw
-            self.silence = False
+            self.speech_duration += reduce((lambda x, y: x + (round(y.get('end') - y.get('start')))), chunk.speech_timestamps, 0)
 
     def reset(self):
         log.debug('flushing working audio')
