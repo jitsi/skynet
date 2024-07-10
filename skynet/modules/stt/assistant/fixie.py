@@ -45,6 +45,6 @@ def init():
 
 
 def oneshot(audio: bytes) -> Iterator[str]:
-    prompt = 'Listen to <|audio|>. If it contains a question, answer it, else respond with "."'
+    prompt = 'Listen to <|audio|> and respond to it.'
 
     return run(inference, audio, prompt)

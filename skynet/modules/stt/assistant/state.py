@@ -10,6 +10,8 @@ from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
 
+silent_chunks_threshold = 1
+
 
 class State:
     working_audio: bytes
@@ -18,10 +20,11 @@ class State:
     def __init__(self):
         self.working_audio = b''
         self.speech_duration = 0;
+        self.silence_duration = 0;
         self.uuid = utils.Uuid7()
 
     def should_respond(self) -> bool:
-        return self.speech_duration >= 1
+        return self.speech_duration >= 1 and self.silence_duration >= silent_chunks_threshold;
 
     def process(self, chunk: Chunk) -> Iterator[AssistantResponse] | None:
         self.add_to_store(chunk)
@@ -30,21 +33,29 @@ class State:
             final_audio_length = utils.convert_bytes_to_seconds(self.working_audio)
             final_audio = utils.get_wav_header([self.working_audio], final_audio_length) + self.working_audio
 
+            self.reset()
+
             for text in ultravox(final_audio):
                 yield AssistantResponse(text=text, ts=utils.now())
-
-            self.reset()
         else:
             return None
 
     def add_to_store(self, chunk: Chunk):
         if chunk.silent:
-            self.speech_duration = 0;
+            self.silence_duration += 1;
+
+            if self.speech_duration < 1 and self.silence_duration >= silent_chunks_threshold:
+                self.reset()
         else:
             self.working_audio += chunk.raw
-            self.speech_duration += reduce((lambda x, y: x + (round(y.get('end') - y.get('start')))), chunk.speech_timestamps, 0)
+            self.speech_duration += reduce((lambda x, y: x + (round(y.get('end') - y.get('start'), 1))), chunk.speech_timestamps, 0)
+            self.silence_duration = 0;
+
+            log.debug(f'speech duration set to {self.speech_duration}')
+
 
     def reset(self):
         log.debug('flushing working audio')
 
+        self.speech_duration = 0;
         self.working_audio = b''
