@@ -1,6 +1,4 @@
 from collections.abc import Iterator
-from typing import List
-from functools import reduce
 
 from skynet.logs import get_logger
 from skynet.modules.stt.assistant.chunk import Chunk
@@ -19,12 +17,12 @@ class State:
 
     def __init__(self):
         self.working_audio = b''
-        self.speech_duration = 0;
-        self.silence_duration = 0;
+        self.speech_duration = 0
+        self.silence_duration = 0
         self.uuid = utils.Uuid7()
 
     def should_respond(self) -> bool:
-        return self.speech_duration >= 1 and self.silence_duration >= silent_chunks_threshold;
+        return self.speech_duration >= 1 and self.silence_duration >= silent_chunks_threshold
 
     def process(self, chunk: Chunk) -> Iterator[AssistantResponse] | None:
         self.add_to_store(chunk)
@@ -42,20 +40,19 @@ class State:
 
     def add_to_store(self, chunk: Chunk):
         if chunk.silent:
-            self.silence_duration += 1;
+            self.silence_duration += 1
 
             if self.speech_duration < 1 and self.silence_duration >= silent_chunks_threshold:
                 self.reset()
         else:
             self.working_audio += chunk.raw
-            self.speech_duration += reduce((lambda x, y: x + (round(y.get('end') - y.get('start'), 1))), chunk.speech_timestamps, 0)
-            self.silence_duration = 0;
+            self.speech_duration += chunk.speech_duration
+            self.silence_duration = 0
 
             log.debug(f'speech duration set to {self.speech_duration}')
-
 
     def reset(self):
         log.debug('flushing working audio')
 
-        self.speech_duration = 0;
+        self.speech_duration = 0
         self.working_audio = b''

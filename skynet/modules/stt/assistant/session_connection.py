@@ -15,8 +15,8 @@ class SessionConnection:
         self.ws = ws
         self.state = None
 
-    def process(self, chunk: bytes, chunk_timestamp: int) -> Iterator[AssistantResponse] | None:
-        a_chunk = Chunk(chunk, chunk_timestamp)
+    def process(self, chunk: bytes) -> Iterator[AssistantResponse] | None:
+        a_chunk = Chunk(chunk)
 
         if self.state is None:
             self.state = State()

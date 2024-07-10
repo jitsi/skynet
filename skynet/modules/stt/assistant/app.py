@@ -2,7 +2,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from skynet.logs import get_logger
 from skynet.modules.stt.assistant.connection_manager import ConnectionManager
-from skynet.modules.stt.streaming_whisper.utils import utils
 from .fixie import init
 
 log = get_logger(__name__)
@@ -26,7 +25,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str, auth_token: 
                 log.info(f'Received disconnect message for {session_id}')
                 ws_connection_manager.disconnect(session_id)
                 break
-            await ws_connection_manager.process(session_id, chunk, utils.now())
+            await ws_connection_manager.process(session_id, chunk)
     except WebSocketDisconnect:
         ws_connection_manager.disconnect(session_id)
         log.info(f'Session {session_id} has ended')

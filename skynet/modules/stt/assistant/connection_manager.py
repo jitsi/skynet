@@ -28,14 +28,14 @@ class ConnectionManager:
 
         log.info(f'Session with id {session_id} started. Ongoing sessions {len(self.connections)}')
 
-    async def process(self, session_id: str, chunk: bytes, chunk_timestamp: int):
+    async def process(self, session_id: str, chunk: bytes):
         log.debug(f'Processing chunk for session {session_id}')
 
         if session_id not in self.connections:
             log.warning(f'No such session id {session_id}, the connection was probably closed.')
             return
 
-        for result in self.connections[session_id].process(chunk, chunk_timestamp):
+        for result in self.connections[session_id].process(chunk):
             await self.send(session_id, result)
 
     async def send(self, session_id: str, result: AssistantResponse | None):

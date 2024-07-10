@@ -6,15 +6,10 @@ log = get_logger(__name__)
 
 class Chunk:
     raw: bytes
-    timestamp: int
-    duration: float
-    size: int
     silent: bool
-    speech_timestamps: iter
+    speech_duration: float
 
-    def __init__(self, chunk: bytes, chunk_timestamp: int):
+    def __init__(self, chunk: bytes):
         self.raw = chunk
-        self.timestamp = chunk_timestamp
-        self.duration = utils.convert_bytes_to_seconds(self.raw)
-        self.size = len(self.raw)
-        self.silent, self.speech_timestamps = utils.is_silent(self.raw)
+        self.silent, speech_timestamps = utils.is_silent(self.raw)
+        self.speech_duration = sum([round(y.get('end') - y.get('start'), 1) for y in speech_timestamps])
