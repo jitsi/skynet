@@ -23,7 +23,7 @@ def run(
     # Run streaming inference and print the output as it arrives.
     stream = inference.infer_stream(sample)
 
-    history.append({"role": "assistant", "content": ""})
+    history.append({"role": "assistant" , "content": ""})
 
     for msg in stream:
         if isinstance(msg, base.InferenceChunk):
@@ -50,6 +50,4 @@ def init():
 
 
 def oneshot(audio: bytes) -> Iterator[str]:
-    prompt = 'Listen to <|audio|> then transcribe it and answer the question it may contain.'
-
-    return run(inference, audio, prompt)
+    return run(inference, audio, 'Listen to <|audio|> and answer it.')
