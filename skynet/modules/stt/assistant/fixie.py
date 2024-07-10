@@ -7,19 +7,25 @@ from ultravox.inference import base, ultravox_infer
 
 from skynet.env import fixie_path
 
+history = []
+
 
 def run(
     inference: base.VoiceInference,
     audio: bytes,
     prompt: str,
 ) -> Iterator[str]:
-    sample = datasets.VoiceSample.from_prompt_and_buf(prompt, audio)
+    new_message = [{"role": "user", "content": prompt}]
+    sample = datasets.VoiceSample(history + new_message, datasets.audio_from_buf(audio))
 
     first_token_time = None
     stats = None
 
     # Run streaming inference and print the output as it arrives.
     stream = inference.infer_stream(sample)
+
+    # add assistant entry to history
+    history.append({"role": "assistant", "content": ""})
 
     for msg in stream:
         if isinstance(msg, base.InferenceChunk):
@@ -28,11 +34,12 @@ def run(
 
             print(msg.text, end="", flush=True)
 
-            yield msg.text
-        elif isinstance(msg, base.InferenceStats):
-            stats = msg
+            # add message to last entry in history
+            history[-1]["content"] += f'{msg.text} '
 
-    print("\n")
+            yield msg.text
+
+    print(f"Updated history: {history}")
 
     if first_token_time is None or stats is None:
         raise ValueError("No tokens received")
