@@ -19,12 +19,10 @@ def run(
     sample = datasets.VoiceSample(history + new_message, datasets.audio_from_buf(audio))
 
     first_token_time = None
-    stats = None
 
     # Run streaming inference and print the output as it arrives.
     stream = inference.infer_stream(sample)
 
-    # add assistant entry to history
     history.append({"role": "assistant", "content": ""})
 
     for msg in stream:
@@ -41,7 +39,7 @@ def run(
 
     print(f"Updated history: {history}")
 
-    if first_token_time is None or stats is None:
+    if first_token_time is None:
         raise ValueError("No tokens received")
 
 
@@ -52,6 +50,6 @@ def init():
 
 
 def oneshot(audio: bytes) -> Iterator[str]:
-    prompt = 'Listen to <|audio|> and respond to it.'
+    prompt = 'Listen to <|audio|> then transcribe it and answer the question it may contain.'
 
     return run(inference, audio, prompt)
