@@ -1,5 +1,5 @@
 from langchain.chains.summarize import load_summarize_chain
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -48,7 +48,7 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
         return ""
 
     system_message = hint_type_to_prompt[job_type][payload.hint]
-    prompt = ChatPromptTemplate.from_messages([("system", system_message), ("user", "{text}")])
+    prompt = PromptTemplate(template=system_message, input_variables=['text'])
 
     # this is a rough estimate of the number of tokens in the input text, since llama models will have a different tokenization scheme
     num_tokens = current_model.get_num_tokens(text)
