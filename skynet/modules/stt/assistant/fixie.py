@@ -13,10 +13,11 @@ history = []
 def run(
     inference: base.VoiceInference,
     audio: bytes,
-    prompt: str,
 ) -> Iterator[str]:
-    new_message = [{"role": "user", "content": prompt}]
-    sample = datasets.VoiceSample(history + new_message, datasets.audio_from_buf(audio))
+    transcribe_message = [{"role": "user", "content": "Transcribe |audio|"}]
+    answer_request = [{"role": "user", "content": "Listen to |audio| and answer it"}]
+
+    sample = datasets.VoiceSample(history + transcribe_message + answer_request, datasets.audio_from_buf(audio))
 
     first_token_time = None
 
@@ -37,7 +38,7 @@ def run(
 
             yield msg.text
 
-    print(f"Updated history: {history}")
+    print("\n")
 
     if first_token_time is None:
         raise ValueError("No tokens received")
@@ -50,4 +51,4 @@ def init():
 
 
 def oneshot(audio: bytes) -> Iterator[str]:
-    return run(inference, audio, 'Listen to <|audio|> and answer it.')
+    return run(inference, audio)
