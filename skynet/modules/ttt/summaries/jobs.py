@@ -33,7 +33,7 @@ current_task = None
 
 
 def can_run_next_job() -> bool:
-    return 'summaries:executor' in modules and (current_task is None or current_task.done())
+    return 'summaries:executor' in modules
 
 
 def get_job_processor(customer_id: str) -> str:
@@ -92,6 +92,8 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     await db.rpush(PENDING_JOBS_KEY, job_id)
     await update_summary_queue_metric()
+
+    create_run_job_task(job)
 
     return JobId(id=job_id)
 
@@ -192,8 +194,8 @@ async def run_job(job: Job) -> None:
 
 
 def create_run_job_task(job: Job) -> asyncio.Task:
-    global current_task
-    current_task = asyncio.create_task(run_job(job))
+    # global current_task
+    asyncio.create_task(run_job(job))
 
 
 async def maybe_run_next_job() -> None:
@@ -233,4 +235,4 @@ async def restart_on_timeout(job: Job) -> None:
 
 def start_monitoring_jobs() -> None:
     global background_task
-    background_task = asyncio.create_task(monitor_candidate_jobs())
+    # background_task = asyncio.create_task(monitor_candidate_jobs())

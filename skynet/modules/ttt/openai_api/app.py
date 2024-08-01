@@ -22,11 +22,10 @@ def initialize():
     global proc
 
     proc = subprocess.Popen(
-        f'{openai_api_server_path} \
-            -m {llama_path} \
-            -b {llama_n_batch} \
-            -c {llama_n_ctx} \
-            -ngl {llama_n_gpu_layers} \
+        f'python -m vllm.entrypoints.openai.api_server \
+            --model /models/Llama-3.1-8B-Instruct \
+            --gpu_memory_utilization 1 \
+            --max-model-len 23000 \
             --port {openai_api_server_port}'.split(),
         shell=False,
     )
