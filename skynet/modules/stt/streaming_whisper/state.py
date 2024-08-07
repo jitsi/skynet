@@ -188,7 +188,7 @@ class State:
     def get_response_payload(
         self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False
     ) -> utils.TranscriptionResponse:
-        if self.transcription_id == '':
+        if not self.transcription_id:
             self.transcription_id = str(self.uuid.get(start_timestamp))
         ts_id = self.transcription_id
         if final:
