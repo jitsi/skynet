@@ -188,10 +188,13 @@ class State:
     def get_response_payload(
         self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False
     ) -> utils.TranscriptionResponse:
-        if final:
+        if not self.transcription_id:
             self.transcription_id = str(self.uuid.get(start_timestamp))
+        ts_id = self.transcription_id
+        if final:
+            self.transcription_id = ''
         return utils.TranscriptionResponse(
-            id=self.transcription_id,
+            id=ts_id,
             participant_id=self.participant_id,
             ts=start_timestamp,
             text=transcription,
