@@ -22,16 +22,15 @@ git submodule update --init
 # Download the preferred GGUF llama model
 mkdir "$HOME/models"
 
-wget -q --show-progress "https://huggingface.co/jitsi/Llama-3-8B-Instruct-GGUF/resolve/main/llama-3-8b-instruct-Q4_K_M.gguf?download=true" -O "$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
+wget -q --show-progress "https://huggingface.co/jitsi/Llama-3.1-8B-GGUF/blob/main/Llama-3.1-8B-Instruct-Q8_0.gguf?download=true" -O "$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
 
-export LLAMA_PATH="$HOME/models/llama-3-8b-instruct.Q4_K_M.gguf"
-export OPENAI_API_SERVER_PATH="$HOME/skynet/llama.cpp/server"
+export OPENAI_API_SERVER_PATH="$HOME/skynet/llama.cpp/llama-server"
+export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
+# disable authorization (for testing)
+export BYPASS_AUTHORIZATION=1
 
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
-
-# disable authorization (for testing)
-export BYPASS_AUTHORIZATION=1
 
 poetry install
 ./run.sh
@@ -55,7 +54,7 @@ poetry install
 ## Testing docker changes
 ```bash
 docker compose -f compose-dev.yaml up --build
-docker cp $HOME/models/llama-3-8b-instruct-Q8_0.gguf skynet-web-1:/models
+docker cp $HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf skynet-web-1:/models
 docker restart skynet-web-1
 
 # localhost:8000 for Skynet APIs

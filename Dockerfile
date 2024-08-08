@@ -1,5 +1,5 @@
-ARG BASE_IMAGE_BUILD=nvidia/cuda:12.3.0-devel-ubuntu20.04
-ARG BASE_IMAGE_RUN=nvidia/cuda:12.3.0-runtime-ubuntu20.04
+ARG BASE_IMAGE_BUILD=nvidia/cuda:12.3.0-devel-ubuntu22.04
+ARG BASE_IMAGE_RUN=nvidia/cuda:12.3.0-runtime-ubuntu22.04
 
 ## Base Image
 ##
@@ -7,10 +7,13 @@ ARG BASE_IMAGE_RUN=nvidia/cuda:12.3.0-runtime-ubuntu20.04
 FROM ${BASE_IMAGE_BUILD} AS builder
 
 RUN \
+    echo "deb http://security.ubuntu.com/ubuntu focal-security main" | tee /etc/apt/sources.list.d/focal-security.list && \
     apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates gnupg git
+    apt-get install -y apt-transport-https ca-certificates gnupg git libcurl4-openssl-dev && \
+    apt-get install libssl1.1
 
 COPY docker/rootfs/ /
+
 
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
@@ -23,13 +26,12 @@ RUN \
     sh cmake.sh --skip-license --prefix=/usr/local && \
     rm cmake.sh
 
-ENV LLAMA_CPP_RELEASE=b3070
 COPY llama.cpp llama.cpp
 RUN \
     cd llama.cpp && \
     rm -rf build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DLLAMA_CUDA=ON -DLLAMA_NATIVE=OFF && \
-    cmake --build build --target server -j`getconf _NPROCESSORS_ONLN`
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_NATIVE=OFF && \
+    cmake --build build --target llama-server -j`getconf _NPROCESSORS_ONLN`
 
 COPY requirements.txt /app/
 
@@ -48,8 +50,10 @@ RUN \
 FROM ${BASE_IMAGE_RUN}
 
 RUN \
+    echo "deb http://security.ubuntu.com/ubuntu focal-security main" | tee /etc/apt/sources.list.d/focal-security.list && \
     apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates gnupg
+    apt-get install -y apt-transport-https ca-certificates gnupg && \
+    apt-get install libssl1.1
 
 COPY docker/rootfs/ /
 COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
@@ -67,7 +71,9 @@ RUN \
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
-COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build/bin/server /app/llama.cpp/server
+COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build /app/llama.cpp/build
+COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build/bin /app/llama.cpp/build/bin
+
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/
@@ -78,7 +84,7 @@ ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
-    LLAMA_PATH="/models/llama-3-8b-instruct-Q8_0.gguf"
+    LLAMA_PATH="/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
 
 VOLUME [ "/models" ]
 
