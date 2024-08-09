@@ -71,8 +71,12 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
         chain = load_summarize_chain(current_model, chain_type="map_reduce", combine_prompt=prompt, map_prompt=prompt)
 
     result = await chain.ainvoke(input={"input_documents": docs})
+    formatted_result = result['output_text'].replace('Response:', '', 1).strip()
 
-    return result['output_text'].strip()
+    log.info(f'input length: {len(system_message.replace("{text}", text))}')
+    log.info(f'output length: {len(formatted_result)}')
+
+    return formatted_result
 
 
 async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str, model_name=None) -> str:

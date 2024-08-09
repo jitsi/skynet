@@ -1,27 +1,11 @@
 summary_conversation_prompt = """
-    ## Instructions
-    Provide a summary of the given conversation, following the instructions
-    The summary should be just plain text.
-    The only formatting allowed is adding a new line between main ideas.
-    Do not add any other formatting, such as bullet points, numbering, or asterisks.
-    Start your response with "Summary:".
-
-    ## Transcript
+    Summarize the following conversation. Start your response with "Response:".
+    You should not use any formatting like bullet points, numbering, or asterisks.
     {text}
-
-    ## Response
 """
 
 summary_text_prompt = """
-    ## Instructions
-    Provide a summary of the given transcript, following the instructions
-    The summary should be just plain text.
-    The only formatting allowed is adding a new line between main ideas.
-    Do not add any other formatting, such as bullet points, numbering, or asterisks.
-    Start your response with "Summary:".
-
-    ## Transcript
+    Summarize the following text. Start your response with "Response:".
+    You should not use any formatting like bullet points, numbering, or asterisks.
     {text}
-
-    ## Response
 """

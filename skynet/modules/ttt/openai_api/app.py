@@ -23,10 +23,11 @@ def initialize():
 
     proc = subprocess.Popen(
         f'{openai_api_server_path} \
-            -m {llama_path} \
-            -b {llama_n_batch} \
-            -c {llama_n_ctx} \
-            -ngl {llama_n_gpu_layers} \
+            --batch-size {llama_n_batch} \
+            --ctx-size {llama_n_ctx} \
+            --flash-attn \
+            --model {llama_path} \
+            --n-gpu-layers {llama_n_gpu_layers} \
             --port {openai_api_server_port}'.split(),
         shell=False,
     )
