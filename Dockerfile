@@ -89,7 +89,7 @@ RUN chown jitsi:jitsi ${PYTHONPATH}
 # Document the exposed port
 EXPOSE 8000
 
-# Use the unpriviledged user to run the application
+# Use the unprivileged user to run the application
 USER 1001
 
 # Use tini as our PID 1
