@@ -28,7 +28,7 @@ file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 llama_path = os.environ.get('LLAMA_PATH')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 99))
-llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 512))
+llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 256))
 
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
@@ -84,7 +84,7 @@ ws_max_ping_timeout = int(os.environ.get('WS_MAX_PING_TIMEOUT', 30))
 
 
 # jobs
-job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 10))  # 10 minutes default
+job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 
 # summaries
 summary_default_hint_type = os.environ.get('SUMMARY_DEFAULT_HINT_TYPE', 'text')
