@@ -1,2 +1,1 @@
-deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu focal main
-deb-src https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu focal main
+deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main

@@ -1,5 +1,5 @@
-ARG BASE_IMAGE_BUILD=nvidia/cuda:12.3.0-devel-ubuntu20.04
-ARG BASE_IMAGE_RUN=nvidia/cuda:12.3.0-runtime-ubuntu20.04
+ARG BASE_IMAGE_BUILD=nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
+ARG BASE_IMAGE_RUN=nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
 ## Base Image
 ##
@@ -13,7 +13,7 @@ RUN \
 COPY docker/rootfs/ /
 
 RUN \
-    apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
     apt-dpkg-wrap apt-get install -y wget build-essential libcurl4-openssl-dev python3.11 python3.11-venv
 
@@ -54,7 +54,7 @@ COPY docker/rootfs/ /
 COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 
 RUN \
-    apt-dpkg-wrap apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
     apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 && \
     apt-cleanup
@@ -89,7 +89,7 @@ RUN chown jitsi:jitsi ${PYTHONPATH}
 # Document the exposed port
 EXPOSE 8000
 
-# Use the unpriviledged user to run the application
+# Use the unprivileged user to run the application
 USER 1001
 
 # Use tini as our PID 1
