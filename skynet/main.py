@@ -25,6 +25,12 @@ log.info(f'Enabled modules: {modules}')
 async def lifespan(main_app: FastAPI):
     log.info('Skynet became self aware')
 
+    if 'assistant' in modules:
+        from skynet.modules.stt.assistant.app import app as assistant_app, app_startup as assistant_startup
+
+        assistant_startup()
+        main_app.mount('/assistant', assistant_app)
+
     if 'streaming_whisper' in modules:
         from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
 

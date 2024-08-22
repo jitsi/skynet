@@ -3,7 +3,14 @@ import os
 import torch
 from faster_whisper import WhisperModel
 
-from skynet.env import whisper_compute_type, whisper_device, whisper_gpu_indices, whisper_model_name, whisper_model_path
+from skynet.env import (
+    modules,
+    whisper_compute_type,
+    whisper_device,
+    whisper_gpu_indices,
+    whisper_model_name,
+    whisper_model_path,
+)
 from skynet.logs import get_logger
 from skynet.modules.stt.streaming_whisper.utils import vad_utils as vad
 
@@ -32,13 +39,17 @@ if whisper_gpu_indices is not None:
 
 path_or_model_name = whisper_model_name if whisper_model_name is not None else whisper_model_path
 
-model = WhisperModel(
-    path_or_model_name,
-    device=device,
-    device_index=gpu_indices,
-    compute_type=whisper_compute_type,
-    num_workers=num_workers,
-    download_root=whisper_model_path,
+model = (
+    WhisperModel(
+        path_or_model_name,
+        device=device,
+        device_index=gpu_indices,
+        compute_type=whisper_compute_type,
+        num_workers=num_workers,
+        download_root=whisper_model_path,
+    )
+    if 'streaming_whisper' in modules
+    else None
 )
 
 one_byte_s = 0.00003125  # the equivalent of one byte in seconds
