@@ -14,6 +14,13 @@ class HintType(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = summary_default_hint_type
+    prompt: str | None = None
+
+    model_config = {
+        'json_schema_extra': {
+            'examples': [{'text': 'Your text here', 'hint': 'text', 'prompt': 'Summarize the following text {text}'}]
+        }
+    }
 
 
 class DocumentMetadata(BaseModel):
