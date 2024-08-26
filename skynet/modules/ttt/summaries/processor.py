@@ -47,7 +47,7 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
     if not text:
         return ""
 
-    system_message = hint_type_to_prompt[job_type][payload.hint]
+    system_message = payload.prompt or hint_type_to_prompt[job_type][payload.hint]
     prompt = PromptTemplate(template=system_message, input_variables=['text'])
 
     # this is a rough estimate of the number of tokens in the input text, since llama models will have a different tokenization scheme
