@@ -117,6 +117,15 @@ async def update_job(job_id: str, expires: int = None, **kwargs) -> Job:
 
 
 async def run_job(job: Job) -> None:
+    exit_task = asyncio.create_task(restart_on_timeout(job))
+
+    try:
+        await _run_job(job)
+    finally:
+        exit_task.cancel()
+
+
+async def _run_job(job: Job) -> None:
     has_failed = False
     result = None
     worker_id = await db.db.client_id()
@@ -137,8 +146,6 @@ async def run_job(job: Job) -> None:
 
         result = job.payload.text
     else:
-        exit_task = asyncio.create_task(restart_on_timeout(job))
-
         try:
             customer_id = job.metadata.customer_id
             options = get_credentials(customer_id)
@@ -168,8 +175,6 @@ async def run_job(job: Job) -> None:
 
             has_failed = True
             result = str(e)
-
-        exit_task.cancel()
 
     updated_job = await update_job(
         expires=redis_exp_seconds if not has_failed else None,
