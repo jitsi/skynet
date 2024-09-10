@@ -19,12 +19,13 @@ def tobool(val: str | None):
 
 # general
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
-supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper'}
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
 # models
+fixie_path = os.environ.get('FIXIE_PATH', 'fixie-ai/ultravox-v0.2')
 llama_path = os.environ.get('LLAMA_PATH')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 99))

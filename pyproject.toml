@@ -30,14 +30,16 @@ pydantic = "2.5.3"
 pyjwt = {extras = ["crypto"], version = "^2.8.0"}
 python = "~3.11"
 redis = "5.0.1"
-torch = ">=2.0.0,<2.1.0"
-torchaudio = ">=2.0.1,<2.1.0"
+torch = ">=2.2.2"
+torchaudio = ">=2.2.2"
 uvicorn = {extras = ["standard"], version = "0.29.0"}
 uuid6 = "^2024.1.12"
 openai = "^1.12.0"
 langchain-openai = "^0.0.6"
 pyyaml = "^6.0.1"
 aiofiles = "^23.2.1"
+ultravox = {git = "https://github.com/fixie-ai/ultravox.git", extras = ["gradio-client"]}
+gradio-client = "^1.0.2"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
