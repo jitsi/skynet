@@ -40,9 +40,17 @@ export class SkynetClient {
         const d = createDeferred();
 
         // Poll for it.
+        const pHeaders = {};
+
+        if (this._token) {
+            pHeaders['Authorization'] = `Bearer ${this._token}`;
+        }
+
         const int = setInterval(async () => {
             try {
-                const r = await fetch(`${this._baseUrl}/summaries/v1/job/${jobId}`);
+                const r = await fetch(`${this._baseUrl}/summaries/v1/job/${jobId}`, {
+                    headers: pHeaders
+                });
                 const data = await r.json();
     
                 if (data.status === 'success') {
