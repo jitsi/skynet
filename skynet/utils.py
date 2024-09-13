@@ -9,8 +9,8 @@ from skynet.logs import get_logger, uvicorn_log_config
 log = get_logger(__name__)
 
 
-def create_app():
-    app = FastAPI()
+def create_app(**kwargs):
+    app = FastAPI(**kwargs)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=['*'],

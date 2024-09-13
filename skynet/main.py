@@ -7,10 +7,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from skynet.agent import create_tcpserver
-
 from skynet.env import enable_haproxy_agent, enable_metrics, modules
 from skynet.logs import get_logger
-from skynet.utils import create_webserver
+from skynet.utils import create_app, create_webserver
 
 log = get_logger(__name__)
 
@@ -51,7 +50,7 @@ async def lifespan(main_app: FastAPI):
         await executor_shutdown()
 
 
-app = FastAPI(lifespan=lifespan)
+app = create_app(lifespan=lifespan)
 
 
 @app.get('/')
