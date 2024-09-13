@@ -7,7 +7,7 @@ from skynet.modules.stt.streaming_whisper.utils import utils
 log = get_logger(__name__)
 
 ws_connection_manager = ConnectionManager()
-app = FastAPI()
+app = FastAPI()  # No need for CORS middleware
 
 
 @app.websocket('/ws/{meeting_id}')

@@ -1,5 +1,3 @@
-from fastapi import FastAPI
-
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -10,9 +8,10 @@ from skynet.modules.monitoring import (
 )
 from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
 from skynet.modules.ttt.summaries.persistence import db
+from skynet.utils import create_app
 
 log = get_logger(__name__)
-metrics = FastAPI()
+metrics = create_app()
 
 if enable_metrics:
 

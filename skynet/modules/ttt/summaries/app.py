@@ -1,10 +1,9 @@
-from fastapi import FastAPI
 from fastapi_versionizer.versionizer import Versionizer
 
 from skynet.auth.openai import setup_credentials
-
 from skynet.logs import get_logger
 from skynet.modules.ttt.openai_api.app import destroy as destroy_openai_api, initialize as initialize_openai_api
+from skynet.utils import create_app
 
 from .jobs import start_monitoring_jobs
 from .persistence import db
@@ -14,7 +13,7 @@ from .v1.router import router as v1_router
 
 log = get_logger(__name__)
 
-app = FastAPI()
+app = create_app()
 app.include_router(v1_router)
 
 Versionizer(app=app, prefix_format='/v{major}', sort_routes=True).versionize()

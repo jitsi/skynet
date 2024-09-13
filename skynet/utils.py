@@ -1,5 +1,6 @@
 import uvicorn
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from skynet.auth.bearer import JWTBearer
 from skynet.env import bypass_auth, ws_max_ping_interval, ws_max_ping_timeout, ws_max_queue_size, ws_max_size_bytes
@@ -7,8 +8,20 @@ from skynet.logs import get_logger, uvicorn_log_config
 
 log = get_logger(__name__)
 
-dependencies = [] if bypass_auth else [Depends(JWTBearer())]
 
+def create_app():
+    app = FastAPI()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=['*'],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    return app
+
+
+dependencies = [] if bypass_auth else [Depends(JWTBearer())]
 responses = (
     {}
     if bypass_auth
