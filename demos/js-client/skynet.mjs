@@ -1,6 +1,7 @@
 export class SkynetClient {
     constructor(options = {}) {
-        this._baseUrl = options.baseUrl ?? 'http://localhost:8000';
+        this._baseUrl = options?.baseUrl ?? 'http://localhost:8000';
+        this._token = options?.token;
     }
 
     async summary(text, options) {
@@ -13,11 +14,17 @@ export class SkynetClient {
 
     async _fetchAndPoll(url, text, options = {}) {
         // Submit the job.
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (this._token) {
+            headers['Authorization'] = `Bearer ${this._token}`;
+        }
+
         const r = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 hint: options?.hint ?? 'text',
                 text
