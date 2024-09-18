@@ -206,7 +206,6 @@ def create_run_job_task(job: Job) -> asyncio.Task:
 
 async def maybe_run_next_job() -> None:
     if not await is_openai_api_ready():
-        log.info("OpenAI API server is not ready yet, waiting for the next check cycle.")
         return
 
     if not can_run_next_job():

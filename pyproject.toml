@@ -10,6 +10,8 @@ black = "23.12.1"
 poetry-githooks = "^3.0.0"
 poetry-plugin-export = "^1.6.0"
 usort = "^1.0.7"
+argparse = "^1.4.0"
+tqdm = "^4.66.5"
 
 [tool.poetry.group.test.dependencies]
 pytest = "7.4.4"
@@ -23,10 +25,8 @@ boto3 = "^1.28.56"
 fastapi = "0.109"
 fastapi-versionizer = "3.0.4"
 faster-whisper = "1.0.3"
-langchain = "0.1.7"
 prometheus-client = "0.19.0"
 prometheus-fastapi-instrumentator = "6.1.0"
-pydantic = "2.5.3"
 pyjwt = {extras = ["crypto"], version = "^2.8.0"}
 python = "~3.11"
 redis = "5.0.1"
@@ -35,9 +35,11 @@ torchaudio = ">=2.0.1,<2.1.0"
 uvicorn = {extras = ["standard"], version = "0.29.0"}
 uuid6 = "^2024.1.12"
 openai = "^1.12.0"
-langchain-openai = "^0.0.6"
 pyyaml = "^6.0.1"
 aiofiles = "^23.2.1"
+pydantic = "^2.9.1"
+langchain = "^0.3.0"
+langchain-openai = "^0.2.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
