@@ -6,6 +6,7 @@ from skynet.env import (
     llama_n_ctx,
     llama_n_gpu_layers,
     llama_path,
+    openai_api_base_url,
     openai_api_server_path,
     openai_api_server_port,
 )
@@ -42,7 +43,7 @@ def initialize():
 async def is_ready():
     # https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md#get-health-returns-heath-check-result
     try:
-        response = await http_client.get(f'http://localhost:{openai_api_server_port}/health')
+        response = await http_client.get(f'{openai_api_base_url}/health')
 
         if response.get('error'):
             return False
