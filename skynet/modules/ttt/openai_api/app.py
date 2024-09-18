@@ -1,5 +1,6 @@
 import subprocess
 
+from skynet import http_client
 from skynet.env import (
     llama_n_batch,
     llama_n_ctx,
@@ -36,6 +37,19 @@ def initialize():
         log.error(f'Failed to start OpenAI API server from {openai_api_server_path}')
     else:
         log.info(f'OpenAI API server started from {openai_api_server_path}')
+
+
+async def is_ready():
+    # https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md#get-health-returns-heath-check-result
+    try:
+        response = await http_client.get(f'http://localhost:{openai_api_server_port}/health')
+
+        if response.get('error'):
+            return False
+
+        return response.get('status') == 'ok'
+    except Exception:
+        return False
 
 
 def destroy():

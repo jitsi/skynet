@@ -13,7 +13,7 @@ from skynet.modules.monitoring import (
     SUMMARY_QUEUE_SIZE_METRIC,
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
-from skynet.modules.ttt.openai_api.app import restart as restart_openai_api
+from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready, restart as restart_openai_api
 
 from .persistence import db
 from .processor import process, process_azure, process_open_ai
@@ -205,6 +205,10 @@ def create_run_job_task(job: Job) -> asyncio.Task:
 
 
 async def maybe_run_next_job() -> None:
+    if not await is_openai_api_ready():
+        log.info("OpenAI API server is not ready yet, waiting for the next check cycle.")
+        return
+
     if not can_run_next_job():
         return
 

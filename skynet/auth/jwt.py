@@ -20,7 +20,7 @@ async def get_public_key(kid: str) -> str:
 
     log.info(f'Fetching public key {kid} from {url}')
 
-    return await http_client.get(url)
+    return await http_client.get(url, 'text')
 
 
 async def authorize(jwt_incoming: str) -> dict:
