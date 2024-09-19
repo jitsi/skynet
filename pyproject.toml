@@ -34,7 +34,6 @@ torch = ">=2.0.0,<2.1.0"
 torchaudio = ">=2.0.1,<2.1.0"
 uvicorn = {extras = ["standard"], version = "0.29.0"}
 uuid6 = "^2024.1.12"
-openai = "^1.12.0"
 pyyaml = "^6.0.1"
 aiofiles = "^23.2.1"
 pydantic = "^2.9.1"
