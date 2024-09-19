@@ -15,6 +15,7 @@ parser.add_argument('-f', '--file', dest='filename', help='skynet jobs dump file
 parser.add_argument('-m', '--max', dest='max_requests', help='max requests to make', default=10)
 parser.add_argument('-s', '--sleep', dest='sleep', help='sleep time in seconds. Should be an estimate of how long max_requests needs to be processed', default=600)
 parser.add_argument('-u', '--url', dest='url', help='skynet url', default='http://localhost:8000')
+parser.add_argument('-jwt', '--jwt', dest='jwt', help='jwt token', default=None)
 parser.add_argument('-t', '--type', dest='type', help='job type', default='any')
 
 args = parser.parse_args()
@@ -26,11 +27,12 @@ if args.type != 'any':
 
 max_requests = int(args.max_requests)
 base_url = args.url
+jwt = args.jwt
 sleep_time = int(args.sleep)
 
 
 async def main():
-    session = aiohttp.ClientSession()
+    session = aiohttp.ClientSession(headers={'Authorization': f'Bearer {jwt}'} if jwt else {})
 
     async def post(job_type, data):
         path = 'summaries/v1/summary' if job_type == 'summary' else 'summaries/v1/action-items'
