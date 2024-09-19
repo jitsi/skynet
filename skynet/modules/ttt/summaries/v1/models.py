@@ -8,6 +8,7 @@ from skynet.env import summary_default_hint_type
 
 class HintType(Enum):
     CONVERSATION = 'conversation'
+    EMAILS = 'emails'
     TEXT = 'text'
 
 

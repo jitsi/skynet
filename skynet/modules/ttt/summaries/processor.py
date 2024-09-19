@@ -1,5 +1,5 @@
 from langchain.chains.summarize import load_summarize_chain
-from langchain.prompts import PromptTemplate
+from langchain.prompts import ChatPromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -7,8 +7,8 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, openai_api_base_url
 from skynet.logs import get_logger
 
-from .prompts.action_items import action_items_conversation_prompt, action_items_text_prompt
-from .prompts.summary import summary_conversation_prompt, summary_text_prompt
+from .prompts.action_items import action_items_conversation, action_items_emails, action_items_text
+from .prompts.summary import summary_conversation, summary_emails, summary_text
 from .v1.models import DocumentPayload, HintType, JobType
 
 llm = None
@@ -17,12 +17,14 @@ log = get_logger(__name__)
 
 hint_type_to_prompt = {
     JobType.SUMMARY: {
-        HintType.CONVERSATION: summary_conversation_prompt,
-        HintType.TEXT: summary_text_prompt,
+        HintType.CONVERSATION: summary_conversation,
+        HintType.EMAILS: summary_emails,
+        HintType.TEXT: summary_text,
     },
     JobType.ACTION_ITEMS: {
-        HintType.CONVERSATION: action_items_conversation_prompt,
-        HintType.TEXT: action_items_text_prompt,
+        HintType.CONVERSATION: action_items_conversation,
+        HintType.EMAILS: action_items_emails,
+        HintType.TEXT: action_items_text,
     },
 }
 
@@ -48,7 +50,13 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
         return ""
 
     system_message = payload.prompt or hint_type_to_prompt[job_type][payload.hint]
-    prompt = PromptTemplate(template=system_message, input_variables=['text'])
+
+    prompt = ChatPromptTemplate(
+        [
+            ("system", system_message),
+            ("human", "{text}"),
+        ]
+    )
 
     # this is a rough estimate of the number of tokens in the input text, since llama models will have a different tokenization scheme
     num_tokens = current_model.get_num_tokens(text)
