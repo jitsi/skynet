@@ -26,7 +26,7 @@ COPY llama.cpp llama.cpp
 RUN \
     cd llama.cpp && \
     rm -rf build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF && \
+    cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGGML_CUDA=ON -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF && \
     cmake --build build --target llama-server -j`getconf _NPROCESSORS_ONLN` && \
     ldd build/bin/llama-server
 
@@ -56,7 +56,7 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application

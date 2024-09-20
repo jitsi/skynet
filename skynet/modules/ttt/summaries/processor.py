@@ -81,7 +81,7 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
     result = await chain.ainvoke(input={"input_documents": docs})
     formatted_result = result['output_text'].replace('Response:', '', 1).strip()
 
-    log.info(f'input length: {len(system_message.replace("{text}", text))}')
+    log.info(f'input length: {len(system_message) + len(text)}')
     log.info(f'output length: {len(formatted_result)}')
 
     return formatted_result
