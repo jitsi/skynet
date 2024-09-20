@@ -11,7 +11,7 @@ summary_conversation = """
 """
 
 summary_text = """
-    You are an AI assistant that will be provided a text transcript. You will extract a summary of that transcript.
+    You are an AI assistant that will be provided a text transcript of a meeting. You will extract a summary of that transcript.
     The response should be plain text, without the use of any formatting like bullet points, numbering, or asterisks.
     Start your response with "Response:".
 """
