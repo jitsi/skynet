@@ -39,6 +39,8 @@ aiofiles = "^23.2.1"
 pydantic = "^2.9.1"
 langchain = "^0.3.0"
 langchain-openai = "^0.2.0"
+av = "^12.3.0"
+pybase64 = "^1.4.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

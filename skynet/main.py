@@ -26,8 +26,10 @@ async def lifespan(main_app: FastAPI):
 
     if 'streaming_whisper' in modules:
         from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
+        from skynet.modules.stt.vox.app import app as vox_app
 
         main_app.mount('/streaming-whisper', streaming_whisper_app)
+        main_app.mount('/vox', vox_app)
 
     if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.summaries.app import app as summaries_app, app_startup as summaries_startup
