@@ -41,4 +41,4 @@ model = WhisperModel(
     download_root=whisper_model_path,
 )
 
-one_byte_s = 0.00003125  # the equivalent of one byte in seconds
+one_byte_s = 0.00003125  # the equivalent of one byte in seconds for 16kHz audio, 2 bytes per sample, mono
