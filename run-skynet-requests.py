@@ -74,15 +74,21 @@ async def main():
         await asyncio.sleep(1)
 
     success = True
+    total_duration = 0
 
     # get the results of the jobs
     for job_id in ids:
         response = await get(job_id)
         status = response['status']
-        print(f'Job {job_id} status: {status}\n')
+        duration = response['duration']
+        total_duration += duration
+
+        print(f'Job {job_id} status: {status} duration: {duration} \n')
 
         if status != 'success':
             success = False
+
+    print(f'Total duration: {total_duration}')
 
     await session.close()
 
