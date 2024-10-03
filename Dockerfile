@@ -15,20 +15,8 @@ COPY docker/rootfs/ /
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y wget build-essential libcurl4-openssl-dev python3.11 python3.11-venv
-
-RUN \
-    wget -nv -O cmake.sh https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-linux-x86_64.sh && \
-    sh cmake.sh --skip-license --prefix=/usr/local && \
-    rm cmake.sh
-
-COPY llama.cpp llama.cpp
-RUN \
-    cd llama.cpp && \
-    rm -rf build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DGGML_CUDA=ON -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF && \
-    cmake --build build --target llama-server -j`getconf _NPROCESSORS_ONLN` && \
-    ldd build/bin/llama-server
+    apt-dpkg-wrap apt-get install -y build-essential libcurl4-openssl-dev python3.11 python3.11-venv && \
+    apt-cleanup
 
 COPY requirements.txt /app/
 
@@ -66,9 +54,6 @@ RUN \
 
 # Copy virtual environment
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
-COPY --chown=jitsi:jitsi --from=builder /llama.cpp/build/bin /app/llama.cpp
-
-RUN ldd /app/llama.cpp/llama-server
 
 # Copy application files
 COPY --chown=jitsi:jitsi /skynet /app/skynet/

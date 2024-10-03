@@ -4,7 +4,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
-from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, openai_api_base_url
+from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, llama_path, openai_api_base_url
 from skynet.logs import get_logger
 
 from .prompts.action_items import action_items_conversation, action_items_emails, action_items_text
@@ -33,9 +33,11 @@ def initialize():
     global llm
 
     llm = ChatOpenAI(
+        model=llama_path,
         api_key='placeholder',  # use a placeholder value to bypass validation, and allow the custom base url to be used
         base_url=f'{openai_api_base_url}/v1',
         default_headers={"X-Skynet-UUID": app_uuid},
+        frequency_penalty=1,
         max_retries=0,
         temperature=0,
     )

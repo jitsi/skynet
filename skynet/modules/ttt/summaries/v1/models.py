@@ -3,8 +3,6 @@ from enum import Enum
 
 from pydantic import BaseModel, computed_field, Field
 
-from skynet.env import summary_default_hint_type
-
 
 class HintType(Enum):
     CONVERSATION = 'conversation'
@@ -14,7 +12,7 @@ class HintType(Enum):
 
 class DocumentPayload(BaseModel):
     text: str
-    hint: HintType = summary_default_hint_type
+    hint: HintType = HintType.TEXT
     prompt: str | None = None
 
     model_config = {

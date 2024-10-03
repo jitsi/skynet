@@ -1,3 +1,4 @@
+import torch
 import uvicorn
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,3 +47,11 @@ async def create_webserver(app, port):
     )
     server = uvicorn.Server(server_config)
     await server.serve()
+
+
+def get_device() -> str:
+    if torch.cuda.is_available():
+        log.debug('CUDA device found.')
+        return 'cuda'
+    log.warning('No CUDA device found, defaulting to CPU.')
+    return 'cpu'
