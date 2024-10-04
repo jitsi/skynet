@@ -1,4 +1,5 @@
 import subprocess
+import time
 
 from skynet import http_client
 from skynet.env import (
@@ -33,6 +34,7 @@ def initialize():
                 --model {llama_path} \
                 --gpu_memory_utilization 0.95 \
                 --max-model-len {llama_n_ctx} \
+                --uvicorn-log-level debug \
                 --port {openai_api_server_port}'.split(),
             shell=False,
         )
@@ -52,7 +54,7 @@ def initialize():
     if proc.poll() is not None:
         log.error(f'Failed to start OpenAI API server from {openai_api_server_path}')
     else:
-        log.info(f'OpenAI API server started from {openai_api_server_path}')
+        log.info(f'OpenAI API server started from {openai_api_server_path}, with PID {proc.pid}')
 
 
 async def is_ready():
@@ -67,7 +69,13 @@ async def is_ready():
 def destroy():
     log.info('Killing OpenAI API subprocess...')
 
+    if use_vllm:
+        subprocess.run(f'nvidia-smi --query-compute-apps=pid --format=csv,noheader | xargs -n1 kill -9', shell=True)
+
+    # subprocess.run(f'lsof -t -i tcp:{openai_api_server_port} | xargs -n1 kill -9', shell=True)
+
     proc.kill()
+    time.sleep(5)
 
 
 def restart():
