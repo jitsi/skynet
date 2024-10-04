@@ -35,7 +35,8 @@ llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 256))
 azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
 
 # openai api
-openai_api_server_path = os.environ.get('OPENAI_API_SERVER_PATH', '/app/llama.cpp/llama-server')
+llama_cpp_server_path = os.environ.get('LLAMA_CPP_SERVER_PATH', './llama.cpp/llama-server')
+vllm_server_path = os.environ.get('VLLM_SERVER_PATH', 'vllm.entrypoints.openai.api_server')
 openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', 8003))
 openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}')
 
@@ -87,7 +88,6 @@ ws_max_ping_timeout = int(os.environ.get('WS_MAX_PING_TIMEOUT', 30))
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 
 # summaries
-summary_default_hint_type = os.environ.get('SUMMARY_DEFAULT_HINT_TYPE', 'text')
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
 
 # monitoring

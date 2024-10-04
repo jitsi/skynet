@@ -6,16 +6,9 @@ from faster_whisper import WhisperModel
 from skynet.env import whisper_compute_type, whisper_device, whisper_gpu_indices, whisper_model_name, whisper_model_path
 from skynet.logs import get_logger
 from skynet.modules.stt.streaming_whisper.utils import vad_utils as vad
+from skynet.utils import get_device
 
 log = get_logger(__name__)
-
-
-def get_device() -> str:
-    if torch.cuda.is_available():
-        log.debug('CUDA device found.')
-        return 'cuda'
-    log.warning('No CUDA device found, defaulting to CPU.')
-    return 'cpu'
 
 
 vad_model = vad.init_jit_model(f'{os.getcwd()}/skynet/modules/stt/streaming_whisper/models/vad/silero_vad.jit')
