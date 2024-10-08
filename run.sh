@@ -9,5 +9,5 @@ else
   cd ..
 fi
 
-export LLAMA_N_CTX=8192
+export LLAMA_N_CTX=16000
 poetry run python -m uvicorn skynet.main:app --reload

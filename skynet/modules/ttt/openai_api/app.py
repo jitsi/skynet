@@ -31,6 +31,7 @@ def initialize():
         openai_api_server_path = vllm_server_path
         proc = subprocess.Popen(
             f'python -m {openai_api_server_path} \
+                --disable-log-requests \
                 --model {llama_path} \
                 --gpu_memory_utilization 0.95 \
                 --max-model-len {llama_n_ctx} \
