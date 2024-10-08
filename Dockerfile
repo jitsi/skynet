@@ -64,6 +64,9 @@ ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
+    OUTLINES_CACHE_DIR=/app/vllm/outlines \
+    VLLM_CONFIG_ROOT=/app/vllm/config \
+    HF_HOME=/app/hf  \
     LLAMA_PATH="/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
 
 VOLUME [ "/models" ]
