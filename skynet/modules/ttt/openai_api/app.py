@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from skynet import http_client
@@ -71,12 +72,12 @@ def destroy():
 
 
 def restart():
-    log.info('Restarting OpenAI API server...')
+    log.info('Restarting Skynet...')
 
     OPENAI_API_RESTART_COUNTER.inc()
 
-    destroy()
-    initialize()
+    # rely on the supervisor to restart the process
+    os._exit(1)
 
 
 __all__ = ['destroy', 'initialize', 'restart']

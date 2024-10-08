@@ -36,7 +36,7 @@ def can_run_next_job() -> bool:
     return 'summaries:executor' in modules and (current_task is None or current_task.done())
 
 
-def get_job_processor(customer_id: str) -> str:
+def get_job_processor(customer_id: str) -> Processors:
     options = get_credentials(customer_id)
     secret = options.get('secret')
     api_type = options.get('type')
@@ -125,6 +125,29 @@ async def run_job(job: Job) -> None:
         exit_task.cancel()
 
 
+async def update_done_job(job: Job, result: str, processor: Processors, has_failed: bool = False) -> None:
+    should_expire = not has_failed or processor != Processors.LOCAL
+
+    updated_job = await update_job(
+        expires=redis_exp_seconds if should_expire else None,
+        job_id=job.id,
+        end=time.time(),
+        status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
+        result=result,
+    )
+
+    if not should_expire:
+        await db.rpush(ERROR_JOBS_KEY, job.id)
+        SUMMARY_ERROR_COUNTER.inc()
+
+    await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
+
+    SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
+    SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
+
+    log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
+
+
 async def _run_job(job: Job) -> None:
     has_failed = False
     result = None
@@ -177,26 +200,7 @@ async def _run_job(job: Job) -> None:
             has_failed = True
             result = str(e)
 
-    should_expire = not has_failed or processor != Processors.LOCAL
-
-    updated_job = await update_job(
-        expires=redis_exp_seconds if should_expire else None,
-        job_id=job.id,
-        end=time.time(),
-        status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
-        result=result,
-    )
-
-    if not should_expire:
-        await db.rpush(ERROR_JOBS_KEY, job.id)
-        SUMMARY_ERROR_COUNTER.inc()
-
-    await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
-
-    SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
-    SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
-
-    log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
+    await update_done_job(job, result, processor, has_failed)
 
 
 def create_run_job_task(job: Job) -> asyncio.Task:
@@ -238,6 +242,8 @@ async def restart_on_timeout(job: Job) -> None:
     await asyncio.sleep(job_timeout)
 
     log.warning(f"Job {job.id} timed out after {job_timeout} seconds, restarting...")
+
+    await update_done_job(job, "Job timed out", Processors.LOCAL, has_failed=True)
 
     restart_openai_api()
 
