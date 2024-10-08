@@ -4,7 +4,7 @@ Skynet is an API server for AI services wrapping several apps and models.
 
 It is comprised of specialized modules which can be enabled or disabled as needed.
 
-- **Summary and Action Items** with llama.cpp (enabled by default)
+- **Summary and Action Items** with vllm (or llama.cpp)
 - **Live Transcriptions** with Faster Whisper via websockets
 - 🚧 _More to follow_
 
@@ -16,16 +16,10 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 ## Summaries Quickstart
 
 ```bash
-# Init and update submodules if you haven't already. This will add llama.cpp which provides the OpenAI api server
-git submodule update --init
-
-# Download the preferred GGUF llama model
-mkdir "$HOME/models"
-
-wget -q --show-progress "https://huggingface.co/jitsi/Llama-3.1-8B-GGUF/blob/main/Llama-3.1-8B-Instruct-Q8_0.gguf?download=true" -O "$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
-
-export OPENAI_API_SERVER_PATH="$HOME/skynet/llama.cpp/llama-server"
+# if VLLM cannot be used, use llama.cpp server with a gguf model, otherwise, simply point LLAMA_PATH to your raw model folder
+export LLAMA_CPP_SERVER_PATH="$HOME/llama.cpp/llama-server"
 export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
+
 # disable authorization (for testing)
 export BYPASS_AUTHORIZATION=1
 
