@@ -1,4 +1,3 @@
-import os
 import subprocess
 
 from skynet import http_client
@@ -13,7 +12,6 @@ from skynet.env import (
     vllm_server_path,
 )
 from skynet.logs import get_logger
-from skynet.modules.monitoring import OPENAI_API_RESTART_COUNTER
 from skynet.utils import get_device
 
 proc = None
@@ -70,15 +68,6 @@ def destroy():
     log.info('Killing OpenAI API subprocess...')
 
     proc.kill()
-
-
-def restart():
-    log.info('Restarting Skynet...')
-
-    OPENAI_API_RESTART_COUNTER.inc()
-
-    # rely on the supervisor to restart the process
-    os._exit(1)
 
 
 __all__ = ['destroy', 'initialize', 'restart']
