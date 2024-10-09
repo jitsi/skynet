@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 import uuid
 
@@ -7,13 +8,14 @@ from skynet.auth.openai import CredentialsType, get_credentials
 from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
+    OPENAI_API_RESTART_COUNTER,
     SUMMARY_DURATION_METRIC,
     SUMMARY_ERROR_COUNTER,
     SUMMARY_INPUT_LENGTH_METRIC,
     SUMMARY_QUEUE_SIZE_METRIC,
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
-from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready, restart as restart_openai_api
+from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready
 
 from .persistence import db
 from .processor import process, process_azure, process_open_ai
@@ -30,6 +32,15 @@ ERROR_JOBS_KEY = "jobs:error"
 
 background_task = None
 current_task = None
+
+
+def restart():
+    log.info('Restarting Skynet...')
+
+    OPENAI_API_RESTART_COUNTER.inc()
+
+    # rely on the supervisor to restart the process
+    os._exit(1)
 
 
 def can_run_next_job() -> bool:
@@ -202,6 +213,10 @@ async def _run_job(job: Job) -> None:
 
     await update_done_job(job, result, processor, has_failed)
 
+    # error returned from the api when vllm crashes with torch.OutOfMemoryError
+    if result == 'Error code: 500' and processor == Processors.LOCAL:
+        restart()
+
 
 def create_run_job_task(job: Job) -> asyncio.Task:
     global current_task
@@ -245,7 +260,7 @@ async def restart_on_timeout(job: Job) -> None:
 
     await update_done_job(job, "Job timed out", Processors.LOCAL, has_failed=True)
 
-    restart_openai_api()
+    restart()
 
 
 def start_monitoring_jobs() -> None:
