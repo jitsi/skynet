@@ -31,7 +31,7 @@ def initialize():
             f'python -m {openai_api_server_path} \
                 --disable-log-requests \
                 --model {llama_path} \
-                --gpu_memory_utilization 0.95 \
+                --gpu_memory_utilization 0.99 \
                 --max-model-len {llama_n_ctx} \
                 --port {openai_api_server_port}'.split(),
             shell=False,
