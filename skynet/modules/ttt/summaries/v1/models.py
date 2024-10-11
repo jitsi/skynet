@@ -10,14 +10,27 @@ class HintType(Enum):
     TEXT = 'text'
 
 
+class Priority(Enum):
+    NORMAL = 'normal'
+    HIGH = 'high'
+
+
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.TEXT
+    priority: Priority = Priority.NORMAL
     prompt: str | None = None
 
     model_config = {
         'json_schema_extra': {
-            'examples': [{'text': 'Your text here', 'hint': 'text', 'prompt': 'Summarize the following text {text}'}]
+            'examples': [
+                {
+                    'text': 'Your text here',
+                    'hint': 'text',
+                    'priority': 'normal',
+                    'prompt': 'Summarize the following text {text}',
+                }
+            ]
         }
     }
 

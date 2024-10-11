@@ -19,7 +19,7 @@ from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready
 
 from .persistence import db
 from .processor import process, process_azure, process_open_ai
-from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Processors
+from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Priority, Processors
 
 log = get_logger(__name__)
 
@@ -101,7 +101,11 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     log.info(f"Created job {job.id}.")
 
-    await db.rpush(PENDING_JOBS_KEY, job_id)
+    if payload.priority == Priority.HIGH:
+        await db.lpush(PENDING_JOBS_KEY, job_id)
+    else:
+        await db.rpush(PENDING_JOBS_KEY, job_id)
+
     await update_summary_queue_metric()
 
     return JobId(id=job_id)
