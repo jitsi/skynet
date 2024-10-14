@@ -1,7 +1,8 @@
-import requests
+import random
 from fastapi import Request
 from fastapi_versionizer.versionizer import Versionizer
 
+from skynet import http_client
 from skynet.auth.openai import setup_credentials
 from skynet.env import echo_requests_base_url, echo_requests_percent, echo_requests_token
 from skynet.logs import get_logger
@@ -19,18 +20,15 @@ log = get_logger(__name__)
 app = create_app()
 app.include_router(v1_router)
 
-post_requests_counter = 0
-
 if echo_requests_base_url:
 
     @app.middleware("http")
     async def echo_requests(request: Request, call_next):
         if request.method == 'POST':
-            global post_requests_counter
-            post_requests_counter += 1
+            counter = random.randrange(1, 101)
 
-            if post_requests_counter % 100 <= echo_requests_percent:
-                requests.post(
+            if counter <= echo_requests_percent:
+                await http_client.post(
                     f'{echo_requests_base_url}/{request.url.path}',
                     headers={'Authorization': f'Bearer {echo_requests_token}'},
                     json=await request.json(),
