@@ -27,4 +27,10 @@ async def get(url, type='json'):
         return await response.text()
 
 
+async def post(url, **kwargs):
+    session = _get_session()
+    async with session.post(url, **kwargs) as response:
+        return await response.json()
+
+
 __all__ = ['get']

@@ -95,3 +95,8 @@ enable_metrics = tobool(os.environ.get('ENABLE_METRICS', 'true'))
 
 # load balancing
 enable_haproxy_agent = tobool(os.environ.get('ENABLE_HAPROXY_AGENT'))
+
+# testing
+echo_requests_base_url = os.environ.get('ECHO_REQUESTS_BASE_URL')
+echo_requests_percent = int(os.environ.get('ECHO_REQUESTS_PERCENT', 100))
+echo_requests_token = os.environ.get('ECHO_REQUESTS_TOKEN')
