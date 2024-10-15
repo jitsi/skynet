@@ -1,4 +1,5 @@
 import random
+
 from fastapi import Request
 from fastapi_versionizer.versionizer import Versionizer
 
@@ -28,11 +29,14 @@ if echo_requests_base_url:
             counter = random.randrange(1, 101)
 
             if counter <= echo_requests_percent:
-                await http_client.post(
-                    f'{echo_requests_base_url}/{request.url.path}',
-                    headers={'Authorization': f'Bearer {echo_requests_token}'},
-                    json=await request.json(),
-                )
+                try:
+                    await http_client.post(
+                        f'{echo_requests_base_url}{request.url.path}',
+                        headers={'Authorization': f'Bearer {echo_requests_token}'},
+                        json=await request.json(),
+                    )
+                except Exception as e:
+                    log.warning(f'Failed to echo request: {e}')
 
         return await call_next(request)
 
