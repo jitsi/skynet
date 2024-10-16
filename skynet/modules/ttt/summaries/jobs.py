@@ -10,6 +10,7 @@ from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
     SUMMARY_DURATION_METRIC,
+    SUMMARY_FULL_DURATION_METRIC,
     SUMMARY_ERROR_COUNTER,
     SUMMARY_INPUT_LENGTH_METRIC,
     SUMMARY_QUEUE_SIZE_METRIC,
@@ -163,9 +164,11 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
 
     if updated_job.status != JobStatus.SKIPPED:
         SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
+        SUMMARY_FULL_DURATION_METRIC.observe(updated_job.computed_full_duration)
         SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
 
         log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
+        log.info(f"Job {updated_job.id} full duration: {updated_job.computed_full_duration} seconds")
 
 
 async def _run_job(job: Job) -> None:
