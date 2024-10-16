@@ -142,12 +142,16 @@ async def run_job(job: Job) -> None:
 
 async def update_done_job(job: Job, result: str, processor: Processors, has_failed: bool = False) -> None:
     should_expire = not has_failed or processor != Processors.LOCAL
+    status = job.status
+
+    if status != JobStatus.SKIPPED:
+        status = JobStatus.ERROR if has_failed else JobStatus.SUCCESS
 
     updated_job = await update_job(
         expires=redis_exp_seconds if should_expire else None,
         job_id=job.id,
         end=time.time(),
-        status=JobStatus.ERROR if has_failed else JobStatus.SUCCESS,
+        status=status,
         result=result,
     )
 
@@ -157,10 +161,11 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
 
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
-    SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
-    SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
+    if updated_job.status != JobStatus.SKIPPED:
+        SUMMARY_DURATION_METRIC.observe(updated_job.computed_duration)
+        SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
 
-    log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
+        log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
 
 
 async def _run_job(job: Job) -> None:
@@ -168,21 +173,21 @@ async def _run_job(job: Job) -> None:
     result = None
     worker_id = await db.db.client_id()
     start = time.time()
+    status = JobStatus.SKIPPED if len(job.payload.text) < summary_minimum_payload_length else JobStatus.RUNNING
+    customer_id = job.metadata.customer_id
+    processor = get_job_processor(customer_id)  # may have changed since job was created
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
     log.info(f"Running job {job.id}. Queue time: {round(start - job.created, 3)} seconds")
 
-    await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
-
-    customer_id = job.metadata.customer_id
-    processor = get_job_processor(customer_id)  # may have changed since job was created
+    job = await update_job(job_id=job.id, start=start, status=status, worker_id=worker_id, processor=processor)
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
-    if len(job.payload.text) < summary_minimum_payload_length:
+    if status == JobStatus.SKIPPED:
         log.info(f"Summarisation for {job.id} did not run because payload is too short: \"{job.payload.text}\"")
 
         result = job.payload.text
