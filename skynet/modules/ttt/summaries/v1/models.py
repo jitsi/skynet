@@ -85,6 +85,14 @@ class Job(BaseJob):
 
         return 0.0
 
+    @computed_field
+    @property
+    def computed_full_duration(self) -> float:
+        if self.end:
+            return round(self.end - self.created, 3)
+
+        return 0.0
+
 
 class JobId(BaseModel):
     id: str

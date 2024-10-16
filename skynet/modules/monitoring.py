@@ -28,6 +28,14 @@ SUMMARY_DURATION_METRIC = Histogram(
     buckets=[5**n for n in range(4)],
 )
 
+SUMMARY_FULL_DURATION_METRIC = Histogram(
+    'summary_full_duration_seconds',
+    documentation='Measures the duration of the summary / action items since they were submitted until they are done in seconds',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    buckets=[5**n for n in range(4)],
+)
+
 SUMMARY_TIME_IN_QUEUE_METRIC = Histogram(
     'summary_queue_time_seconds',
     documentation='Measures the time spent in the queue in seconds',
