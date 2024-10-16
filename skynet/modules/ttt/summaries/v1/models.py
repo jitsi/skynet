@@ -51,10 +51,11 @@ class Processors(Enum):
 
 
 class JobStatus(Enum):
+    ERROR = 'error'
     PENDING = 'pending'
     RUNNING = 'running'
+    SKIPPED = 'skipped'
     SUCCESS = 'success'
-    ERROR = 'error'
 
 
 # job model to expose to the API
