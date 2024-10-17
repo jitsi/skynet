@@ -29,7 +29,7 @@ action_items_meeting = """
 """
 
 action_items_text = """
-    You are an AI assistant that will be provided with a text transcript. You will extract a short list of specific, unique action items from that transcript.
+    You are an AI assistant that will be provided with a text or a document. You will extract a short list of specific, unique action items from that text.
     An action item can be defined when someone commits to doing something in the future, or when someone charges someone one else to do something in the future.
 
     Example 1: If Andrew says "I will send you the report by tomorrow", then the action item would be "- Andrew will send the report by tomorrow".
