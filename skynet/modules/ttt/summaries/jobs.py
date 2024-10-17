@@ -5,7 +5,7 @@ import uuid
 
 from skynet.auth.openai import CredentialsType, get_credentials
 
-from skynet.env import job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
+from skynet.env import enable_batching, job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
@@ -24,7 +24,7 @@ from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus,
 
 log = get_logger(__name__)
 
-TIME_BETWEEN_JOBS_CHECK = 2
+TIME_BETWEEN_JOBS_CHECK = 1
 TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
 
 PENDING_JOBS_KEY = "jobs:pending"
@@ -45,7 +45,13 @@ def restart():
 
 
 def can_run_next_job() -> bool:
-    return 'summaries:executor' in modules and (current_task is None or current_task.done())
+    if 'summaries:executor' not in modules:
+        return False
+
+    if enable_batching:
+        return True
+
+    return current_task is None or current_task.done()
 
 
 def get_job_processor(customer_id: str) -> Processors:
@@ -167,8 +173,9 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
         SUMMARY_FULL_DURATION_METRIC.observe(updated_job.computed_full_duration)
         SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
 
-        log.info(f"Job {updated_job.id} duration: {updated_job.computed_duration} seconds")
-        log.info(f"Job {updated_job.id} full duration: {updated_job.computed_full_duration} seconds")
+        log.info(
+            f"Job {updated_job.id} duration: {updated_job.computed_duration}s full duration: {updated_job.computed_full_duration}s"
+        )
 
 
 async def _run_job(job: Job) -> None:
@@ -236,13 +243,8 @@ def create_run_job_task(job: Job) -> asyncio.Task:
 
 
 async def maybe_run_next_job() -> None:
-    if not await is_openai_api_ready():
-        return
-
     if not can_run_next_job():
         return
-
-    await restore_stale_jobs()
 
     next_job_id = await db.lpop(PENDING_JOBS_KEY)
 
@@ -256,6 +258,11 @@ async def maybe_run_next_job() -> None:
 
 
 async def monitor_candidate_jobs() -> None:
+    await restore_stale_jobs()
+
+    while not await is_openai_api_ready():
+        await asyncio.sleep(TIME_BETWEEN_JOBS_CHECK)
+
     while True:
         try:
             await maybe_run_next_job()
