@@ -22,6 +22,7 @@ app = create_app()
 app.include_router(v1_router)
 
 if echo_requests_base_url:
+    log.info(f'Echoing requests enabled for url: {echo_requests_base_url}')
 
     @app.middleware("http")
     async def echo_requests(request: Request, call_next):

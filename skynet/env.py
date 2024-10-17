@@ -89,6 +89,7 @@ job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
+enable_batching = tobool(os.environ.get('ENABLE_BATCHING', 'true'))
 
 # monitoring
 enable_metrics = tobool(os.environ.get('ENABLE_METRICS', 'true'))
