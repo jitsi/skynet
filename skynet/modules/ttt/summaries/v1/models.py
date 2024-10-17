@@ -7,6 +7,7 @@ from pydantic import BaseModel, computed_field, Field
 class HintType(Enum):
     CONVERSATION = 'conversation'
     EMAILS = 'emails'
+    MEETING = 'meeting'
     TEXT = 'text'
 
 
@@ -17,7 +18,7 @@ class Priority(Enum):
 
 class DocumentPayload(BaseModel):
     text: str
-    hint: HintType = HintType.TEXT
+    hint: HintType = HintType.MEETING
     priority: Priority = Priority.NORMAL
     prompt: str | None = None
 

@@ -7,8 +7,13 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, llama_path, openai_api_base_url
 from skynet.logs import get_logger
 
-from .prompts.action_items import action_items_conversation, action_items_emails, action_items_text
-from .prompts.summary import summary_conversation, summary_emails, summary_text
+from .prompts.action_items import (
+    action_items_conversation,
+    action_items_emails,
+    action_items_meeting,
+    action_items_text,
+)
+from .prompts.summary import summary_conversation, summary_emails, summary_meeting, summary_text
 from .v1.models import DocumentPayload, HintType, JobType
 
 llm = None
@@ -19,11 +24,13 @@ hint_type_to_prompt = {
     JobType.SUMMARY: {
         HintType.CONVERSATION: summary_conversation,
         HintType.EMAILS: summary_emails,
+        HintType.MEETING: summary_meeting,
         HintType.TEXT: summary_text,
     },
     JobType.ACTION_ITEMS: {
         HintType.CONVERSATION: action_items_conversation,
         HintType.EMAILS: action_items_emails,
+        HintType.MEETING: action_items_meeting,
         HintType.TEXT: action_items_text,
     },
 }
