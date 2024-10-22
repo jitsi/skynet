@@ -7,6 +7,7 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, llama_path, openai_api_base_url
 from skynet.logs import get_logger
+from skynet.utils import encode_image
 
 from .prompts.action_items import (
     action_items_conversation,
@@ -76,13 +77,14 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
     )
 
     if job_type == JobType.IMAGE:
+        base64_image = encode_image(payload.image)
         messages = [
             SystemMessage(content=system_message),
             HumanMessage(
                 content=[
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{payload.image}"},
+                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
                     },
                 ],
             ),

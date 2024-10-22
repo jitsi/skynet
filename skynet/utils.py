@@ -1,3 +1,5 @@
+import base64
+
 import torch
 import uvicorn
 from fastapi import APIRouter, Depends, FastAPI
@@ -55,3 +57,8 @@ def get_device() -> str:
         return 'cuda'
     log.warning('No CUDA device found, defaulting to CPU.')
     return 'cpu'
+
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
