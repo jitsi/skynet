@@ -43,6 +43,18 @@ async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
 
 
 @api_version(1)
+@router.post("/summary/image")
+async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
+    """
+    Starts a job to summarize the given image.
+    """
+
+    return await create_job(
+        job_type=JobType.IMAGE, payload=payload, metadata=DocumentMetadata(customer_id=get_customer_id(request))
+    )
+
+
+@api_version(1)
 @router.get("/job/{id}")
 async def get_job_result(id: str) -> BaseJob | None:
     """

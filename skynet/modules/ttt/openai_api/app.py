@@ -30,9 +30,12 @@ def initialize():
         proc = subprocess.Popen(
             f'python -m {openai_api_server_path} \
                 --disable-log-requests \
+                --enforce-eager \
                 --model {llama_path} \
                 --gpu_memory_utilization 0.99 \
                 --max-model-len {llama_n_ctx} \
+                --max-num-seqs 16 \
+                --tensor-parallel-size 2 \
                 --port {openai_api_server_port}'.split(),
             shell=False,
         )

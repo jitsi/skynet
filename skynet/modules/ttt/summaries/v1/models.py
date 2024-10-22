@@ -19,6 +19,7 @@ class Priority(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
+    image_url: str | None = None
     priority: Priority = Priority.NORMAL
     prompt: str | None = None
 
@@ -42,6 +43,7 @@ class DocumentMetadata(BaseModel):
 
 class JobType(Enum):
     ACTION_ITEMS = 'action_items'
+    IMAGE = 'image'
     SUMMARY = 'summary'
 
 

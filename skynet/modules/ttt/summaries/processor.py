@@ -2,6 +2,7 @@ from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, llama_path, openai_api_base_url
@@ -13,6 +14,7 @@ from .prompts.action_items import (
     action_items_meeting,
     action_items_text,
 )
+from .prompts.image import image_meeting
 from .prompts.summary import summary_conversation, summary_emails, summary_meeting, summary_text
 from .v1.models import DocumentPayload, HintType, JobType
 
@@ -32,6 +34,12 @@ hint_type_to_prompt = {
         HintType.EMAILS: action_items_emails,
         HintType.MEETING: action_items_meeting,
         HintType.TEXT: action_items_text,
+    },
+    JobType.IMAGE: {
+        HintType.CONVERSATION: image_meeting,
+        HintType.EMAILS: image_meeting,
+        HintType.MEETING: image_meeting,
+        HintType.TEXT: image_meeting,
     },
 }
 
@@ -60,12 +68,29 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
 
     system_message = payload.prompt or hint_type_to_prompt[job_type][payload.hint]
 
-    prompt = ChatPromptTemplate(
+    prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system_message),
+            SystemMessage(content=system_message),
             ("human", "{text}"),
         ]
     )
+
+    if job_type == JobType.IMAGE:
+        messages = [
+            SystemMessage(content=system_message),
+            HumanMessage(
+                content=[
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{payload.image}"},
+                    },
+                ],
+            ),
+        ]
+
+        result = await current_model.ainvoke(messages)
+        formatted_result = result['content']
+        return formatted_result
 
     # this is a rough estimate of the number of tokens in the input text, since llama models will have a different tokenization scheme
     num_tokens = current_model.get_num_tokens(text)
