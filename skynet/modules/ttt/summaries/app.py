@@ -1,13 +1,13 @@
 import random
 
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi_versionizer.versionizer import Versionizer
 
 from skynet import http_client
 from skynet.auth.openai import setup_credentials
 from skynet.env import echo_requests_base_url, echo_requests_percent, echo_requests_token
 from skynet.logs import get_logger
-from skynet.modules.ttt.openai_api.app import destroy as destroy_openai_api, initialize as initialize_openai_api
+from skynet.modules.ttt.openai_api.app import initialize as initialize_openai_api
 from skynet.utils import create_app
 
 from .jobs import start_monitoring_jobs
@@ -52,10 +52,10 @@ async def app_startup():
     log.info('Persistence initialized')
 
 
-async def executor_startup():
+async def executor_startup(app: FastAPI | None = None):
     await setup_credentials()
 
-    initialize_openai_api()
+    initialize_openai_api(app)
 
     initialize_summaries()
     log.info('summaries:executor module initialized')
@@ -68,8 +68,6 @@ async def executor_startup():
 
 
 async def executor_shutdown():
-    destroy_openai_api()
-
     await db.close()
     log.info('Persistence shutdown')
 
