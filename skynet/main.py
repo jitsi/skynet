@@ -40,7 +40,7 @@ async def lifespan(main_app: FastAPI):
     if 'summaries:executor' in modules:
         from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
 
-        await executor_startup()
+        await executor_startup(main_app)
 
     yield
 

@@ -36,7 +36,6 @@ azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-0
 
 # openai api
 llama_cpp_server_path = os.environ.get('LLAMA_CPP_SERVER_PATH', './llama.cpp/llama-server')
-vllm_server_path = os.environ.get('VLLM_SERVER_PATH', 'vllm.entrypoints.openai.api_server')
 openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', 8003))
 openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}')
 
