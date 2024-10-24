@@ -52,10 +52,10 @@ async def app_startup():
     log.info('Persistence initialized')
 
 
-async def executor_startup(main_app: FastAPI):
+async def executor_startup(app: FastAPI | None = None):
     await setup_credentials()
 
-    initialize_openai_api(main_app)
+    initialize_openai_api(app)
 
     initialize_summaries()
     log.info('summaries:executor module initialized')

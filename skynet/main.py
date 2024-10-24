@@ -7,17 +7,22 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from skynet.agent import create_tcpserver
-from skynet.env import enable_haproxy_agent, enable_metrics, modules
+from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules, use_vllm
 from skynet.logs import get_logger
 from skynet.utils import create_app, create_webserver
 
 log = get_logger(__name__)
 
 if not modules:
-    log.warn('No modules enabled!')
+    log.warning('No modules enabled!')
     sys.exit(1)
 
 log.info(f'Enabled modules: {modules}')
+
+if device == 'cuda' or is_mac:
+    log.info('Using GPU')
+else:
+    log.info('Using CPU')
 
 
 @asynccontextmanager
@@ -40,7 +45,14 @@ async def lifespan(main_app: FastAPI):
     if 'summaries:executor' in modules:
         from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
 
-        await executor_startup(main_app)
+        if use_vllm:
+            from vllm.entrypoints.openai.api_server import lifespan
+
+            app = create_app(lifespan=lifespan)
+            await executor_startup(app)
+            main_app.mount('/openai', app)
+        else:
+            await executor_startup()
 
     yield
 
@@ -61,7 +73,7 @@ def root():
 
 
 async def main():
-    tasks = [asyncio.create_task(create_webserver('skynet.main:app', port=8000))]
+    tasks = [asyncio.create_task(create_webserver('skynet.main:app', port=app_port))]
 
     if enable_metrics:
         tasks.append(asyncio.create_task(create_webserver('skynet.metrics:metrics', port=8001)))

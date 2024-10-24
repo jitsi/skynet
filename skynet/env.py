@@ -2,9 +2,14 @@ import os
 import sys
 import uuid
 
+import torch
+
 app_uuid = str(uuid.uuid4())
 
 is_mac = sys.platform == 'darwin'
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+use_vllm = device == 'cuda'
 
 
 # utilities
@@ -18,6 +23,7 @@ def tobool(val: str | None):
 
 
 # general
+app_port = int(os.environ.get('SKYNET_PORT', 8000))
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper'}
 enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
@@ -36,8 +42,10 @@ azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-0
 
 # openai api
 llama_cpp_server_path = os.environ.get('LLAMA_CPP_SERVER_PATH', './llama.cpp/llama-server')
-openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', 8003))
-openai_api_base_url = os.environ.get('OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}')
+openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', app_port if use_vllm else 8003))
+openai_api_base_url = os.environ.get(
+    'OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}{"/openai" if use_vllm else ""}'
+)
 
 # openai
 openai_credentials_file = os.environ.get('SKYNET_CREDENTIALS_PATH')

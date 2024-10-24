@@ -12,50 +12,25 @@ from skynet.env import (
     llama_path,
     openai_api_base_url,
     openai_api_server_port,
+    use_vllm,
 )
 from skynet.logs import get_logger
-from skynet.utils import create_app, dependencies, get_device, responses
-
-use_vllm = get_device() == 'cuda'
+from skynet.utils import dependencies, responses
 
 log = get_logger(__name__)
 
 
-async def run_vllm_server(args, main_app: FastAPI):
-    from vllm.entrypoints.launcher import serve_http
-    from vllm.entrypoints.openai.api_server import (
-        build_async_engine_client,
-        init_app_state,
-        lifespan,
-        router,
-        TIMEOUT_KEEP_ALIVE,
-    )
+async def run_vllm_server(args, app: FastAPI):
+    from vllm.entrypoints.openai.api_server import build_async_engine_client, init_app_state, router
 
     async with build_async_engine_client(args) as engine_client:
-        app = create_app(lifespan=lifespan)
         app.include_router(router, dependencies=dependencies, responses=responses)
 
         model_config = await engine_client.get_model_config()
         init_app_state(engine_client, model_config, app.state, args)
 
-        main_app.mount('/openai', app)
 
-        shutdown_task = await serve_http(
-            app,
-            host=args.host,
-            port=args.port,
-            log_level=args.uvicorn_log_level,
-            timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
-            ssl_keyfile=args.ssl_keyfile,
-            ssl_certfile=args.ssl_certfile,
-            ssl_ca_certs=args.ssl_ca_certs,
-            ssl_cert_reqs=args.ssl_cert_reqs,
-        )
-
-    await shutdown_task
-
-
-def initialize(main_app: FastAPI):
+def initialize(app: FastAPI | None = None):
     log.info('Starting OpenAI API server...')
 
     if use_vllm:
@@ -66,6 +41,7 @@ def initialize(main_app: FastAPI):
         parser = make_arg_parser(parser)
         args = parser.parse_args(
             [
+                '--disable-frontend-multiprocessing',  # disable running the engine in a separate process
                 '--disable-log-requests',
                 '--model',
                 llama_path,
@@ -78,7 +54,7 @@ def initialize(main_app: FastAPI):
             ]
         )
 
-        asyncio.create_task(run_vllm_server(args, main_app))
+        asyncio.create_task(run_vllm_server(args, app))
     else:
         subprocess.Popen(
             f'{llama_cpp_server_path} \
