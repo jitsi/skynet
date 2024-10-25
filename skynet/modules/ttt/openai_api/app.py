@@ -71,7 +71,7 @@ def initialize(app: FastAPI | None = None):
 async def is_ready():
     try:
         response = await http_client.get(f'{openai_api_base_url}/health', 'text' if use_vllm else 'json')
- 
+
         if use_vllm:
             return response == ''
 
