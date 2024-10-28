@@ -1,19 +1,9 @@
 import asyncio
-import subprocess
 
 from fastapi import FastAPI
 
 from skynet import http_client
-from skynet.env import (
-    llama_cpp_server_path,
-    llama_n_batch,
-    llama_n_ctx,
-    llama_n_gpu_layers,
-    llama_path,
-    openai_api_base_url,
-    openai_api_server_port,
-    use_vllm,
-)
+from skynet.env import app_port, llama_n_ctx, llama_path, openai_api_base_url, use_vllm
 from skynet.logs import get_logger
 from skynet.utils import dependencies, responses
 
@@ -50,33 +40,25 @@ def initialize(app: FastAPI | None = None):
                 '--max-model-len',
                 str(llama_n_ctx),
                 '--port',
-                str(openai_api_server_port),
+                str(app_port),
             ]
         )
 
         asyncio.create_task(run_vllm_server(args, app))
-    else:
-        subprocess.Popen(
-            f'{llama_cpp_server_path} \
-                --batch-size {llama_n_batch} \
-                --ctx-size {llama_n_ctx} \
-                --flash-attn \
-                --model {llama_path} \
-                --n-gpu-layers {llama_n_gpu_layers} \
-                --port {openai_api_server_port}'.split(),
-            shell=False,
-        )
 
 
 async def is_ready():
+    url = f'{openai_api_base_url}/health' if use_vllm else openai_api_base_url
+
     try:
-        response = await http_client.get(f'{openai_api_base_url}/health', 'text' if use_vllm else 'json')
+        response = await http_client.get(url, 'text')
 
         if use_vllm:
             return response == ''
-
-        return True
-    except Exception:
+        else:
+            return response == 'Ollama is running'
+    except Exception as e:
+        log.warning('Error checking if the server is ready: ', e)
         return False
 
 
