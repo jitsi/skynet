@@ -31,20 +31,16 @@ modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
 # models
-llama_path = os.environ.get('LLAMA_PATH')
+llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
-llama_n_gpu_layers = int(os.environ.get('LLAMA_N_GPU_LAYERS', -1 if is_mac else 99))
-llama_n_batch = int(os.environ.get('LLAMA_N_BATCH', 256))
 
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
 azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
 
 # openai api
-llama_cpp_server_path = os.environ.get('LLAMA_CPP_SERVER_PATH', './llama.cpp/llama-server')
-openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', app_port if use_vllm else 8003))
 openai_api_base_url = os.environ.get(
-    'OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}{"/openai" if use_vllm else ""}'
+    'OPENAI_API_BASE_URL', f'http://localhost:{app_port}{"/openai"}' if use_vllm else "http://localhost:11434"
 )
 
 # openai

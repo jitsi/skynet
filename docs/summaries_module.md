@@ -1,6 +1,6 @@
 # Skynet Summaries Module
 
-Extracts summaries and action items from a given text. The service can be deployed to use either vllm or llama.cpp. It is split into two sub-modules: `summaries:dispatcher` and `summaries:executor`.
+Extracts summaries and action items from a given text. The service can be deployed to use either vllm or Ollama. It is split into two sub-modules: `summaries:dispatcher` and `summaries:executor`.
 
 `summaries:dispatcher` will do CRUD for jobs with a Redis installation, while `summaries:executor` performs the actual inference. They can both be enabled at the same time or deployed separately.
 
@@ -19,16 +19,15 @@ Extracts summaries and action items from a given text. The service can be deploy
 
 All of the configuration is done via env vars. Check the [Skynet Environment Variables](env_vars.md) page for a list of values.
 
-## Running with Llama.cpp
+## Running with Ollama
+
+First make sure Ollama is installed and running.
 
 ```bash
-# Download the preferred GGUF llama model
-mkdir "$HOME/models"
+# Download the preferred llama model
+ollama pull llama3.1
 
-wget -q --show-progress "https://huggingface.co/jitsi/Llama-3.1-8B-GGUF/blob/main/Llama-3.1-8B-Instruct-Q8_0.gguf?download=true" -O "$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
-
-export LLAMA_CPP_SERVER_PATH="$HOME/skynet/llama.cpp/llama-server"
-export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
+export LLAMA_PATH="llama3.1"
 # disable authorization (for testing)
 export BYPASS_AUTHORIZATION=1
 
@@ -52,14 +51,3 @@ When running the resulting image, make sure to mount a model under `/models` on 
 ### Code samples
 
 JavaScript: https://github.com/jitsi/skynet/blob/master/docs/sample.js
-
-## Some benchmarks
-
-Summary:
-
-| Model | Input size | Time to summarize (M1 CPU)  | Time to summarize (GPU) |
-| :---- | :--------: |:---------------------------:|:-----------------------:|
-| [llama-2-7b-chat.Q4_K_M.gguf][1] | 16000 chars |           ~87 sec           |         ~44 sec         |
-| [llama-2-7b-chat.Q4_K_M.gguf][1] | 8000 chars |           ~51 sec           |         ~28 sec         |
-
-[1]: https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf
