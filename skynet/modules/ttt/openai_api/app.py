@@ -3,7 +3,7 @@ import asyncio
 from fastapi import FastAPI
 
 from skynet import http_client
-from skynet.env import app_port, llama_n_ctx, llama_path, openai_api_base_url, use_vllm
+from skynet.env import app_port, app_uuid, llama_n_ctx, llama_path, openai_api_base_url, use_vllm
 from skynet.logs import get_logger
 from skynet.utils import dependencies, responses
 
@@ -51,7 +51,11 @@ async def is_ready():
     url = f'{openai_api_base_url}/health' if use_vllm else openai_api_base_url
 
     try:
-        response = await http_client.get(url, 'text')
+        response = await http_client.get(
+            url,
+            'text',
+            headers={'X-Skynet-UUID': app_uuid},
+        )
 
         if use_vllm:
             return response == ''

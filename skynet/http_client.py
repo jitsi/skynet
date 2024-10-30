@@ -18,9 +18,9 @@ def _get_session():
     return _session
 
 
-async def get(url, type='json'):
+async def get(url, type='json', **kwargs):
     session = _get_session()
-    async with session.get(url) as response:
+    async with session.get(url, **kwargs) as response:
         if type == 'json':
             return await response.json()
 
