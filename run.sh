@@ -8,4 +8,4 @@ else
   export LLAMA_N_CTX=8182
 fi
 
-poetry run python -m uvicorn skynet.main:app --reload
+poetry run python -m skynet.main
