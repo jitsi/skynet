@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
+from skynet import http_client
 from skynet.agent import create_tcpserver
 from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules, use_vllm
 from skynet.logs import get_logger
@@ -45,14 +46,12 @@ async def lifespan(main_app: FastAPI):
     if 'summaries:executor' in modules:
         from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
 
-        if use_vllm:
-            from vllm.entrypoints.openai.api_server import lifespan
+        await executor_startup()
 
-            app = create_app(lifespan=lifespan)
-            await executor_startup(app)
-            main_app.mount('/openai', app)
-        else:
-            await executor_startup()
+        if use_vllm:
+            from skynet.modules.ttt.openai_api.app import app as openai_api_app
+
+            main_app.mount('/openai', openai_api_app)
 
     yield
 
@@ -62,6 +61,8 @@ async def lifespan(main_app: FastAPI):
         from skynet.modules.ttt.summaries.app import executor_shutdown as executor_shutdown
 
         await executor_shutdown()
+
+    await http_client.close()
 
 
 app = create_app(lifespan=lifespan)

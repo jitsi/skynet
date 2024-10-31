@@ -1,69 +1,85 @@
-import asyncio
+import subprocess
 
-from fastapi import FastAPI
+from aiohttp.client_exceptions import ClientConnectorError
+
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from vllm.entrypoints.openai.api_server import router as vllm_router
 
 from skynet import http_client
-from skynet.env import app_port, app_uuid, llama_n_ctx, llama_path, openai_api_base_url, use_vllm
+from skynet.auth.bearer import JWTBearer
+from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, openai_api_server_port, use_vllm
 from skynet.logs import get_logger
-from skynet.utils import dependencies, responses
+from skynet.utils import create_app, dependencies, responses
 
 log = get_logger(__name__)
 
 
-async def run_vllm_server(args, app: FastAPI):
-    from vllm.entrypoints.openai.api_server import build_async_engine_client, init_app_state, router
+def initialize():
+    if not use_vllm:
+        return
 
-    async with build_async_engine_client(args) as engine_client:
-        app.include_router(router, dependencies=dependencies, responses=responses)
-
-        model_config = await engine_client.get_model_config()
-        init_app_state(engine_client, model_config, app.state, args)
-
-
-def initialize(app: FastAPI | None = None):
     log.info('Starting OpenAI API server...')
 
-    if use_vllm:
-        from vllm.entrypoints.openai.cli_args import make_arg_parser
-        from vllm.utils import FlexibleArgumentParser
+    proc = subprocess.Popen(
+        f'python -m vllm.entrypoints.openai.api_server \
+            --disable-log-requests \
+            --model {llama_path} \
+            --gpu_memory_utilization 0.99 \
+            --max-model-len {llama_n_ctx} \
+            --port {openai_api_server_port}'.split(),
+        shell=False,
+    )
 
-        parser = FlexibleArgumentParser(description="vLLM OpenAI-Compatible RESTful API server.")
-        parser = make_arg_parser(parser)
-        args = parser.parse_args(
-            [
-                '--disable-frontend-multiprocessing',  # disable running the engine in a separate process
-                '--disable-log-requests',
-                '--model',
-                llama_path,
-                '--gpu_memory_utilization',
-                '0.99',
-                '--max-model-len',
-                str(llama_n_ctx),
-                '--port',
-                str(app_port),
-            ]
-        )
-
-        asyncio.create_task(run_vllm_server(args, app))
+    if proc.poll() is not None:
+        log.error('Failed to start vLLM OpenAI API server')
+    else:
+        log.info('vLLM OpenAI API server started')
 
 
 async def is_ready():
     url = f'{openai_api_base_url}/health' if use_vllm else openai_api_base_url
 
     try:
-        response = await http_client.get(
-            url,
-            'text',
-            headers={'X-Skynet-UUID': app_uuid},
-        )
+        response = await http_client.get(url, 'text')
 
         if use_vllm:
             return response == ''
         else:
             return response == 'Ollama is running'
-    except Exception as e:
-        log.warning('Error checking if the server is ready: ', e)
+    except Exception:
         return False
 
 
-__all__ = ['initialize', 'is_ready']
+app = create_app()
+app.include_router(vllm_router, dependencies=dependencies, responses=responses)
+
+whitelisted_routes = ['/openai/docs', '/openai/openapi.json']
+
+bearer = JWTBearer()
+
+
+@app.middleware('http')
+async def proxy_middleware(request: Request, call_next):
+    if request.url.path in whitelisted_routes:
+        return await call_next(request)
+
+    if not bypass_auth:
+        try:
+            await bearer.__call__(request)
+        except HTTPException as e:
+            return JSONResponse(content=responses.get(e.status_code), status_code=e.status_code)
+
+    try:
+        url = f'{openai_api_base_url}{request.url.path.replace("/openai", "")}'
+        response = await http_client.request(request.method, url, headers=request.headers, data=await request.body())
+
+        return StreamingResponse(response.content, status_code=response.status, headers=response.headers)
+    except ClientConnectorError as e:
+        return JSONResponse(content=str(e), status_code=500)
+    except HTTPException as e:
+        return JSONResponse(content=e.detail, status_code=e.status_code)
+
+
+__all__ = ['app', 'initialize', 'is_ready']

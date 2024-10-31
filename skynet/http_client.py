@@ -33,4 +33,17 @@ async def post(url, **kwargs):
         return await response.json()
 
 
-__all__ = ['get']
+async def request(method, url, **kwargs) -> aiohttp.ClientResponse:
+    session = _get_session()
+
+    return await session.request(method, url, **kwargs)
+
+
+async def close():
+    session = _get_session()
+
+    if session is not None:
+        await _session.close()
+
+
+__all__ = ['close', 'get', 'post', 'request']

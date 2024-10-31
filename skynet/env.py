@@ -39,8 +39,9 @@ llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
 
 # openai api
+openai_api_server_port = int(os.environ.get('OPENAI_API_SERVER_PORT', 8003))
 openai_api_base_url = os.environ.get(
-    'OPENAI_API_BASE_URL', f'http://localhost:{app_port}{"/openai"}' if use_vllm else "http://localhost:11434"
+    'OPENAI_API_BASE_URL', f'http://localhost:{openai_api_server_port}' if use_vllm else "http://localhost:11434"
 )
 
 # openai
