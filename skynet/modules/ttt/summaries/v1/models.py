@@ -29,7 +29,7 @@ class DocumentPayload(BaseModel):
                     'text': 'Your text here',
                     'hint': 'text',
                     'priority': 'normal',
-                    'prompt': 'Summarize the following text {text}',
+                    'prompt': 'Summarize the following text',
                 }
             ]
         }
