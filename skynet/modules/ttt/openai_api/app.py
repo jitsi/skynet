@@ -1,4 +1,5 @@
 import subprocess
+import sys
 
 from aiohttp.client_exceptions import ClientConnectorError
 
@@ -9,7 +10,7 @@ from vllm.entrypoints.openai.api_server import router as vllm_router
 
 from skynet import http_client
 from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, openai_api_server_port, use_vllm
+from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, use_vllm, vllm_server_port
 from skynet.logs import get_logger
 from skynet.utils import create_app, dependencies, responses
 
@@ -23,12 +24,12 @@ def initialize():
     log.info('Starting OpenAI API server...')
 
     proc = subprocess.Popen(
-        f'python -m vllm.entrypoints.openai.api_server \
+        f'{sys.executable} -m vllm.entrypoints.openai.api_server \
             --disable-log-requests \
             --model {llama_path} \
             --gpu_memory_utilization 0.99 \
             --max-model-len {llama_n_ctx} \
-            --port {openai_api_server_port}'.split(),
+            --port {vllm_server_port}'.split(),
         shell=False,
     )
 
@@ -80,6 +81,8 @@ async def proxy_middleware(request: Request, call_next):
         return JSONResponse(content=str(e), status_code=500)
     except HTTPException as e:
         return JSONResponse(content=e.detail, status_code=e.status_code)
+    except Exception as e:
+        return JSONResponse(content=str(e), status_code=500)
 
 
 __all__ = ['app', 'initialize', 'is_ready']
