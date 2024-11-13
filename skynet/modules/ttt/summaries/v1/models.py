@@ -37,6 +37,7 @@ class DocumentPayload(BaseModel):
 
 
 class DocumentMetadata(BaseModel):
+    app_id: str | None = None
     customer_id: str | None = None
 
 

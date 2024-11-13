@@ -18,6 +18,14 @@ def get_customer_id(request: Request) -> str:
     return id
 
 
+def get_app_id(request: Request) -> str:
+    return request.state.decoded_jwt.get('appId') if hasattr(request.state, 'decoded_jwt') else None
+
+
+def get_metadata(request: Request) -> DocumentMetadata:
+    return DocumentMetadata(app_id=get_app_id(request), customer_id=get_customer_id(request))
+
+
 @api_version(1)
 @router.post("/action-items")
 async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
@@ -25,9 +33,7 @@ async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
     Starts a job to extract action items from the given payload.
     """
 
-    return await create_job(
-        job_type=JobType.ACTION_ITEMS, payload=payload, metadata=DocumentMetadata(customer_id=get_customer_id(request))
-    )
+    return await create_job(job_type=JobType.ACTION_ITEMS, payload=payload, metadata=get_metadata(request))
 
 
 @api_version(1)
@@ -37,9 +43,7 @@ async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
     Starts a job to summarize the given payload.
     """
 
-    return await create_job(
-        job_type=JobType.SUMMARY, payload=payload, metadata=DocumentMetadata(customer_id=get_customer_id(request))
-    )
+    return await create_job(job_type=JobType.SUMMARY, payload=payload, metadata=get_metadata(request))
 
 
 @api_version(1)
