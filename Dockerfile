@@ -44,7 +44,7 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb ffmpeg && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application
