@@ -78,7 +78,6 @@ RUN \
 RUN mkdir -p /app/ffmpeg && \
     wget https://www.ffmpeg.org/releases/ffmpeg-6.1.2.tar.gz && \
     tar -xzf ffmpeg-6.1.2.tar.gz -C /app/ffmpeg --strip-components 1 && \
-    ls -lah /app/ffmpeg/ && \
     cd /app/ffmpeg/ && \
     ./configure --enable-shared \
       --enable-gpl \
@@ -93,6 +92,7 @@ RUN mkdir -p /app/ffmpeg && \
       --enable-libx265 && \
     make -j 2 && \
     make install && \
+    ldconfig && \
     ffmpeg -version
 
 # Principle of least privilege: create a new user for running the application
