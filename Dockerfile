@@ -44,8 +44,57 @@ COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb ffmpeg && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb \
+        autoconf \
+        automake \
+        build-essential \
+        cmake \
+        libass-dev \
+        libfreetype6-dev \
+        libgnutls28-dev \
+        libmp3lame-dev \
+        libopus-dev \
+        libsdl2-dev \
+        libtheora-dev \
+        libtool \
+        libva-dev \
+        libvdpau-dev \
+        libvorbis-dev \
+        libvpx-dev \
+        libwebp-dev \
+        libx264-dev \
+        libx265-dev \
+        libxcb1-dev \
+        libxcb-shm0-dev \
+        libxcb-xfixes0-dev \
+        pkg-config \
+        texinfo \
+        wget \
+        yasm \
+        zlib1g-dev && \
     apt-cleanup
+
+# Build and install ffmpeg version 6
+RUN mkdir -p /app/ffmpeg && \
+    wget https://www.ffmpeg.org/releases/ffmpeg-6.1.2.tar.gz && \
+    tar -xzf ffmpeg-6.1.2.tar.gz -C /app/ffmpeg --strip-components 1 && \
+    ls -lah /app/ffmpeg/ && \
+    cd /app/ffmpeg/ && \
+    ./configure --enable-shared \
+      --enable-gpl \
+      --enable-gnutls \
+      --enable-libass \
+      --enable-libfreetype \
+      --enable-libmp3lame \
+      --enable-libopus \
+      --enable-libvorbis \
+      --enable-libvpx \
+      --enable-libx264 \
+      --enable-libx265 && \
+    make -j 2 && \
+    make install && \
+    ffmpeg -version && \
+    exit 1
 
 # Principle of least privilege: create a new user for running the application
 RUN \
