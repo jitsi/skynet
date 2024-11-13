@@ -93,8 +93,7 @@ RUN mkdir -p /app/ffmpeg && \
       --enable-libx265 && \
     make -j 2 && \
     make install && \
-    ffmpeg -version && \
-    exit 1
+    ffmpeg -version
 
 # Principle of least privilege: create a new user for running the application
 RUN \
