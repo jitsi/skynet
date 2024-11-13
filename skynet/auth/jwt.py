@@ -40,7 +40,12 @@ async def authorize(jwt_incoming: str) -> dict:
         raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {kid}')
 
     try:
-        return jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
+        decoded = jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
+
+        if decoded.get('appId') is None:
+            decoded['appId'] = kid
+
+        return decoded
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Expired token.")
     except Exception:
