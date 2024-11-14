@@ -38,6 +38,8 @@ RUN \
 
 COPY docker/rootfs/ /
 
+WORKDIR /app
+
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
@@ -90,8 +92,7 @@ RUN \
       --enable-libx265 && \
     make && \
     make install && \
-    ldconfig && \
-    ffmpeg -version
+    ldconfig
 
 # Clean up ffmpeg build dependencies
 RUN \
