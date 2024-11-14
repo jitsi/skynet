@@ -2,7 +2,6 @@ ARG BASE_IMAGE_BUILD=nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 ARG BASE_IMAGE_RUN=nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
 ## Base Image
-##
 
 FROM ${BASE_IMAGE_BUILD} AS builder
 
@@ -29,10 +28,65 @@ RUN \
     . .venv/bin/activate && \
     pip install -vvv -r requirements.txt
 
-## Production Image
-##
+## Build ffmpeg
 
-FROM ${BASE_IMAGE_RUN}
+FROM ${BASE_IMAGE_RUN} AS ffmpeg_install
+
+COPY docker/rootfs/ /
+
+# ffmpeg build dependencies
+RUN \
+    apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-get update && \
+    apt-dpkg-wrap apt-get install -y \
+        autoconf \
+        automake \
+        build-essential \
+        cmake \
+        libopus-dev \
+        libopus0 \
+        libtool \
+        pkg-config \
+        texinfo \
+        wget \
+        yasm \
+        zlib1g \
+        zlib1g-dev && \
+    apt-cleanup
+
+# Build ffmpeg6 (required for pytorch which only supports ffmpeg < v7)
+RUN \
+    mkdir -p /opt/ffmpeg && \
+    cd /opt/ && \
+    wget -q https://www.ffmpeg.org/releases/ffmpeg-6.1.2.tar.gz && \
+    tar -xzf ffmpeg-6.1.2.tar.gz -C /opt/ffmpeg --strip-components 1 && \
+    rm ffmpeg-6.1.2.tar.gz && \
+    cd /opt/ffmpeg/ && \
+    ./configure \
+      --enable-shared \
+      --enable-gpl \
+      --enable-libopus && \
+    make && \
+    make install && \
+    ldconfig
+
+RUN \
+    apt-dpkg-wrap apt-get autoremove -y \
+        autoconf \
+        automake \
+        build-essential \
+        cmake \
+        libopus-dev \
+        libtool \
+        pkg-config \
+        texinfo \
+        wget \
+        yasm \
+        zlib1g-dev
+
+## Production Image
+
+FROM ffmpeg_install
 
 RUN \
     apt-get update && \

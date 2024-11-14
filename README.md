@@ -33,6 +33,9 @@ poetry install
 
 ## Live Transcriptions Quickstart
 
+> **Note**: Make sure to have ffmpeg < 7 installed and to update the `DYLD_LIBRARY_PATH` with the path to the ffmpeg 
+> libraries, e.g. `export DYLD_LIBRARY_PATH=/Users/MyUser/ffmpeg/6.1.2/lib:$DYLD_LIBRARY_PATH`.
+
 ```bash
 mkdir -p "$HOME/models/streaming-whisper"
 export WHISPER_MODEL_NAME="tiny.en"
