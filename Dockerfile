@@ -66,7 +66,7 @@ RUN \
       --enable-shared \
       --enable-gpl \
       --enable-libopus && \
-    make -j 3 && \
+    make && \
     make install && \
     ldconfig
 
