@@ -4,11 +4,16 @@ Performs live transcriptions using [Faster Whisper](https://github.com/SYSTRAN/f
 
 Enable the module by setting the `ENABLED_MODULES` env var to `streaming_whisper`.
 
-> Here the JWT (see [Authorization](auth.md)) needs to be provided as a GET parameter. Please make sure to make it _very_ short-lived.
+> Here the JWT (see [Authorization](auth.md)) needs to be provided as a GET parameter. Please make sure to make it 
+> _very_ short-lived.
 
 ## Requirements
 
 - Poetry
+- ffmpeg < 7 (required by pytorch)
+
+If you have multiple versions of ffmpeg installed, make sure to update the `DYLD_LIBRARY_PATH` with the path to the 
+ffmpeg libraries, e.g. `export DYLD_LIBRARY_PATH=/Users/MyUser/ffmpeg/6.1.2/lib:$DYLD_LIBRARY_PATH`.
 
 ## Quickstart
 
@@ -41,15 +46,19 @@ Omit the `auth_token` parameter if authorization is disabled.
 
 ## Authorization
 
-We pass the JWT as part of the connection string, so please make it as short lived as possible. Refer to [Authorization](auth.md) for more details regarding the generation of JWTs.
+We pass the JWT as part of the connection string, so please make it as short lived as possible. Refer to 
+[Authorization](auth.md) for more details regarding the generation of JWTs.
 
 ## Data format
 
-The payload sent by the client should be a binary blob. Where the first 60 bytes must be a header composed by a unique speaker id plus the language in short ISO format separated by a pipe `|`.
+The payload sent by the client should be a binary blob. Where the first 60 bytes must be a header composed by a unique 
+speaker id plus the language in short ISO format separated by a pipe `|`.
 
 > E.G. `some_unique_speaker_id|en`
 
-If the header is not fully filled, it must be padded with nulls. The rest of the payload must be a raw, single-channel, 16khz, WAV array of bytes. **The audio chunk must not contain a WAV header**. Each audio chunk should be at least 1 second long.
+If the header is not fully filled, it must be padded with nulls. The rest of the payload must be a raw, single-channel, 
+16khz, WAV array of bytes. **The audio chunk must not contain a WAV header**. Each audio chunk should be at least 1 
+second long.
 
 ## Building the payload
 
@@ -130,13 +139,17 @@ public void sendAudio(Participant participant, ByteBuffer audio) {
 
 ## Build image
 
-You need to change the build and runtime images to `cuda:11.8.0-cudnn8-devel-ubuntu20.04` and `nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04` respectively.
+You need to change the build and runtime images to `cuda:11.8.0-cudnn8-devel-ubuntu20.04` and 
+`nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04` respectively.
 
 ```bash
-docker buildx build --build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04" --build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" --push --progress plain --platform linux/amd64 -t your-registry/skynet:your-tag .
+docker buildx build --build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04" \
+  --build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" --push --progress plain \
+  --platform linux/amd64 -t your-registry/skynet:your-tag .
 ```
 
-When running the resulting image, make sure to mount a faster-whisper model under `/models` on the container fs and reference it in the `WHISPER_MODEL_PATH` environment variable.
+When running the resulting image, make sure to mount a faster-whisper model under `/models` on the container fs and 
+reference it in the `WHISPER_MODEL_PATH` environment variable.
 
 ## Download models
 
@@ -169,7 +182,8 @@ your-registry/skynet:your-tag
 
 ### Using GPU
 
-In order to allow docker access GPU, install nvidia container toolkit from [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt)
+In order to allow docker access GPU, install nvidia container toolkit from 
+[https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt)
 Restart docker with `systemctl restart docker.service`
 When running the resulting image, pass `--gpus all` and look for `CUDA device found.` in log.
 
