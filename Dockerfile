@@ -76,10 +76,11 @@ RUN \
 # Build and install ffmpeg6
 RUN \
     mkdir -p /app/ffmpeg && \
-    wget https://www.ffmpeg.org/releases/ffmpeg-6.1.2.tar.gz && \
+    wget -q https://www.ffmpeg.org/releases/ffmpeg-6.1.2.tar.gz && \
     tar -xzf ffmpeg-6.1.2.tar.gz -C /app/ffmpeg --strip-components 1 && \
     cd /app/ffmpeg/ && \
-    ./configure --enable-shared \
+    ./configure \
+      --enable-shared \
       --enable-gpl \
       --enable-gnutls \
       --enable-libass \
