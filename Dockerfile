@@ -53,19 +53,13 @@ RUN \
         libgnutls28-dev \
         libmp3lame-dev \
         libopus-dev \
-        libsdl2-dev \
         libtheora-dev \
         libtool \
-        libva-dev \
-        libvdpau-dev \
         libvorbis-dev \
         libvpx-dev \
         libwebp-dev \
         libx264-dev \
         libx265-dev \
-        libxcb1-dev \
-        libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
         pkg-config \
         texinfo \
         wget \
@@ -107,19 +101,13 @@ RUN \
         libgnutls28-dev \
         libmp3lame-dev \
         libopus-dev \
-        libsdl2-dev \
         libtheora-dev \
         libtool \
-        libva-dev \
-        libvdpau-dev \
         libvorbis-dev \
         libvpx-dev \
         libwebp-dev \
         libx264-dev \
         libx265-dev \
-        libxcb1-dev \
-        libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
         pkg-config \
         texinfo \
         wget \
@@ -128,8 +116,7 @@ RUN \
     apt-get autoremove -y && \
     apt-get clean && \
     rm /app/ffmpeg-6.1.2.tar.gz && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /app/ffmpeg
+    rm -rf /var/lib/apt/lists/*
 
 ## Production Image
 
@@ -147,8 +134,7 @@ RUN \
     apt-dpkg-wrap apt-get update && \
     apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb && \
     apt-cleanup && \
-    rm -rf /var/lib/apt/lists/* && \
-    ldconfig
+    rm -rf /var/lib/apt/lists/*
 
 # Principle of least privilege: create a new user for running the application
 RUN \
