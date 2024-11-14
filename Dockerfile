@@ -2,7 +2,6 @@ ARG BASE_IMAGE_BUILD=nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 ARG BASE_IMAGE_RUN=nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
 ## Base Image
-##
 
 FROM ${BASE_IMAGE_BUILD} AS builder
 
@@ -29,22 +28,20 @@ RUN \
     . .venv/bin/activate && \
     pip install -vvv -r requirements.txt
 
-## Production Image
-##
+## Build ffmpeg6 (required for pytorch which only supports ffmpeg < v7)
 
-FROM ${BASE_IMAGE_RUN}
+FROM ${BASE_IMAGE_RUN} AS ffmpeg-builder
 
 RUN \
     apt-get update && \
     apt-get install -y apt-transport-https ca-certificates gnupg
 
 COPY docker/rootfs/ /
-COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
 
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
     apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb \
+    apt-dpkg-wrap apt-get install -y \
         autoconf \
         automake \
         build-essential \
@@ -74,8 +71,9 @@ RUN \
         zlib1g-dev && \
     apt-cleanup
 
-# Build and install ffmpeg version 6
-RUN mkdir -p /app/ffmpeg && \
+# Build and install ffmpeg6
+RUN \
+    mkdir -p /app/ffmpeg && \
     wget https://www.ffmpeg.org/releases/ffmpeg-6.1.2.tar.gz && \
     tar -xzf ffmpeg-6.1.2.tar.gz -C /app/ffmpeg --strip-components 1 && \
     cd /app/ffmpeg/ && \
@@ -90,10 +88,64 @@ RUN mkdir -p /app/ffmpeg && \
       --enable-libvpx \
       --enable-libx264 \
       --enable-libx265 && \
-    make -j 2 && \
+    make && \
     make install && \
     ldconfig && \
     ffmpeg -version
+
+# Clean up ffmpeg build dependencies
+RUN \
+    apt-get purge -y \
+        autoconf \
+        automake \
+        build-essential \
+        cmake \
+        libass-dev \
+        libfreetype6-dev \
+        libgnutls28-dev \
+        libmp3lame-dev \
+        libopus-dev \
+        libsdl2-dev \
+        libtheora-dev \
+        libtool \
+        libva-dev \
+        libvdpau-dev \
+        libvorbis-dev \
+        libvpx-dev \
+        libwebp-dev \
+        libx264-dev \
+        libx265-dev \
+        libxcb1-dev \
+        libxcb-shm0-dev \
+        libxcb-xfixes0-dev \
+        pkg-config \
+        texinfo \
+        wget \
+        yasm \
+        zlib1g-dev && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm /app/ffmpeg-6.1.2.tar.gz && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /app/ffmpeg
+
+## Production Image
+
+FROM ffmpeg-builder
+
+RUN \
+    apt-get update && \
+    apt-get install -y apt-transport-https ca-certificates gnupg
+
+COPY docker/rootfs/ /
+COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
+
+RUN \
+    apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-get update && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb && \
+    apt-cleanup && \
+    rm -rf /var/lib/apt/lists/*
 
 # Principle of least privilege: create a new user for running the application
 RUN \
