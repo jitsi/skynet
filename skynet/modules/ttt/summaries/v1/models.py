@@ -56,7 +56,6 @@ class JobStatus(Enum):
     ERROR = 'error'
     PENDING = 'pending'
     RUNNING = 'running'
-    SKIPPED = 'skipped'
     SUCCESS = 'success'
 
 
