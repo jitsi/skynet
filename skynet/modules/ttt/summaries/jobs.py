@@ -5,7 +5,7 @@ import uuid
 
 from skynet.auth.openai import CredentialsType, get_credentials
 
-from skynet.env import enable_batching, job_timeout, modules, redis_exp_seconds, summary_minimum_payload_length
+from skynet.env import enable_batching, job_timeout, modules, redis_exp_seconds
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
@@ -149,10 +149,7 @@ async def run_job(job: Job) -> None:
 
 async def update_done_job(job: Job, result: str, processor: Processors, has_failed: bool = False) -> None:
     should_expire = not has_failed or processor != Processors.LOCAL
-    status = job.status
-
-    if status != JobStatus.SKIPPED:
-        status = JobStatus.ERROR if has_failed else JobStatus.SUCCESS
+    status = JobStatus.ERROR if has_failed else JobStatus.SUCCESS
 
     updated_job = await update_job(
         expires=redis_exp_seconds if should_expire else None,
@@ -168,14 +165,13 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
 
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
-    if updated_job.status != JobStatus.SKIPPED:
-        SUMMARY_DURATION_METRIC.labels(updated_job.metadata.app_id).observe(updated_job.computed_duration)
-        SUMMARY_FULL_DURATION_METRIC.observe(updated_job.computed_full_duration)
-        SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
+    SUMMARY_DURATION_METRIC.labels(updated_job.metadata.app_id).observe(updated_job.computed_duration)
+    SUMMARY_FULL_DURATION_METRIC.observe(updated_job.computed_full_duration)
+    SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
 
-        log.info(
-            f"Job {updated_job.id} duration: {updated_job.computed_duration}s full duration: {updated_job.computed_full_duration}s"
-        )
+    log.info(
+        f"Job {updated_job.id} duration: {updated_job.computed_duration}s full duration: {updated_job.computed_full_duration}s"
+    )
 
 
 async def _run_job(job: Job) -> None:
@@ -183,7 +179,6 @@ async def _run_job(job: Job) -> None:
     result = None
     worker_id = await db.db.client_id()
     start = time.time()
-    status = JobStatus.SKIPPED if len(job.payload.text) < summary_minimum_payload_length else JobStatus.RUNNING
     customer_id = job.metadata.customer_id
     processor = get_job_processor(customer_id)  # may have changed since job was created
 
@@ -191,44 +186,41 @@ async def _run_job(job: Job) -> None:
 
     log.info(f"Running job {job.id}. Queue time: {round(start - job.created, 3)} seconds")
 
-    job = await update_job(job_id=job.id, start=start, status=status, worker_id=worker_id, processor=processor)
+    job = await update_job(
+        job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id, processor=processor
+    )
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
-    if status == JobStatus.SKIPPED:
-        log.info(f"Summarisation for {job.id} did not run because payload is too short: \"{job.payload.text}\"")
+    try:
+        options = get_credentials(customer_id)
+        secret = options.get('secret')
 
-        result = job.payload.text
-    else:
-        try:
-            options = get_credentials(customer_id)
-            secret = options.get('secret')
+        if processor == Processors.OPENAI:
+            log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
 
-            if processor == Processors.OPENAI:
-                log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
+            # needed for backwards compatibility
+            model = options.get('model') or options.get('metadata').get('model')
+            result = await process_open_ai(job.payload, job.type, secret, model)
+        elif processor == Processors.AZURE:
+            log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
 
-                # needed for backwards compatibility
-                model = options.get('model') or options.get('metadata').get('model')
-                result = await process_open_ai(job.payload, job.type, secret, model)
-            elif processor == Processors.AZURE:
-                log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
+            metadata = options.get('metadata')
+            result = await process_azure(
+                job.payload, job.type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
+            )
+        else:
+            if customer_id:
+                log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
 
-                metadata = options.get('metadata')
-                result = await process_azure(
-                    job.payload, job.type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
-                )
-            else:
-                if customer_id:
-                    log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
+            result = await process(job.payload, job.type)
+    except Exception as e:
+        log.warning(f"Job {job.id} failed: {e}")
 
-                result = await process(job.payload, job.type)
-        except Exception as e:
-            log.warning(f"Job {job.id} failed: {e}")
-
-            has_failed = True
-            result = str(e)
+        has_failed = True
+        result = str(e)
 
     await update_done_job(job, result, processor, has_failed)
 
