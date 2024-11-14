@@ -139,13 +139,8 @@ public void sendAudio(Participant participant, ByteBuffer audio) {
 
 ## Build image
 
-You need to change the build and runtime images to `cuda:11.8.0-cudnn8-devel-ubuntu20.04` and 
-`nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04` respectively.
-
 ```bash
-docker buildx build --build-arg="BASE_IMAGE_BUILD=nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04" \
-  --build-arg="BASE_IMAGE_RUN=nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04" --push --progress plain \
-  --platform linux/amd64 -t your-registry/skynet:your-tag .
+make build
 ```
 
 When running the resulting image, make sure to mount a faster-whisper model under `/models` on the container fs and 
