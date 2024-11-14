@@ -147,7 +147,8 @@ RUN \
     apt-dpkg-wrap apt-get update && \
     apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 strace gdb && \
     apt-cleanup && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    ldconfig
 
 # Principle of least privilege: create a new user for running the application
 RUN \
