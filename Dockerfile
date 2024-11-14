@@ -13,6 +13,7 @@ COPY docker/rootfs/ /
 
 RUN \
     apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
+    apt-dpkg-wrap apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys E996735927E427A733BB653E374C7797FB006459 && \
     apt-dpkg-wrap apt-get update && \
     apt-dpkg-wrap apt-get install -y build-essential libcurl4-openssl-dev python3.11 python3.11-venv && \
     apt-cleanup
