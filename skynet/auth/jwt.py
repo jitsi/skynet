@@ -42,7 +42,7 @@ async def get_public_key(kid: str) -> str:
         if is_valid_key(key):
             return key
 
-    raise Exception()
+    raise Exception(f'Failed to retrieve public key {kid}')
 
 
 async def authorize(jwt_incoming: str) -> dict:
@@ -58,8 +58,8 @@ async def authorize(jwt_incoming: str) -> dict:
 
     try:
         public_key = await get_public_key(kid)
-    except Exception:
-        raise HTTPException(status_code=401, detail=f'Failed to retrieve public key {kid}')
+    except Exception as ex:
+        raise HTTPException(status_code=401, detail=str(ex))
 
     try:
         decoded = jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
