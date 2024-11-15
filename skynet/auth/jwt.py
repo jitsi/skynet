@@ -5,22 +5,44 @@ from async_lru import alru_cache
 from fastapi import HTTPException
 
 from skynet import http_client
-from skynet.env import asap_pub_keys_auds, asap_pub_keys_folder, asap_pub_keys_max_cache_size, asap_pub_keys_url
+from skynet.env import (
+    asap_pub_keys_auds,
+    asap_pub_keys_fallback_folder,
+    asap_pub_keys_folder,
+    asap_pub_keys_max_cache_size,
+    asap_pub_keys_url,
+)
 from skynet.logs import get_logger
 
 log = get_logger(__name__)
+
+
+def is_valid_key(key: str) -> bool:
+    return key.startswith('-----BEGIN PUBLIC KEY-----')
 
 
 @alru_cache(maxsize=asap_pub_keys_max_cache_size)
 async def get_public_key(kid: str) -> str:
     encoded_pub_key_name = sha256(kid.encode('UTF-8')).hexdigest()
     pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
-
     url = f'{asap_pub_keys_url}/{asap_pub_keys_folder}/{pub_key_remote_filename}'
 
     log.info(f'Fetching public key {kid} from {url}')
+    key = await http_client.get(url, 'text')
 
-    return await http_client.get(url, 'text')
+    if is_valid_key(key):
+        return key
+
+    if asap_pub_keys_fallback_folder:
+        url = f'{asap_pub_keys_url}/{asap_pub_keys_fallback_folder}/{pub_key_remote_filename}'
+
+        log.info(f'Fetching public key {kid} from {url}')
+        key = await http_client.get(url, 'text')
+
+        if is_valid_key(key):
+            return key
+
+    raise Exception(f'Failed to retrieve public key {kid}')
 
 
 async def authorize(jwt_incoming: str) -> dict:
@@ -36,8 +58,8 @@ async def authorize(jwt_incoming: str) -> dict:
 
     try:
         public_key = await get_public_key(kid)
-    except Exception:
-        raise HTTPException(status_code=401, detail=f'Failed to retrieve public key. {kid}')
+    except Exception as ex:
+        raise HTTPException(status_code=401, detail=str(ex))
 
     try:
         decoded = jwt.decode(jwt_incoming, public_key, algorithms=['RS256', 'HS512'], audience=asap_pub_keys_auds)
