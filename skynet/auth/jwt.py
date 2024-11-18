@@ -17,32 +17,32 @@ from skynet.logs import get_logger
 log = get_logger(__name__)
 
 
-def is_valid_key(key: str) -> bool:
-    return key.startswith('-----BEGIN PUBLIC KEY-----')
-
-
 @alru_cache(maxsize=asap_pub_keys_max_cache_size)
 async def get_public_key(kid: str) -> str:
     encoded_pub_key_name = sha256(kid.encode('UTF-8')).hexdigest()
     pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
+
     url = f'{asap_pub_keys_url}/{asap_pub_keys_folder}/{pub_key_remote_filename}'
 
     log.info(f'Fetching public key {kid} from {url}')
-    key = await http_client.get(url, 'text')
+    response = await http_client.request('GET', url)
 
-    if is_valid_key(key):
-        return key
+    if response.status != 200:
+        error = f'Failed to retrieve public key {kid}'
 
-    if asap_pub_keys_fallback_folder:
-        url = f'{asap_pub_keys_url}/{asap_pub_keys_fallback_folder}/{pub_key_remote_filename}'
+        if asap_pub_keys_fallback_folder:
+            url = f'{asap_pub_keys_url}/{asap_pub_keys_fallback_folder}/{pub_key_remote_filename}'
 
-        log.info(f'Fetching public key {kid} from {url}')
-        key = await http_client.get(url, 'text')
+            log.info(f'Fetching public key {kid} from {url}')
 
-        if is_valid_key(key):
-            return key
+            response = await http_client.request('GET', url)
 
-    raise Exception(f'Failed to retrieve public key {kid}')
+            if response.status != 200:
+                raise Exception(error)
+        else:
+            raise Exception(error)
+
+    return await response.text()
 
 
 async def authorize(jwt_incoming: str) -> dict:
