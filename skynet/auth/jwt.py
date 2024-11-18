@@ -22,28 +22,27 @@ async def get_public_key(kid: str) -> str:
     encoded_pub_key_name = sha256(kid.encode('UTF-8')).hexdigest()
     pub_key_remote_filename = f'{encoded_pub_key_name}.pem'
 
-    try:
-        url = f'{asap_pub_keys_url}/{asap_pub_keys_folder}/{pub_key_remote_filename}'
+    url = f'{asap_pub_keys_url}/{asap_pub_keys_folder}/{pub_key_remote_filename}'
 
-        log.info(f'Fetching public key {kid} from {url}')
-        response = await http_client.request('GET', url)
+    log.info(f'Fetching public key {kid} from {url}')
+    response = await http_client.request('GET', url)
 
-        if response.status != 200:
-            if asap_pub_keys_fallback_folder:
-                url = f'{asap_pub_keys_url}/{asap_pub_keys_fallback_folder}/{pub_key_remote_filename}'
+    if response.status != 200:
+        error = f'Failed to retrieve public key {kid}'
 
-                log.info(f'Fetching public key {kid} from {url}')
+        if asap_pub_keys_fallback_folder:
+            url = f'{asap_pub_keys_url}/{asap_pub_keys_fallback_folder}/{pub_key_remote_filename}'
 
-                response = await http_client.request('GET', url)
+            log.info(f'Fetching public key {kid} from {url}')
 
-                if response.status != 200:
-                    raise Exception()
-            else:
-                raise Exception()
+            response = await http_client.request('GET', url)
 
-        return await response.text()
-    except Exception:
-        raise Exception(f'Failed to retrieve public key {kid}')
+            if response.status != 200:
+                raise Exception(error)
+        else:
+            raise Exception(error)
+
+    return await response.text()
 
 
 async def authorize(jwt_incoming: str) -> dict:
