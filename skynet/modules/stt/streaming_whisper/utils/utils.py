@@ -6,10 +6,10 @@ from typing import List, Tuple
 import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
+from silero_vad import get_speech_timestamps, read_audio
 from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
-from silero_vad import read_audio, get_speech_timestamps
 from skynet.env import whisper_beam_size
 from skynet.logs import get_logger
 
