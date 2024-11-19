@@ -1,6 +1,5 @@
-import os
-
 from faster_whisper import WhisperModel
+from silero_vad import load_silero_vad
 
 from skynet.env import (
     device,
@@ -11,12 +10,11 @@ from skynet.env import (
     whisper_model_path,
 )
 from skynet.logs import get_logger
-from skynet.modules.stt.streaming_whisper.utils import vad_utils as vad
 
 log = get_logger(__name__)
 
 
-vad_model = vad.init_jit_model(f'{os.getcwd()}/skynet/modules/stt/streaming_whisper/models/vad/silero_vad.jit')
+vad_model = load_silero_vad(onnx=False)
 
 device = whisper_device if whisper_device != 'auto' else device
 log.info(f'Using {device}')

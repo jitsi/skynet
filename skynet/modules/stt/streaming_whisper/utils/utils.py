@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
+from silero_vad import read_audio, get_speech_timestamps
 from skynet.env import whisper_beam_size
 from skynet.logs import get_logger
 
@@ -188,8 +189,8 @@ def is_silent(audio: bytes) -> Tuple[bool, iter]:
     chunk_duration = convert_bytes_to_seconds(audio)
     wav_header = get_wav_header([audio], chunk_duration_s=chunk_duration)
     stream = wav_header + b'' + audio
-    audio = cfg.vad.read_audio(stream)
-    st = cfg.vad.get_speech_timestamps(audio, model=cfg.vad_model, return_seconds=True)
+    audio = read_audio(stream)
+    st = get_speech_timestamps(audio, model=cfg.vad_model, return_seconds=True)
     log.debug(f'Detected speech timestamps: {st}')
     silent = True if len(st) == 0 else False
     return silent, st
