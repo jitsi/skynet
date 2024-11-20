@@ -42,6 +42,7 @@ langchain-openai = "^0.2.0"
 av = "^12.3.0"
 pybase64 = "^1.4.0"
 vllm = "0.6.2"
+silero-vad = "^5.1.2"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

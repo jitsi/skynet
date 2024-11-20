@@ -4545,6 +4545,22 @@ files = [
 ]
 
 [[package]]
+name = "silero-vad"
+version = "5.1.2"
+description = "Voice Activity Detector (VAD) by Silero"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "silero_vad-5.1.2-py3-none-any.whl", hash = "sha256:93b41953d7774b165407fda6b533c119c5803864e367d5034dc626c82cfdf661"},
+    {file = "silero_vad-5.1.2.tar.gz", hash = "sha256:c442971160026d2d7aa0ad83f0c7ee86c89797a65289fe625c8ea59fc6fb828d"},
+]
+
+[package.dependencies]
+onnxruntime = ">=1.16.1"
+torch = ">=1.12.0"
+torchaudio = ">=0.12.0"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -5941,4 +5957,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "495e3c5a0cb347d13376eaef3bfd532e89798cb752ea67c17a4979a87311882e"
+content-hash = "e06203dbf380719b2ebe9dc19e868d3d018569b78d9833a9c9b256d30b5f28fd"
