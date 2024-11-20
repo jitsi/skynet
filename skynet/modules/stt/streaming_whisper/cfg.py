@@ -38,3 +38,7 @@ model = WhisperModel(
 )
 
 one_byte_s = 0.00003125  # the equivalent of one byte in seconds for 16kHz audio, 2 bytes per sample, mono
+# The maximum number of final transcriptions to include in the initial prompt.
+# This is used to provide some context to the model
+# The larger the initial prompt (max 224 tokens), the slower the inference.
+MAX_FINALS_IN_INITIAL_PROMPT = 2

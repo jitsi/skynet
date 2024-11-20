@@ -136,7 +136,7 @@ class State:
             return results
         return None
 
-    async def process(self, chunk: Chunk) -> List[utils.TranscriptionResponse] | None:
+    async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
         self.last_received_chunk = utils.now()
         self.chunk_count += 1
         if self.chunk_duration == 0:
@@ -148,7 +148,7 @@ class State:
         )
         self.add_to_store(chunk)
         if self.should_transcribe():
-            ts_result = await self.do_transcription(self.working_audio)
+            ts_result = await self.do_transcription(self.working_audio, previous_tokens)
             last_pause = utils.get_last_silence_from_result(ts_result, self.perform_final_after_silent_seconds)
             results = self._extract_transcriptions(last_pause, ts_result)
             if len(results) > 0:
@@ -220,12 +220,12 @@ class State:
             sliceable_bytes += 2048
         return sliceable_bytes
 
-    async def do_transcription(self, audio: bytes) -> utils.WhisperResult | None:
+    async def do_transcription(self, audio: bytes, previous_tokens: list[int]) -> utils.WhisperResult | None:
         start = time.perf_counter_ns()
         loop = asyncio.get_running_loop()
         log.debug(f'Participant {self.participant_id}: starting transcription of {len(audio)} bytes.')
         try:
-            ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang)
+            ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang, previous_tokens)
         except RuntimeError as e:
             log.error(f'Participant {self.participant_id}: failed to transcribe {e}')
             return None

@@ -261,7 +261,9 @@ def now() -> int:
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
 
-def transcribe(buffer_list: List[bytes], lang: str = 'en') -> WhisperResult:
+def transcribe(buffer_list: List[bytes], lang: str = 'en', previous_tokens=None) -> WhisperResult:
+    if previous_tokens is None:
+        previous_tokens = []
     audio_bytes = b''.join(buffer_list)
     audio = load_audio(audio_bytes)
     iterator, _ = cfg.model.transcribe(
@@ -270,6 +272,7 @@ def transcribe(buffer_list: List[bytes], lang: str = 'en') -> WhisperResult:
         task='transcribe',
         word_timestamps=True,
         beam_size=whisper_beam_size,
+        initial_prompt=previous_tokens,
         condition_on_previous_text=False,
     )
     res = list(iterator)
