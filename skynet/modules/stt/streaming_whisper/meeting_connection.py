@@ -1,14 +1,15 @@
 from itertools import chain
 from typing import List
 
+from faster_whisper.tokenizer import Tokenizer
+
 from starlette.websockets import WebSocket
 
 from skynet.logs import get_logger
+from skynet.modules.stt.streaming_whisper.cfg import MAX_FINALS_IN_INITIAL_PROMPT, model
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.streaming_whisper.cfg import model, MAX_FINALS_IN_INITIAL_PROMPT
-from faster_whisper.tokenizer import Tokenizer
 
 log = get_logger(__name__)
 
@@ -42,10 +43,7 @@ class MeetingConnection:
         if not self.meeting_language:
             self.meeting_language = a_chunk.language
             self.tokenizer = Tokenizer(
-                model.hf_tokenizer,
-                multilingual=False,
-                task='transcribe',
-                language=self.meeting_language
+                model.hf_tokenizer, multilingual=False, task='transcribe', language=self.meeting_language
             )
 
         if a_chunk.participant_id not in self.participants:
