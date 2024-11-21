@@ -26,9 +26,12 @@ def initialize():
     proc = subprocess.Popen(
         f'{sys.executable} -m vllm.entrypoints.openai.api_server \
             --disable-log-requests \
+            --enable-auto-tool-choice \
             --model {llama_path} \
             --gpu_memory_utilization 0.99 \
             --max-model-len {llama_n_ctx} \
+            --tool-call-parser llama3_json \
+            --chat-template examples/tool_chat_template_llama3_json.jinja \
             --port {vllm_server_port}'.split(),
         shell=False,
     )
