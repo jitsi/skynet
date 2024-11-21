@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 
@@ -23,6 +24,9 @@ def initialize():
 
     log.info('Starting OpenAI API server...')
 
+    cwd = os.getcwd()
+    chat_template_path = os.path.join(cwd, 'tools', 'llama3.1_json.jinja')
+
     proc = subprocess.Popen(
         f'{sys.executable} -m vllm.entrypoints.openai.api_server \
             --disable-log-requests \
@@ -31,7 +35,7 @@ def initialize():
             --gpu_memory_utilization 0.99 \
             --max-model-len {llama_n_ctx} \
             --tool-call-parser llama3_json \
-            --chat-template examples/tool_chat_template_llama3_json.jinja \
+            --chat-template {chat_template_path} \
             --port {vllm_server_port}'.split(),
         shell=False,
     )
