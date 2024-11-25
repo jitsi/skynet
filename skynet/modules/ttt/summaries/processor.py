@@ -88,7 +88,7 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
         documents=trek_docs,
         embedding=OpenAIEmbeddings(
             api_key='placeholder',
-            base_url=f'{openai_api_base_url}',  # use a placeholder value to bypass validation, and allow the custom base url to be used
+            base_url=f'{openai_api_base_url}/v1',  # use a placeholder value to bypass validation, and allow the custom base url to be used
         ),
     )
     # Retrieve and generate using the relevant snippets of the blog.
