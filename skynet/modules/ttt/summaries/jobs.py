@@ -5,7 +5,7 @@ import uuid
 
 from skynet.auth.openai import CredentialsType, get_credentials
 
-from skynet.env import enable_batching, job_timeout, modules, redis_exp_seconds
+from skynet.env import job_timeout, modules, redis_exp_seconds
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
@@ -32,7 +32,7 @@ RUNNING_JOBS_KEY = "jobs:running"
 ERROR_JOBS_KEY = "jobs:error"
 
 background_task = None
-current_task = None
+current_tasks = []
 
 
 def restart():
@@ -45,13 +45,7 @@ def restart():
 
 
 def can_run_next_job() -> bool:
-    if 'summaries:executor' not in modules:
-        return False
-
-    if enable_batching:
-        return True
-
-    return current_task is None or current_task.done()
+    return 'summaries:executor' in modules
 
 
 def get_job_processor(customer_id: str) -> Processors:
@@ -118,6 +112,21 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
     return JobId(id=job_id)
 
 
+async def create_and_run_job(job_type: JobType, payload: DocumentPayload, metadata: DocumentMetadata) -> str:
+    """Create a job and run it immediately."""
+
+    job_id = str(uuid.uuid4())
+
+    job = Job(
+        id=job_id, payload=payload, type=job_type, metadata=metadata, processor=get_job_processor(metadata.customer_id)
+    )
+    await db.set(job_id, Job.model_dump_json(job))
+
+    result = await _run_job(job)
+
+    return result
+
+
 async def get_job(job_id: str) -> Job:
     job_json = await db.get(job_id)
     job = Job.model_validate_json(job_json) if job_json else None
@@ -174,7 +183,7 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
     )
 
 
-async def _run_job(job: Job) -> None:
+async def _run_job(job: Job) -> str:
     has_failed = False
     result = None
     worker_id = await db.db.client_id()
@@ -228,10 +237,15 @@ async def _run_job(job: Job) -> None:
     if result == 'Error code: 500' and processor == Processors.LOCAL:
         restart()
 
+    return result
+
 
 def create_run_job_task(job: Job) -> asyncio.Task:
-    global current_task
-    current_task = asyncio.create_task(run_job(job))
+    task = asyncio.create_task(run_job(job))
+    current_tasks.append(task)
+    task.add_done_callback(lambda _: current_tasks.remove(task))
+
+    return task
 
 
 async def maybe_run_next_job() -> None:

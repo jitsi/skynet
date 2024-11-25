@@ -5,7 +5,7 @@ from skynet.env import summary_minimum_payload_length
 
 from skynet.utils import get_router
 
-from ..jobs import create_job, get_job as get_job
+from ..jobs import create_and_run_job, create_job, get_job as get_job
 from .models import BaseJob, DocumentMetadata, DocumentPayload, JobId, JobType
 
 router = get_router()
@@ -51,6 +51,16 @@ async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
     """
 
     return await create_job(job_type=JobType.SUMMARY, payload=payload, metadata=get_metadata(request))
+
+
+@api_version(1)
+@router.post("/completion")
+async def get_summary(payload: DocumentPayload, request: Request) -> str:
+    """
+    Starts a job to summarize the given payload.
+    """
+
+    return await create_and_run_job(job_type=JobType.COMPLETION, payload=payload, metadata=get_metadata(request))
 
 
 @api_version(1)

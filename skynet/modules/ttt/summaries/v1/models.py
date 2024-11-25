@@ -43,6 +43,7 @@ class DocumentMetadata(BaseModel):
 
 class JobType(Enum):
     ACTION_ITEMS = 'action_items'
+    COMPLETION = 'completion'
     SUMMARY = 'summary'
 
 
