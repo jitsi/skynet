@@ -87,6 +87,10 @@ ws_max_size_bytes = int(os.environ.get('WS_MAX_SIZE_BYTES', 1000000))
 ws_max_queue_size = int(os.environ.get('WS_MAX_QUEUE_SIZE', 3000))
 ws_max_ping_interval = int(os.environ.get('WS_MAX_PING_INTERVAL', 30))
 ws_max_ping_timeout = int(os.environ.get('WS_MAX_PING_TIMEOUT', 30))
+# The maximum number of final transcriptions to include in the initial prompt.
+# This is used to provide some context to the model
+# The larger the initial prompt (max 224 tokens), the slower the inference.
+whisper_max_finals_in_initial_prompt = int(os.environ.get('WHISPER_MAX_FINALS_IN_INITIAL_PROMPT', 2))
 
 
 # jobs
