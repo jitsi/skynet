@@ -6,8 +6,9 @@ ARG BASE_IMAGE_RUN=nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 FROM ${BASE_IMAGE_BUILD} AS builder
 
 RUN \
+    echo "deb http://security.ubuntu.com/ubuntu focal-security main" | tee /etc/apt/sources.list.d/focal-security.list && \
     apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates gnupg git
+    apt-get install -y apt-transport-https ca-certificates gnupg git libssl1.1
 
 COPY docker/rootfs/ /
 
@@ -89,8 +90,9 @@ RUN \
 FROM ffmpeg_install
 
 RUN \
+    echo "deb http://security.ubuntu.com/ubuntu focal-security main" | tee /etc/apt/sources.list.d/focal-security.list && \
     apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates gnupg
+    apt-get install -y apt-transport-https ca-certificates gnupg libssl1.1
 
 COPY docker/rootfs/ /
 COPY --chown=jitsi:jitsi docker/run-skynet.sh /opt/
