@@ -16,7 +16,6 @@ from .prompts.action_items import (
 from .prompts.summary import summary_conversation, summary_emails, summary_meeting, summary_text
 from .v1.models import DocumentPayload, HintType, JobType
 
-llm = None
 log = get_logger(__name__)
 
 
@@ -36,10 +35,8 @@ hint_type_to_prompt = {
 }
 
 
-def initialize():
-    global llm
-
-    llm = ChatOpenAI(
+def get_local_llm(**kwargs):
+    return ChatOpenAI(
         model=llama_path,
         api_key='placeholder',  # use a placeholder value to bypass validation, and allow the custom base url to be used
         base_url=f'{openai_api_base_url}/v1',
@@ -47,11 +44,12 @@ def initialize():
         frequency_penalty=1,
         max_retries=0,
         temperature=0,
+        **kwargs,
     )
 
 
 async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI = None) -> str:
-    current_model = model or llm
+    current_model = model or get_local_llm(max_tokens=payload.max_tokens)
     chain = None
     text = payload.text
 
@@ -99,6 +97,7 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
 async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str, model_name=None) -> str:
     llm = ChatOpenAI(
         api_key=api_key,
+        max_tokens=payload.max_tokens,
         model_name=model_name,
         temperature=0,
     )
@@ -114,6 +113,7 @@ async def process_azure(
         api_version=azure_openai_api_version,
         azure_endpoint=endpoint,
         azure_deployment=deployment_name,
+        max_tokens=payload.max_tokens,
         temperature=0,
     )
 
