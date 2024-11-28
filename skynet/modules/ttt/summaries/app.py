@@ -12,7 +12,6 @@ from skynet.utils import create_app
 
 from .jobs import start_monitoring_jobs
 from .persistence import db
-from .processor import initialize as initialize_summaries
 from .v1.router import router as v1_router
 
 
@@ -57,7 +56,6 @@ async def executor_startup():
 
     initialize_openai_api()
 
-    initialize_summaries()
     log.info('summaries:executor module initialized')
 
     await db.initialize()

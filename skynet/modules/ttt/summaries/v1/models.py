@@ -19,6 +19,7 @@ class Priority(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
+    max_tokens: int = 0
     priority: Priority = Priority.NORMAL
     prompt: str | None = None
 
@@ -27,7 +28,8 @@ class DocumentPayload(BaseModel):
             'examples': [
                 {
                     'text': 'Your text here',
-                    'hint': 'text',
+                    'hint': 'meeting',
+                    'max_tokens': 0,
                     'priority': 'normal',
                     'prompt': 'Summarize the following text',
                 }
