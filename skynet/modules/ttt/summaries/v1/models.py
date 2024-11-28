@@ -22,7 +22,7 @@ class Priority(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
-    max_tokens: int = 0
+    max_tokens: int = None
     priority: Priority = Priority.NORMAL
     prompt: str | None = None
 
@@ -44,7 +44,7 @@ class SummaryDocumentPayload(DocumentPayload):
                 {
                     'text': 'Your text here',
                     'hint': 'meeting',
-                    'max_tokens': 0,
+                    'max_tokens': None,
                     'priority': 'normal',
                     'prompt': summary_meeting,
                 }
