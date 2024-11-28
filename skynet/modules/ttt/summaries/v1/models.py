@@ -1,5 +1,6 @@
 import time
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, computed_field, Field
 
@@ -22,9 +23,9 @@ class Priority(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
-    max_tokens: int = None
+    max_tokens: Optional[int] = None
     priority: Priority = Priority.NORMAL
-    prompt: str | None = None
+    prompt: Optional[str] = None
 
 
 class ActionItemsDocumentPayload(DocumentPayload):
