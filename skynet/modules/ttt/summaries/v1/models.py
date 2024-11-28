@@ -3,6 +3,9 @@ from enum import Enum
 
 from pydantic import BaseModel, computed_field, Field
 
+from skynet.modules.ttt.summaries.prompts.action_items import action_items_meeting
+from skynet.modules.ttt.summaries.prompts.summary import summary_meeting
+
 
 class HintType(Enum):
     CONVERSATION = 'conversation'
@@ -23,6 +26,18 @@ class DocumentPayload(BaseModel):
     priority: Priority = Priority.NORMAL
     prompt: str | None = None
 
+
+class ActionItemsDocumentPayload(DocumentPayload):
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {'text': 'Your text here', 'hint': 'text', 'priority': 'normal', 'prompt': action_items_meeting}
+            ]
+        }
+    }
+
+
+class SummaryDocumentPayload(DocumentPayload):
     model_config = {
         'json_schema_extra': {
             'examples': [
@@ -31,7 +46,7 @@ class DocumentPayload(BaseModel):
                     'hint': 'meeting',
                     'max_tokens': 0,
                     'priority': 'normal',
-                    'prompt': 'Summarize the following text',
+                    'prompt': summary_meeting,
                 }
             ]
         }

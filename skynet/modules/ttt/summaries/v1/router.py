@@ -6,7 +6,15 @@ from skynet.env import summary_minimum_payload_length
 from skynet.utils import get_router
 
 from ..jobs import create_job, get_job as get_job
-from .models import BaseJob, DocumentMetadata, DocumentPayload, JobId, JobType
+from .models import (
+    ActionItemsDocumentPayload,
+    BaseJob,
+    DocumentMetadata,
+    DocumentPayload,
+    JobId,
+    JobType,
+    SummaryDocumentPayload,
+)
 
 router = get_router()
 
@@ -35,7 +43,7 @@ def validate_payload(payload: DocumentPayload) -> None:
 
 @api_version(1)
 @router.post("/action-items", dependencies=[Depends(validate_payload)])
-async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
+async def get_action_items(payload: ActionItemsDocumentPayload, request: Request) -> JobId:
     """
     Starts a job to extract action items from the given payload.
     """
@@ -45,7 +53,7 @@ async def get_action_items(payload: DocumentPayload, request: Request) -> JobId:
 
 @api_version(1)
 @router.post("/summary", dependencies=[Depends(validate_payload)])
-async def get_summary(payload: DocumentPayload, request: Request) -> JobId:
+async def get_summary(payload: SummaryDocumentPayload, request: Request) -> JobId:
     """
     Starts a job to summarize the given payload.
     """
