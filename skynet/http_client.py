@@ -40,6 +40,8 @@ async def request(method, url, **kwargs) -> aiohttp.ClientResponse:
 
 
 async def close():
+    global _session
+
     if _session is not None:
         await _session.close()
 

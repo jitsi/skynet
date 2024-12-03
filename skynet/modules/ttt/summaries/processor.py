@@ -49,7 +49,7 @@ def get_local_llm(**kwargs):
 
 
 async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI = None) -> str:
-    current_model = model or get_local_llm(max_tokens=payload.max_tokens)
+    current_model = model or get_local_llm(max_tokens=payload.max_completion_tokens)
     chain = None
     text = payload.text
 
@@ -97,7 +97,7 @@ async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI
 async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str, model_name=None) -> str:
     llm = ChatOpenAI(
         api_key=api_key,
-        max_tokens=payload.max_tokens,
+        max_tokens=payload.max_completion_tokens,
         model_name=model_name,
         temperature=0,
     )
@@ -113,7 +113,7 @@ async def process_azure(
         api_version=azure_openai_api_version,
         azure_endpoint=endpoint,
         azure_deployment=deployment_name,
-        max_tokens=payload.max_tokens,
+        max_tokens=payload.max_completion_tokens,
         temperature=0,
     )
 
