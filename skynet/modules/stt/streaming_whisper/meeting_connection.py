@@ -55,7 +55,8 @@ class MeetingConnection:
             self.participants[a_chunk.participant_id] = State(a_chunk.participant_id, a_chunk.language)
 
         payloads = await self.participants[a_chunk.participant_id].process(a_chunk, self.previous_transcription_tokens)
-        for payload in payloads:
-            if payload.type == 'final':
-                await self.update_initial_prompt(payload.text)
+        if payloads:
+            for payload in payloads:
+                if payload.type == 'final':
+                    await self.update_initial_prompt(payload.text)
         return payloads
