@@ -23,7 +23,7 @@ class Priority(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
-    max_tokens: Optional[int] = None
+    max_completion_tokens: Optional[int] = None
     priority: Priority = Priority.NORMAL
     prompt: Optional[str] = None
 
@@ -45,7 +45,7 @@ class SummaryDocumentPayload(DocumentPayload):
                 {
                     'text': 'Your text here',
                     'hint': 'meeting',
-                    'max_tokens': None,
+                    'max_completion_tokens': None,
                     'priority': 'normal',
                     'prompt': summary_meeting,
                 }
@@ -55,8 +55,8 @@ class SummaryDocumentPayload(DocumentPayload):
 
 
 class DocumentMetadata(BaseModel):
-    app_id: str | None = None
-    customer_id: str | None = None
+    app_id: Optional[str] = None
+    customer_id: Optional[str] = None
 
 
 class JobType(Enum):
@@ -82,7 +82,7 @@ class BaseJob(BaseModel):
     duration: float = 0.0
     id: str
     processor: Processors = Processors.LOCAL
-    result: str | None = None
+    result: Optional[str] = None
     status: JobStatus = JobStatus.PENDING
     type: JobType
 
@@ -90,11 +90,11 @@ class BaseJob(BaseModel):
 # since private fields are not serialized, use a different model with required internals
 class Job(BaseJob):
     created: float = Field(default_factory=time.time)
-    end: float | None = None
+    end: Optional[float] = None
     metadata: DocumentMetadata = DocumentMetadata()
     payload: DocumentPayload
-    start: float | None = None
-    worker_id: int | None = None
+    start: Optional[float] = None
+    worker_id: Optional[int] = None
 
     @computed_field
     @property
