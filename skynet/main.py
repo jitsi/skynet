@@ -80,7 +80,10 @@ async def main():
         tasks.append(asyncio.create_task(create_webserver('skynet.metrics:metrics', port=8001)))
 
     if enable_haproxy_agent and 'streaming_whisper' in modules:
+        # haproxy agent check tcp server
         tasks.append(asyncio.create_task(create_tcpserver(port=8002)))
+        # sidecar rest endpoint for the autoscaler
+        tasks.append(asyncio.create_task(create_webserver('skynet.agent:app', port=8003)))
 
     await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
