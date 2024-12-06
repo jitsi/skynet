@@ -1,7 +1,9 @@
 import asyncio
 import math
+
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
+
 from skynet.env import whisper_max_connections
 
 from skynet.logs import get_logger
@@ -89,9 +91,7 @@ async def echo_requests(request: Request):
     if payload['state'] and payload['state'] in ['drain', 'maint', 'ready']:
         with open(STATE_FILE, 'w') as f:
             f.write(payload['state'].strip())
-        return StateResponse(request_status='success',
-                                   current_state=current_state,
-                                   desired_state=payload['state'])
+        return StateResponse(request_status='success', current_state=current_state, desired_state=payload['state'])
 
     log.error(f'Invalid state change request: {payload}')
     return StateResponse(request_status='failed', current_state=current_state, desired_state=payload['state'])
@@ -99,8 +99,9 @@ async def echo_requests(request: Request):
 
 @app.get('/state')
 async def echo_requests(request: Request):
-    return CurrentStateResponse(current_state=await get_current_state(),
-                                active_connections=CONNECTIONS_METRIC._value.get())
+    return CurrentStateResponse(
+        current_state=await get_current_state(), active_connections=CONNECTIONS_METRIC._value.get()
+    )
 
 
 # Update the HAProxy state if it changes via the API
