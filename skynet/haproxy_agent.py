@@ -63,6 +63,7 @@ class CurrentStateResponse(BaseModel):
     state: str
     connections: int
     stress_level: float
+    graceful_shutdown: bool
 
 
 @autoscaler_rest_app.post('/state')
@@ -94,4 +95,5 @@ async def get_state(request: Request):
         state=haproxy_state,
         connections=CONNECTIONS_METRIC._value.get(),
         stress_level=TRANSCRIBE_STRESS_LEVEL_METRIC._value.get(),
+        graceful_shutdown=bool(TRANSCRIBE_GRACEFUL_SHUTDOWN._value.get()),
     )
