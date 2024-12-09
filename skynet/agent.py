@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from skynet.env import whisper_max_connections
 
 from skynet.logs import get_logger
-from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_GRACEFUL_SHUTDOWN
+from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_GRACEFUL_SHUTDOWN, TRANSCRIBE_STRESS_LEVEL_METRIC
 
 log = get_logger(__name__)
 app = FastAPI()
@@ -24,10 +24,6 @@ async def get_haproxy_percentage():
     if inverted <= 0:
         return 1
     return int(inverted)
-
-
-async def get_stress_level():
-    return round(CONNECTIONS_METRIC._value.get() / whisper_max_connections, 2)
 
 
 async def handle_tcp_request(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -107,7 +103,7 @@ async def echo_requests(request: Request):
     return CurrentStateResponse(
         current_state=await get_current_state(),
         active_connections=CONNECTIONS_METRIC._value.get(),
-        stress_level=await get_stress_level()
+        stress_level=TRANSCRIBE_STRESS_LEVEL_METRIC._value.get()
     )
 
 
