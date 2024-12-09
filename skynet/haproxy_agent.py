@@ -78,10 +78,11 @@ async def set_state(request: Request):
         if haproxy_state == 'drain':
             TRANSCRIBE_GRACEFUL_SHUTDOWN.set(1)
 
-        return UpdateStateResponse(request_status='success',
-                                   old_state=old_state,
-                                   new_state=haproxy_state,
-                                   )
+        return UpdateStateResponse(
+            request_status='success',
+            old_state=old_state,
+            new_state=haproxy_state,
+        )
 
     log.error(f'Invalid state change request: {payload}')
     return UpdateStateResponse(request_status='failed', old_state=old_state, new_state='invalid')
