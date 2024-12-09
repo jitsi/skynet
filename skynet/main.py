@@ -7,8 +7,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from skynet import http_client
-from skynet.haproxy_agent import create_tcpserver
 from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules, use_vllm
+from skynet.haproxy_agent import create_tcpserver
 from skynet.logs import get_logger
 from skynet.utils import create_app, create_webserver
 
@@ -83,7 +83,7 @@ async def main():
         # haproxy agent check tcp server
         tasks.append(asyncio.create_task(create_tcpserver(port=8002)))
         # sidecar rest endpoint for the autoscaler
-        tasks.append(asyncio.create_task(create_webserver('skynet.agent:app', port=8003)))
+        tasks.append(asyncio.create_task(create_webserver('skynet.haproxy_agent:autoscaler_rest_app', port=8003)))
 
     await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 

@@ -10,14 +10,17 @@ from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_GRACEFUL_SHUTDOWN, TRANSCRIBE_STRESS_LEVEL_METRIC
 
 log = get_logger(__name__)
-app = FastAPI()
 
-STATE_FILE = '/tmp/streaming-whisper-connections-state'
+# Bundles a REST API server used by the autoscaler with a TCP server that is queried by the HAProxy agent.
+# The REST API is used to change and query the state of the system. The HAProxy agent server is closely
+# bound to the REST API server as the latter will inform HAProxy if the system was set to drain mode.
+
+autoscaler_rest_app = FastAPI()
+TRANSCRIBE_GRACEFUL_SHUTDOWN.set(0)
 haproxy_state = 'ready'
-haproxy_check_state_task = None
 
 
-async def get_haproxy_percentage():
+def get_haproxy_lb_percentage():
     conns = CONNECTIONS_METRIC._value.get()
     perc = int(math.floor(conns * 100 / whisper_max_connections))
     inverted = 100 - perc
@@ -27,9 +30,7 @@ async def get_haproxy_percentage():
 
 
 async def handle_tcp_request(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    global haproxy_state
-    percentage = await get_haproxy_percentage()
-    response = f'up {haproxy_state} {percentage}%\n'
+    response = f'up {haproxy_state} {get_haproxy_lb_percentage()}%\n'
     if writer is not None:
         try:
             writer.write(response.encode())
@@ -52,72 +53,44 @@ async def create_tcpserver(port):
 
 
 # Endpoints for the autoscaler to query the current state of the system
-class StateResponse(BaseModel):
+class UpdateStateResponse(BaseModel):
     request_status: str
-    current_state: str
-    desired_state: str
+    old_state: str
+    new_state: str
 
 
 class CurrentStateResponse(BaseModel):
-    current_state: str
-    active_connections: int
+    state: str
+    connections: int
     stress_level: float
 
 
-async def get_current_state():
-    try:
-        with open(STATE_FILE, 'r') as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        log.error(f'The state file does not exist')
-        with open(STATE_FILE, 'w') as f:
-            f.write('ready')
-        return 'ready'
-    except Exception as e:
-        log.error(f'Failed to read the state file: {e}')
-        return 'unknown'
-
-
-@app.post('/state')
+@autoscaler_rest_app.post('/state')
 async def set_state(request: Request):
-    global haproxy_check_state_task
+    global haproxy_state
     payload = await request.json()
     log.info(f'Received state change request: {payload}')
-    current_state = await get_current_state()
+    old_state = haproxy_state
 
-    if haproxy_check_state_task is None:
-        loop = asyncio.get_running_loop()
-        haproxy_check_state_task = loop.create_task(update_haproxy_state())
+    if payload['state'] and payload['state'].strip() in ['drain', 'maint', 'ready']:
+        haproxy_state = payload['state'].strip()
 
-    if payload['state'] and payload['state'] in ['drain', 'maint', 'ready']:
-        with open(STATE_FILE, 'w') as f:
-            f.write(payload['state'].strip())
-        return StateResponse(request_status='success', current_state=current_state, desired_state=payload['state'])
+        if haproxy_state == 'drain':
+            TRANSCRIBE_GRACEFUL_SHUTDOWN.set(1)
+
+        return UpdateStateResponse(request_status='success',
+                                   old_state=old_state,
+                                   new_state=haproxy_state,
+                                   )
 
     log.error(f'Invalid state change request: {payload}')
-    return StateResponse(request_status='failed', current_state=current_state, desired_state=payload['state'])
+    return UpdateStateResponse(request_status='failed', old_state=old_state, new_state='invalid')
 
 
-@app.get('/state')
+@autoscaler_rest_app.get('/state')
 async def get_state(request: Request):
     return CurrentStateResponse(
-        current_state=await get_current_state(),
-        active_connections=CONNECTIONS_METRIC._value.get(),
+        state=haproxy_state,
+        connections=CONNECTIONS_METRIC._value.get(),
         stress_level=TRANSCRIBE_STRESS_LEVEL_METRIC._value.get(),
     )
-
-
-# Updates the HAProxy state if it changes via the API
-# so that the load balancer can react to the changes
-async def update_haproxy_state():
-    global haproxy_state
-    while True:
-        new_state = await get_current_state()
-        if new_state != haproxy_state:
-            log.info(f'HAProxy state changed from {haproxy_state} to {new_state}')
-            haproxy_state = new_state
-        if new_state in ('drain', 'maint'):
-            TRANSCRIBE_GRACEFUL_SHUTDOWN.set(1)
-        else:
-            TRANSCRIBE_GRACEFUL_SHUTDOWN.set(0)
-        await asyncio.sleep(1)
