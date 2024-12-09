@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from skynet.env import whisper_max_connections
 
 from skynet.logs import get_logger
-from skynet.modules.monitoring import CONNECTIONS_METRIC
+from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_GRACEFUL_SHUTDOWN
 
 log = get_logger(__name__)
 app = FastAPI()
@@ -17,7 +17,7 @@ haproxy_state = 'ready'
 haproxy_check_state_task = None
 
 
-async def calc_percentage():
+async def get_haproxy_percentage():
     conns = CONNECTIONS_METRIC._value.get()
     perc = int(math.floor(conns * 100 / whisper_max_connections))
     inverted = 100 - perc
@@ -26,9 +26,13 @@ async def calc_percentage():
     return int(inverted)
 
 
+async def get_stress_level():
+    return round(CONNECTIONS_METRIC._value.get() / whisper_max_connections, 2)
+
+
 async def handle_tcp_request(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     global haproxy_state
-    percentage = await calc_percentage()
+    percentage = await get_haproxy_percentage()
     response = f'up {haproxy_state} {percentage}%\n'
     if writer is not None:
         try:
@@ -61,6 +65,7 @@ class StateResponse(BaseModel):
 class CurrentStateResponse(BaseModel):
     current_state: str
     active_connections: int
+    stress_level: float
 
 
 async def get_current_state():
@@ -100,11 +105,14 @@ async def echo_requests(request: Request):
 @app.get('/state')
 async def echo_requests(request: Request):
     return CurrentStateResponse(
-        current_state=await get_current_state(), active_connections=CONNECTIONS_METRIC._value.get()
+        current_state=await get_current_state(),
+        active_connections=CONNECTIONS_METRIC._value.get(),
+        stress_level=await get_stress_level()
     )
 
 
-# Update the HAProxy state if it changes via the API
+# Updates the HAProxy state if it changes via the API
+# so that the load balancer can react to the changes
 async def update_haproxy_state():
     global haproxy_state
     while True:
@@ -112,4 +120,8 @@ async def update_haproxy_state():
         if new_state != haproxy_state:
             log.info(f'HAProxy state changed from {haproxy_state} to {new_state}')
             haproxy_state = new_state
+        if new_state in ('drain', 'maint'):
+            TRANSCRIBE_GRACEFUL_SHUTDOWN.set(1)
+        else:
+            TRANSCRIBE_GRACEFUL_SHUTDOWN.set(0)
         await asyncio.sleep(1)

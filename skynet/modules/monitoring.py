@@ -66,6 +66,14 @@ CONNECTIONS_METRIC = Gauge(
     subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
 )
 
+TRANSCRIBE_GRACEFUL_SHUTDOWN = Gauge(
+    'LiveWsGracefulShutdown',
+    documentation='Indicates if the transcriber is in the process of shutting down gracefully',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
+)
+
+
 TRANSCRIBE_STRESS_LEVEL_METRIC = Gauge(
     'stress_level',
     documentation='Whisper stress level',
