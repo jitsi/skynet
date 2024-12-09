@@ -103,7 +103,7 @@ async def echo_requests(request: Request):
     return CurrentStateResponse(
         current_state=await get_current_state(),
         active_connections=CONNECTIONS_METRIC._value.get(),
-        stress_level=TRANSCRIBE_STRESS_LEVEL_METRIC._value.get()
+        stress_level=TRANSCRIBE_STRESS_LEVEL_METRIC._value.get(),
     )
 
 
