@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from skynet import http_client
-from skynet.agent import create_tcpserver
+from skynet.haproxy_agent import create_tcpserver
 from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules, use_vllm
 from skynet.logs import get_logger
 from skynet.utils import create_app, create_webserver

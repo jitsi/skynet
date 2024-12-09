@@ -79,7 +79,7 @@ async def get_current_state():
 
 
 @app.post('/state')
-async def echo_requests(request: Request):
+async def set_state(request: Request):
     global haproxy_check_state_task
     payload = await request.json()
     log.info(f'Received state change request: {payload}')
@@ -99,7 +99,7 @@ async def echo_requests(request: Request):
 
 
 @app.get('/state')
-async def echo_requests(request: Request):
+async def get_state(request: Request):
     return CurrentStateResponse(
         current_state=await get_current_state(),
         active_connections=CONNECTIONS_METRIC._value.get(),
