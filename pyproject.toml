@@ -12,6 +12,7 @@ poetry-plugin-export = "^1.6.0"
 usort = "^1.0.7"
 argparse = "^1.4.0"
 tqdm = "^4.66.5"
+llmcompressor = "^0.3.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "7.4.4"
