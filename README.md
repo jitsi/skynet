@@ -17,7 +17,7 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 
 ```bash
 # if VLLM cannot be used, make sure to have Ollama started. In that case LLAMA_PATH should be the model name, like "llama3.1".
-export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct-Q8_0.gguf"
+export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct"
 
 # disable authorization (for testing)
 export BYPASS_AUTHORIZATION=1

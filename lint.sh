@@ -1,4 +1,4 @@
 #!/bin/sh
 
-poetry run black skynet
-poetry run usort format skynet
+poetry run black skynet tools
+poetry run usort format skynet tools
