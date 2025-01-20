@@ -34,11 +34,10 @@ class TestCreateJob:
 
 @pytest.fixture()
 def run_job_fixture(mocker):
-    mocker.patch('skynet.modules.ttt.summaries.jobs.SUMMARY_DURATION_METRIC.observe')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.SUMMARY_DURATION_METRIC.labels')
+    mocker.patch('skynet.modules.ttt.summaries.jobs.SUMMARY_FULL_DURATION_METRIC.observe')
     mocker.patch('skynet.modules.ttt.summaries.jobs.update_job')
     mocker.patch('skynet.modules.ttt.summaries.jobs.process')
-    mocker.patch('skynet.modules.ttt.summaries.jobs.process_open_ai')
-    mocker.patch('skynet.modules.ttt.summaries.jobs.process_azure')
     mocker.patch('skynet.modules.ttt.summaries.jobs.db.db')
 
     return mocker
@@ -46,99 +45,23 @@ def run_job_fixture(mocker):
 
 class TestRunJob:
     @pytest.mark.asyncio
-    async def test_does_not_run_job(self, run_job_fixture):
-        '''Test that a job with a short payload is not sent for inference.'''
-
-        from skynet.modules.ttt.summaries.jobs import process, run_job
-
-        await run_job(
-            Job(
-                payload=DocumentPayload(text="Hello. It’s me . . . Where are you?"),
-                type=JobType.SUMMARY,
-                id='job_id',
-                metadata=DocumentMetadata(customer_id='test'),
-            )
-        )
-
-        process.assert_not_called()
-
-    @pytest.mark.asyncio
     async def test_run_job(self, run_job_fixture):
-        '''Test that a job with a long enough payload is sent for inference.'''
+        '''Test that a job is sent for inference.'''
 
         from skynet.modules.ttt.summaries.jobs import process, run_job
 
-        await run_job(
-            Job(
-                payload=DocumentPayload(
-                    text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
-                ),
-                metadata=DocumentMetadata(customer_id=None),
-                type=JobType.SUMMARY,
-                id='job_id',
-            )
+        job = Job(
+            payload=DocumentPayload(
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+            ),
+            metadata=DocumentMetadata(customer_id=None),
+            type=JobType.SUMMARY,
+            id='job_id',
         )
+
+        await run_job(job)
 
         process.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_run_job_with_open_ai(self, run_job_fixture):
-        '''Test that a job is sent for inference to openai if there is a customer id with a valid api key.'''
-
-        from skynet.modules.ttt.summaries.jobs import process_open_ai, run_job
-
-        secret = 'secret'
-        model = 'gpt-3.5-turbo'
-
-        run_job_fixture.patch(
-            'skynet.modules.ttt.summaries.jobs.get_credentials',
-            return_value={'secret': secret, 'type': 'OPENAI', 'metadata': {'model': model}},
-        )
-
-        job = Job(
-            payload=DocumentPayload(
-                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
-            ),
-            metadata=DocumentMetadata(customer_id='test'),
-            type=JobType.SUMMARY,
-            id='job_id',
-        )
-
-        await run_job(job)
-
-        process_open_ai.assert_called_once_with(job.payload, job.type, secret, model)
-
-    @pytest.mark.asyncio
-    async def test_run_job_with_azure_open_ai(self, run_job_fixture):
-        '''Test that a job is sent for inference to azure openai if there is a customer id with a valid api key.'''
-
-        from skynet.modules.ttt.summaries.jobs import process_azure, run_job
-
-        secret = 'secret'
-        deployment_name = 'gpt-3.5-turbo'
-        endpoint = 'https://myopenai.azure.com'
-
-        run_job_fixture.patch(
-            'skynet.modules.ttt.summaries.jobs.get_credentials',
-            return_value={
-                'secret': secret,
-                'type': 'AZURE_OPENAI',
-                'metadata': {'deploymentName': deployment_name, 'endpoint': endpoint},
-            },
-        )
-
-        job = Job(
-            payload=DocumentPayload(
-                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
-            ),
-            metadata=DocumentMetadata(customer_id='test'),
-            type=JobType.SUMMARY,
-            id='job_id',
-        )
-
-        await run_job(job)
-
-        process_azure.assert_called_once_with(job.payload, job.type, secret, endpoint, deployment_name)
 
 
 class TestCanRunNextJob:

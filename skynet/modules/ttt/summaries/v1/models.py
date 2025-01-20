@@ -81,7 +81,6 @@ class JobStatus(Enum):
 class BaseJob(BaseModel):
     duration: float = 0.0
     id: str
-    processor: Processors = Processors.LOCAL
     result: Optional[str] = None
     status: JobStatus = JobStatus.PENDING
     type: JobType

@@ -3,8 +3,6 @@ import os
 import time
 import uuid
 
-from skynet.auth.openai import CredentialsType, get_credentials
-
 from skynet.env import enable_batching, job_timeout, modules, redis_exp_seconds
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -17,9 +15,9 @@ from skynet.modules.monitoring import (
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
 from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready
+from skynet.modules.ttt.processor import get_job_processor, process
 
 from .persistence import db
-from .processor import process, process_azure, process_open_ai
 from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Priority, Processors
 
 log = get_logger(__name__)
@@ -52,20 +50,6 @@ def can_run_next_job() -> bool:
         return True
 
     return current_task is None or current_task.done()
-
-
-def get_job_processor(customer_id: str) -> Processors:
-    options = get_credentials(customer_id)
-    secret = options.get('secret')
-    api_type = options.get('type')
-
-    if secret:
-        if api_type == CredentialsType.OPENAI.value:
-            return Processors.OPENAI
-        elif api_type == CredentialsType.AZURE_OPENAI.value:
-            return Processors.AZURE
-
-    return Processors.LOCAL
 
 
 async def update_summary_queue_metric() -> None:
@@ -101,9 +85,7 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     job_id = str(uuid.uuid4())
 
-    job = Job(
-        id=job_id, payload=payload, type=job_type, metadata=metadata, processor=get_job_processor(metadata.customer_id)
-    )
+    job = Job(id=job_id, payload=payload, type=job_type, metadata=metadata)
     await db.set(job_id, Job.model_dump_json(job))
 
     log.info(f"Created job {job.id}.")
@@ -180,42 +162,20 @@ async def _run_job(job: Job) -> None:
     worker_id = await db.db.client_id()
     start = time.time()
     customer_id = job.metadata.customer_id
-    processor = get_job_processor(customer_id)  # may have changed since job was created
+    processor = get_job_processor(customer_id)
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
     log.info(f"Running job {job.id}. Queue time: {round(start - job.created, 3)} seconds")
 
-    job = await update_job(
-        job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id, processor=processor
-    )
+    job = await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
 
     # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
     if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
     try:
-        options = get_credentials(customer_id)
-        secret = options.get('secret')
-
-        if processor == Processors.OPENAI:
-            log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
-
-            # needed for backwards compatibility
-            model = options.get('model') or options.get('metadata').get('model')
-            result = await process_open_ai(job.payload, job.type, secret, model)
-        elif processor == Processors.AZURE:
-            log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
-
-            metadata = options.get('metadata')
-            result = await process_azure(
-                job.payload, job.type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
-            )
-        else:
-            if customer_id:
-                log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
-
-            result = await process(job.payload, job.type)
+        result = await process(job.payload, job.type, customer_id)
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 

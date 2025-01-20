@@ -4,17 +4,23 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
+from skynet.auth.user_info import CredentialsType, get_credentials
 from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, llama_path, openai_api_base_url
 from skynet.logs import get_logger
 
-from .prompts.action_items import (
+from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_conversation,
     action_items_emails,
     action_items_meeting,
     action_items_text,
 )
-from .prompts.summary import summary_conversation, summary_emails, summary_meeting, summary_text
-from .v1.models import DocumentPayload, HintType, JobType
+from skynet.modules.ttt.summaries.prompts.summary import (
+    summary_conversation,
+    summary_emails,
+    summary_meeting,
+    summary_text,
+)
+from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType, Processors
 
 log = get_logger(__name__)
 
@@ -35,6 +41,20 @@ hint_type_to_prompt = {
 }
 
 
+def get_job_processor(customer_id: str) -> Processors:
+    options = get_credentials(customer_id)
+    secret = options.get('secret')
+    api_type = options.get('type')
+
+    if secret:
+        if api_type == CredentialsType.OPENAI.value:
+            return Processors.OPENAI
+        elif api_type == CredentialsType.AZURE_OPENAI.value:
+            return Processors.AZURE
+
+    return Processors.LOCAL
+
+
 def get_local_llm(**kwargs):
     return ChatOpenAI(
         model=llama_path,
@@ -48,7 +68,7 @@ def get_local_llm(**kwargs):
     )
 
 
-async def process(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI = None) -> str:
+async def summarize(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI = None) -> str:
     current_model = model or get_local_llm(max_completion_tokens=payload.max_completion_tokens)
     chain = None
     text = payload.text
@@ -102,7 +122,7 @@ async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: 
         temperature=0,
     )
 
-    return await process(payload, job_type, llm)
+    return await summarize(payload, job_type, llm)
 
 
 async def process_azure(
@@ -117,4 +137,31 @@ async def process_azure(
         temperature=0,
     )
 
-    return await process(payload, job_type, llm)
+    return await summarize(payload, job_type, llm)
+
+
+async def process(payload: DocumentPayload, job_type: JobType, customer_id: str | None = None) -> str:
+    processor = get_job_processor(customer_id)
+    options = get_credentials(customer_id)
+
+    secret = options.get('secret')
+
+    if processor == Processors.OPENAI:
+        log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
+
+        model = options.get('metadata').get('model')
+        result = await process_open_ai(payload, job_type, secret, model)
+    elif processor == Processors.AZURE:
+        log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
+
+        metadata = options.get('metadata')
+        result = await process_azure(
+            payload, job_type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
+        )
+    else:
+        if customer_id:
+            log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
+
+        result = await summarize(payload, job_type)
+
+    return result
