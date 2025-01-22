@@ -49,7 +49,8 @@ class State:
         self.is_transcribing = False
 
     def _extract_transcriptions(
-        self, last_pause: dict, ts_result: utils.WhisperResult) -> List[utils.TranscriptionResponse]:
+        self, last_pause: dict, ts_result: utils.WhisperResult
+    ) -> List[utils.TranscriptionResponse]:
         if ts_result is None:
             return []
         results = []
