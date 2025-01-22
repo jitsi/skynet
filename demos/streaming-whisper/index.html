@@ -68,8 +68,6 @@
         // mostly taken from https://dev.to/louisgv/quick-guide-to-audioworklet-30df
         const main = async () => {
             let finals = []
-            const CLIENTID = crypto.randomUUID()
-            const MEETINGID = crypto.randomUUID()
             const context = new AudioContext({ sampleRate: 16000 })
             const microphone = await navigator.mediaDevices.getUserMedia({
                 audio: true,
@@ -89,6 +87,9 @@
             const jwt = document.getElementById('jwt')
             const wsHost = document.getElementById('wshost')
             const muteBtn = document.getElementById('mutebtn')
+
+            let CLIENTID = crypto.randomUUID()
+            let MEETINGID = crypto.randomUUID()
 
             let isMuted = false
             muteBtn.addEventListener('click', () => {
@@ -157,6 +158,8 @@
             }
 
             function wsConnect() {
+                MEETINGID = crypto.randomUUID()
+                CLIENTID = crypto.randomUUID()
                 let wsConnectionString = wsHost.value.trim() + '/' + MEETINGID
                 if (jwt.value.trim() != '') {
                     wsConnectionString += '?auth_token=' + jwt.value.trim()

@@ -204,16 +204,14 @@ def get_phrase_prob(last_word_idx: int, words: list[WhisperWord]) -> float:
 def find_biggest_gap_between_words(word_list: list[WhisperWord]) -> dict:
     prev_word = word_list[0]
     biggest_gap_so_far = 0.0
-    biggest_probability_so_far = prev_word.probability
     result = {'start': 0.0, 'end': 0.0, 'probability': 0.0}
     for i, word in enumerate(word_list):
         if i == 0:
             continue
         diff = word.start - prev_word.end
         probability = get_phrase_prob(i - 1, word_list)
-        if diff > biggest_gap_so_far and probability > biggest_probability_so_far:
+        if diff > biggest_gap_so_far:
             biggest_gap_so_far = diff
-            biggest_probability_so_far = probability
             result = {'start': prev_word.end, 'end': word.start, 'probability': probability}
             log.debug(f'Biggest gap between words:\n{result}')
         prev_word = word
