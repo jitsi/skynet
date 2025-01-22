@@ -10,7 +10,7 @@ from silero_vad import get_speech_timestamps, read_audio
 from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
-from skynet.env import whisper_beam_size
+from skynet.env import whisper_beam_size, whisper_min_probability
 from skynet.logs import get_logger
 
 log = get_logger(__name__)
@@ -196,38 +196,55 @@ def is_silent(audio: bytes) -> Tuple[bool, iter]:
     return silent, st
 
 
+def get_phrase_prob(last_word_idx: int, words: list[WhisperWord]) -> float:
+    word_number = last_word_idx + 1
+    return sum([word.probability for word in words[:word_number]]) / word_number
+
+
 def find_biggest_gap_between_words(word_list: list[WhisperWord]) -> dict:
     prev_word = word_list[0]
-    biggest_so_far = 0.0
-    result = {'start': 0.0, 'end': 0.0}
-
-    for word in word_list:
+    biggest_gap_so_far = 0.0
+    biggest_probability_so_far = prev_word.probability
+    result = {'start': 0.0, 'end': 0.0, 'probability': 0.0}
+    for i, word in enumerate(word_list):
+        if i == 0:
+            continue
         diff = word.start - prev_word.end
-        if diff > biggest_so_far:
-            biggest_so_far = diff
-            result = {'start': prev_word.end, 'end': word.start}
+        probability = get_phrase_prob(i - 1, word_list)
+        if diff > biggest_gap_so_far and probability > biggest_probability_so_far:
+            biggest_gap_so_far = diff
+            biggest_probability_so_far = probability
+            result = {'start': prev_word.end, 'end': word.start, 'probability': probability}
             log.debug(f'Biggest gap between words:\n{result}')
         prev_word = word
     return result
 
 
-def get_last_silence_from_result(ts_result: WhisperResult, silence_threshold: float = 1.0) -> dict:
-    result = {'start': 0.0, 'end': 0.0}
-    last_word = {'start': 0.0, 'end': 0.0}
-    # if the audio is longer than 10 seconds
-    # force a final at the biggest gap between words found
-    # instead of waiting for the silence_threshold
-    if not len(ts_result.words):
-        return result
-    if ts_result.words[-1].end >= 10:
-        return find_biggest_gap_between_words(ts_result.words)
-    else:
-        # try to find a gap at least silence_threshold big
-        for word in ts_result.words:
-            if last_word['start'] > 0 and (word.start - last_word['end']) >= silence_threshold:
-                result = {'start': last_word['end'], 'end': word.start}
-            last_word = {'start': word.start, 'end': word.end}
-    return result
+def get_cut_mark_from_segment_probability(ts_result: WhisperResult) -> dict:
+    check_len = len(ts_result.words) - 1
+    phrase = ''
+    if len(ts_result.words) > 1:
+        # force a final at the biggest gap between words found if the audio is longer than 10 seconds
+        if ts_result.words[-1].end >= 10:
+            return find_biggest_gap_between_words(ts_result.words)
+        for i, word in enumerate(ts_result.words):
+            if i == check_len:
+                break
+            phrase += word.word
+            avg_probability = get_phrase_prob(i, ts_result.words)
+            if len(phrase) >= 48:
+                if (
+                    avg_probability >= whisper_min_probability
+                    and word.word[-1] in ['.', '!', '?']
+                    and word.end < ts_result.words[i + 1].start
+                ):
+                    log.debug(f'Found split at {word.word} ({word.end} - {ts_result.words[i+1].start})')
+                    log.debug(f'Avg probability: {avg_probability}')
+                    return {'start': word.end, 'end': ts_result.words[i + 1].start, 'probability': avg_probability}
+                else:
+                    if ts_result.words[-1].end >= 15:
+                        return find_biggest_gap_between_words(ts_result.words)
+    return {'start': 0.0, 'end': 0.0, 'probability': 0.0}
 
 
 def get_wav_header(chunks: List[bytes], chunk_duration_s: float = 0.256, sample_rate: int = 16000) -> bytes:

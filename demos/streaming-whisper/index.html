@@ -48,7 +48,7 @@
   </section>
   <section class="section">
       <div class="container is-max-desktop">
-          <div class="box has-text-centered is-family-monospace has-text-grey" id="outputcontainer">
+          <div class="box is-family-monospace has-text-grey" id="outputcontainer">
               <p>Waiting for interims...</p>
           </div>
       </div>
@@ -128,7 +128,8 @@
                     final.innerHTML += '<div class="columns">' +
                                          '<div class="column"><span class="tag is-info is-light is-family-monospace">' +
                                           h + ':' + m + ':' + s + '.' + ms + '</span>' + playButton + '</div>' +
-                                         '<div class="column is-three-fifths"><span class="transcript">' + msg.text + '</span>' +
+                                         '<div class="column is-three-fifths"><span class="tag is-info">' +
+                                         msg.variance.toFixed(2) + '</span><span class="transcript">' + msg.text + '</span>' +
                                          '</div></div>'
                 }
             }

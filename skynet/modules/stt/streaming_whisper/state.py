@@ -31,8 +31,6 @@ class State:
         # before starting to drop them
         add_max_silent_chunks: int = 1,
         final_after_x_silent_chunks: int = 2,
-        force_final_duration_threshold: int = 15,
-        perform_final_after_silent_seconds: float = 0.8,
     ):
         self.working_audio_starts_at = 0
         self.participant_id = participant_id
@@ -45,44 +43,24 @@ class State:
         # silence count before starting to drop incoming silent chunks
         self.silence_count_before_ignore = add_max_silent_chunks
         self.final_after_x_silent_chunks = final_after_x_silent_chunks
-        self.force_final_duration_threshold = force_final_duration_threshold
-        self.perform_final_after_silent_seconds = perform_final_after_silent_seconds
         self.uuid = utils.Uuid7()
         self.transcription_id = str(self.uuid.get())
+        self.last_received_chunk = utils.now()
+        self.is_transcribing = False
 
     def _extract_transcriptions(
-        self, last_pause: dict, ts_result: utils.WhisperResult, force_final: bool = False
-    ) -> List[utils.TranscriptionResponse]:
+        self, last_pause: dict, ts_result: utils.WhisperResult) -> List[utils.TranscriptionResponse]:
         if ts_result is None:
             return []
         results = []
         final = ''
         interim = ''
-        # return a final and flush the working audio if too many silent chunks
-        # or if the working audio is over the max duration threshold
-        if (
-            self.silent_chunks >= self.final_after_x_silent_chunks
-            or utils.convert_bytes_to_seconds(self.working_audio) > self.force_final_duration_threshold
-            or force_final
-        ):
-            if ts_result.text.strip() != '':
-                start_timestamp = int(ts_result.words[0].start * 1000) + self.working_audio_starts_at
-                final_audio = None
-                if return_audio:
-                    final_audio_length = utils.convert_bytes_to_seconds(self.working_audio)
-                    final_audio = utils.get_wav_header([self.working_audio], final_audio_length) + self.working_audio
-                results.append(self.get_response_payload(ts_result.text, start_timestamp, final_audio, True))
-                self.reset()
-                return results
-        if self.silent_chunks > self.final_after_x_silent_chunks:
-            self.long_silence = True
-
         final_starts_at = None
         interim_starts_at = None
         for word in ts_result.words:
             space = ' ' if ' ' not in word.word else ''
             # search for final up to silence
-            if word.end <= last_pause['end']:
+            if word.end < last_pause['end']:
                 final_starts_at = word.start if final_starts_at is None else final_starts_at
                 final += word.word + space
                 log.debug(f'Participant {self.participant_id}: final is "{final}"')
@@ -102,9 +80,14 @@ class State:
                 if return_audio:
                     final_audio_length = utils.convert_bytes_to_seconds(final_raw_audio)
                     final_audio = utils.get_wav_header([final_raw_audio], final_audio_length) + final_raw_audio
-                results.append(self.get_response_payload(final, final_start_timestamp, final_audio, True))
-                # advance the start timestamp of the working audio to the start of the interim,
-                self.working_audio_starts_at += int(last_pause['end'] * 1000)
+                results.append(
+                    self.get_response_payload(
+                        final, final_start_timestamp, final_audio, True, probability=last_pause['probability']
+                    )
+                )
+                # advance the start timestamp of the working audio to the start of the interim
+                if self.working_audio_starts_at != 0:
+                    self.working_audio_starts_at += int(last_pause['end'] * 1000)
             else:
                 # return everything as interim if failed to slice and acquire cut mark
                 results.append(
@@ -128,16 +111,32 @@ class State:
             return True
         return False
 
-    async def force_transcription(self) -> List[utils.TranscriptionResponse] | None:
-        ts_result = await self.do_transcription(self.working_audio)
-        last_pause = utils.get_last_silence_from_result(ts_result, self.perform_final_after_silent_seconds)
-        results = self._extract_transcriptions(last_pause, ts_result, force_final=True)
-        if len(results) > 0:
+    async def force_transcription(self, previous_tokens) -> List[utils.TranscriptionResponse] | None:
+        results = None
+        if self.is_transcribing:
             return results
-        return None
+        ts_result = await self.do_transcription(self.working_audio, previous_tokens)
+        if ts_result.text.strip() != '':
+            results = []
+            start_timestamp = int(ts_result.words[0].start * 1000) + self.working_audio_starts_at
+            final_audio = None
+            if return_audio:
+                final_audio_length = utils.convert_bytes_to_seconds(self.working_audio)
+                final_audio = utils.get_wav_header([self.working_audio], final_audio_length) + self.working_audio
+            results.append(
+                self.get_response_payload(
+                    ts_result.text,
+                    start_timestamp,
+                    final_audio,
+                    True,
+                    probability=utils.get_phrase_prob(len(ts_result.words) - 1, ts_result.words),
+                )
+            )
+        self.reset()
+        return results
 
     async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
-        self.last_received_chunk = utils.now()
+        self.last_received_chunk = self.last_received_chunk if chunk.silent else utils.now()
         self.chunk_count += 1
         if self.chunk_duration == 0:
             self.chunk_duration = chunk.duration
@@ -147,9 +146,10 @@ class State:
             f'total chunks {self.chunk_count}.'
         )
         self.add_to_store(chunk)
-        if self.should_transcribe():
+
+        if self.should_transcribe() and not self.is_transcribing:
             ts_result = await self.do_transcription(self.working_audio, previous_tokens)
-            last_pause = utils.get_last_silence_from_result(ts_result, self.perform_final_after_silent_seconds)
+            last_pause = utils.get_cut_mark_from_segment_probability(ts_result)
             results = self._extract_transcriptions(last_pause, ts_result)
             if len(results) > 0:
                 return results
@@ -166,6 +166,8 @@ class State:
         if chunk.silent:
             log.debug(f'Participant {self.participant_id}: the chunk is silent.')
             self.silent_chunks += 1
+            if self.silent_chunks > self.final_after_x_silent_chunks:
+                self.long_silence = True
         else:
             if self.working_audio_starts_at == 0:
                 self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
@@ -179,6 +181,8 @@ class State:
         )
         dropped_chunk = self.working_audio[:bytes_to_cut]
         self.working_audio = self.working_audio[bytes_to_cut:]
+        if len(self.working_audio) == 0:
+            self.working_audio_starts_at = 0
         log.debug(
             f'Participant {self.participant_id}: '
             + f'the audio buffer after cut is now {len(self.working_audio)} bytes'
@@ -186,8 +190,9 @@ class State:
         return dropped_chunk
 
     def get_response_payload(
-        self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False
+        self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False, **kwargs
     ) -> utils.TranscriptionResponse:
+        prob = kwargs.get('probability', 0.5)
         if not self.transcription_id:
             self.transcription_id = str(self.uuid.get(start_timestamp))
         ts_id = self.transcription_id
@@ -200,7 +205,7 @@ class State:
             text=transcription,
             audio=base64.b64encode(final_audio).decode('ASCII') if final_audio else '',
             type='final' if final else 'interim',
-            variance=1.0 if final else 0.5,
+            variance=prob,
         )
 
     def reset(self):
@@ -214,13 +219,14 @@ class State:
     @staticmethod
     def get_num_bytes_for_slicing(cut_mark: float) -> int:
         byte_threshold = utils.convert_seconds_to_bytes(cut_mark)
-        sliceable_bytes = 0
-        while sliceable_bytes < byte_threshold:
-            # the resulting value needs to be a multiple of 2048
-            sliceable_bytes += 2048
+        # the resulting value needs to be a multiple of 2048
+        sliceable_bytes_multiplier, _ = divmod(byte_threshold, 2048)
+        sliceable_bytes = sliceable_bytes_multiplier * 2048
+        log.debug(f'Sliceable bytes: {sliceable_bytes}')
         return sliceable_bytes
 
     async def do_transcription(self, audio: bytes, previous_tokens: list[int]) -> utils.WhisperResult | None:
+        self.is_transcribing = True
         start = time.perf_counter_ns()
         loop = asyncio.get_running_loop()
         log.debug(f'Participant {self.participant_id}: starting transcription of {len(audio)} bytes.')
@@ -228,9 +234,11 @@ class State:
             ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang, previous_tokens)
         except RuntimeError as e:
             log.error(f'Participant {self.participant_id}: failed to transcribe {e}')
+            self.is_transcribing = False
             return None
         end = time.perf_counter_ns()
         processing_time = (end - start) / 1e6 / 1000
         TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         log.debug(ts_result)
+        self.is_transcribing = False
         return ts_result

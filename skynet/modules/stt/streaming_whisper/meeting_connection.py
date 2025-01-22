@@ -12,6 +12,7 @@ from skynet.modules.stt.streaming_whisper.cfg import model
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
+from skynet.modules.stt.streaming_whisper.utils.utils import TranscriptionResponse
 
 log = get_logger(__name__)
 
@@ -31,12 +32,14 @@ class MeetingConnection:
         self.meeting_language = None
         self.tokenizer = None
 
-    async def update_initial_prompt(self, new_transcription: str):
-        self.previous_transcription_store.append(self.tokenizer.encode(f' {new_transcription.strip()}'))
-        if len(self.previous_transcription_tokens) > max_finals:
-            self.previous_transcription_store.pop(0)
-        # flatten the list of lists
-        self.previous_transcription_tokens = list(chain.from_iterable(self.previous_transcription_store))
+    async def update_initial_prompt(self, payloads: list[TranscriptionResponse]):
+        for payload in payloads:
+            if payload.type == 'final' and '. .' not in payload.text:
+                self.previous_transcription_store.append(self.tokenizer.encode(f' {payload.text.strip()}'))
+                if len(self.previous_transcription_tokens) > max_finals:
+                    self.previous_transcription_store.pop(0)
+                # flatten the list of lists
+                self.previous_transcription_tokens = list(chain.from_iterable(self.previous_transcription_store))
 
     async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
         a_chunk = Chunk(chunk, chunk_timestamp)
@@ -56,7 +59,14 @@ class MeetingConnection:
 
         payloads = await self.participants[a_chunk.participant_id].process(a_chunk, self.previous_transcription_tokens)
         if payloads:
-            for payload in payloads:
-                if payload.type == 'final':
-                    await self.update_initial_prompt(payload.text)
+            await self.update_initial_prompt(payloads)
         return payloads
+
+    async def force_transcription(self, participant_id: str):
+        if participant_id in self.participants:
+            payloads = await self.participants[participant_id].force_transcription(self.previous_transcription_tokens)
+            if payloads:
+                await self.update_initial_prompt(payloads)
+            return payloads
+        log.warn(f'Participant {participant_id} not found in the meeting')
+        return None
