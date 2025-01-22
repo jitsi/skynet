@@ -12,7 +12,7 @@ from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
 
-FLUSH_AFTER_MS = 2000
+FLUSH_AFTER_MS = 3000
 
 
 class ConnectionManager:
