@@ -32,7 +32,13 @@ class ActionItemsDocumentPayload(DocumentPayload):
     model_config = {
         'json_schema_extra': {
             'examples': [
-                {'text': 'Your text here', 'hint': 'text', 'priority': 'normal', 'prompt': action_items_meeting}
+                {
+                    'text': 'Your text here',
+                    'hint': 'text',
+                    'priority': 'normal',
+                    'prompt': action_items_meeting,
+                    'max_completion_tokens': None,
+                }
             ]
         }
     }
@@ -60,6 +66,7 @@ class DocumentMetadata(BaseModel):
 
 
 class JobType(Enum):
+    ASSIST = 'assist'
     ACTION_ITEMS = 'action_items'
     SUMMARY = 'summary'
 

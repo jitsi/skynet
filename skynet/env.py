@@ -25,23 +25,31 @@ def tobool(val: str | None):
 # general
 app_port = int(os.environ.get('SKYNET_PORT', 8000))
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
-supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper'}
-enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor').split(','))
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant'}
+enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor,assistant').split(','))
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
-# models
+# models - the default models should be downloaded with ollama beforehand if they're not to be overridden
 llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
+
+embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-embed-text')
+embeddings_model_n_ctx = int(os.environ.get('EMBEDDINGS_MODEL_N_CTX', 8192))
 
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
 azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
 
 # openai api
-vllm_server_port = int(os.environ.get('VLLM_SERVER_PORT', 8003))
+openai_api_port = int(os.environ.get('OPENAI_API_PORT', 8003))
+openai_embeddings_api_port = int(os.environ.get('OPENAI_EMBEDDINGS_API_PORT', 8004))
 openai_api_base_url = os.environ.get(
-    'OPENAI_API_BASE_URL', f'http://localhost:{vllm_server_port}' if use_vllm else "http://localhost:11434"
+    'OPENAI_API_BASE_URL', f'http://localhost:{openai_api_port}' if use_vllm else "http://localhost:11434"
+)
+openai_embeddings_api_base_url = os.environ.get(
+    'OPENAI_EMBEDDINGS_API_BASE_URL',
+    f'http://localhost:{openai_embeddings_api_port}' if use_vllm else "http://localhost:11434",
 )
 
 # openai
@@ -110,3 +118,9 @@ enable_haproxy_agent = tobool(os.environ.get('ENABLE_HAPROXY_AGENT'))
 echo_requests_base_url = os.environ.get('ECHO_REQUESTS_BASE_URL')
 echo_requests_percent = int(os.environ.get('ECHO_REQUESTS_PERCENT', 100))
 echo_requests_token = os.environ.get('ECHO_REQUESTS_TOKEN')
+
+# rag
+vector_store_path = os.environ.get('VECTOR_STORE_PATH', '_vector_store')
+supported_vector_store_types = {'faiss'}
+vector_store_type = supported_vector_store_types.intersection({os.environ.get('VECTOR_STORE_TYPE', 'faiss').lower()})
+vector_store_type = vector_store_type.pop() if vector_store_type else None

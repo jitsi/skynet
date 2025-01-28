@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from skynet import http_client
-from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules, use_vllm
+from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules
 from skynet.haproxy_agent import create_tcpserver
 from skynet.logs import get_logger
 from skynet.utils import create_app, create_webserver
@@ -20,8 +20,10 @@ if not modules:
 
 log.info(f'Enabled modules: {modules}')
 
-if device == 'cuda' or is_mac:
-    log.info('Using GPU')
+if device == 'cuda':
+    log.info('Using Nvidia GPU')
+elif is_mac:
+    log.info('Using Apple GPU')
 else:
     log.info('Using CPU')
 
@@ -37,21 +39,25 @@ async def lifespan(main_app: FastAPI):
         main_app.mount('/streaming-whisper', streaming_whisper_app)
         main_app.mount('/vox', vox_app)
 
+    if 'assistant' in modules:
+        from skynet.modules.ttt.assistant.app import app as rag_app, app_startup as assistant_startup
+
+        main_app.mount('/assistant', rag_app)
+        await assistant_startup()
+
     if 'summaries:dispatcher' in modules:
+        from skynet.modules.ttt.openai_api.app import app as openai_api_app
         from skynet.modules.ttt.summaries.app import app as summaries_app, app_startup as summaries_startup
 
         main_app.mount('/summaries', summaries_app)
+        main_app.mount('/openai', openai_api_app)
+
         await summaries_startup()
 
     if 'summaries:executor' in modules:
         from skynet.modules.ttt.summaries.app import executor_startup as executor_startup
 
         await executor_startup()
-
-        if use_vllm:
-            from skynet.modules.ttt.openai_api.app import app as openai_api_app
-
-            main_app.mount('/openai', openai_api_app)
 
     yield
 

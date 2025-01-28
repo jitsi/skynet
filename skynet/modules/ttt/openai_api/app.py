@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from enum import Enum
 
 from aiohttp.client_exceptions import ClientConnectorError
 
@@ -10,26 +11,46 @@ from vllm.entrypoints.openai.api_server import router as vllm_router
 
 from skynet import http_client
 from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, use_vllm, vllm_server_port
+from skynet.env import bypass_auth, openai_api_base_url, use_vllm
 from skynet.logs import get_logger
 from skynet.utils import create_app, dependencies, responses
 
 log = get_logger(__name__)
 
 
-def initialize():
+class TaskType(Enum):
+    GENERATE = 'generate'
+    EMBEDDING = 'embedding'
+
+
+def initialize(model_path: str, max_model_len: int, port: int, task: TaskType):
     if not use_vllm:
         return
 
-    log.info('Starting OpenAI API server...')
+    log.info(f'Starting vLLM server for {task.value} task on port {port} using model {model_path}')
+
+    gpu_memory_utilization = 0.88 if task == TaskType.GENERATE else 0.1
+    # cpu_offload_gb = 4 if task == TaskType.EMBEDDING else 0
 
     proc = subprocess.Popen(
-        f'{sys.executable} -m vllm.entrypoints.openai.api_server \
-            --disable-log-requests \
-            --model {llama_path} \
-            --gpu_memory_utilization 0.98 \
-            --max-model-len {llama_n_ctx} \
-            --port {vllm_server_port}'.split(),
+        [
+            sys.executable,
+            "-m",
+            "vllm.entrypoints.openai.api_server",
+            "--trust-remote-code",
+            # "--cpu-offload-gb", str(cpu_offload_gb),
+            "--disable-log-requests",
+            "--model",
+            model_path,
+            "--task",
+            task.value,
+            "--gpu_memory_utilization",
+            str(gpu_memory_utilization),
+            "--max-model-len",
+            str(max_model_len),
+            "--port",
+            str(port),
+        ],
         shell=False,
     )
 
