@@ -27,7 +27,7 @@ def initialize():
         f'{sys.executable} -m vllm.entrypoints.openai.api_server \
             --disable-log-requests \
             --model {llama_path} \
-            --gpu_memory_utilization 0.99 \
+            --gpu_memory_utilization 0.98 \
             --max-model-len {llama_n_ctx} \
             --port {vllm_server_port}'.split(),
         shell=False,
