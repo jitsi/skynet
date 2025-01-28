@@ -4,15 +4,13 @@ from asyncio import Task
 from fastapi import WebSocket, WebSocketDisconnect
 
 from skynet.auth.jwt import authorize
-from skynet.env import bypass_auth, whisper_max_connections
+from skynet.env import bypass_auth, whisper_flush_interval, whisper_max_connections
 from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER, TRANSCRIBE_STRESS_LEVEL_METRIC
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
-
-FLUSH_AFTER_MS = 2000
 
 
 class ConnectionManager:
@@ -76,12 +74,13 @@ class ConnectionManager:
         while True:
             for meeting_id in self.connections:
                 for participant in self.connections[meeting_id].participants:
-                    now = utils.now()
-                    last_received_chunk = self.connections[meeting_id].participants[participant].last_received_chunk
-                    is_due = now - last_received_chunk > FLUSH_AFTER_MS
-                    is_silent, _ = utils.is_silent(self.connections[meeting_id].participants[participant].working_audio)
-                    if is_due and not is_silent:
+                    state = self.connections[meeting_id].participants[participant]
+                    diff = utils.now() - state.last_received_chunk
+                    log.debug(
+                        f'Participant {participant} in meeting {meeting_id} has been silent for {diff} ms and has {len(state.working_audio)} bytes of audio'
+                    )
+                    if diff > whisper_flush_interval and len(state.working_audio) > 0 and not state.is_transcribing:
                         log.info(f'Forcing a transcription in meeting {meeting_id} for {participant}')
-                        results = await self.connections[meeting_id].participants[participant].force_transcription()
+                        results = await self.connections[meeting_id].force_transcription(participant)
                         await self.send(meeting_id, results)
             await asyncio.sleep(1)

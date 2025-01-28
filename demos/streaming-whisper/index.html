@@ -23,6 +23,7 @@
                       <div class="field">
                           <button class="button is-primary" id="transcribebtn">Transcribe</button>
                           <button class="button" id="stopbtn" disabled>Stop</button>
+                          <button class="button" id="clearbtn">Clear</button>
                           <div class="select is-disabled">
                               <select id="langselector" name="langselector">
                                 <option value="en" selected="selected">English</option>
@@ -48,7 +49,7 @@
   </section>
   <section class="section">
       <div class="container is-max-desktop">
-          <div class="box has-text-centered is-family-monospace has-text-grey" id="outputcontainer">
+          <div class="box is-family-monospace has-text-grey" id="outputcontainer">
               <p>Waiting for interims...</p>
           </div>
       </div>
@@ -68,8 +69,6 @@
         // mostly taken from https://dev.to/louisgv/quick-guide-to-audioworklet-30df
         const main = async () => {
             let finals = []
-            const CLIENTID = crypto.randomUUID()
-            const MEETINGID = crypto.randomUUID()
             const context = new AudioContext({ sampleRate: 16000 })
             const microphone = await navigator.mediaDevices.getUserMedia({
                 audio: true,
@@ -84,6 +83,7 @@
             const langSel = document.getElementById('langselector')
             const transcribeBtn = document.getElementById('transcribebtn')
             const stopBtn = document.getElementById('stopbtn')
+            const clearBtn = document.getElementById('clearbtn')
             const output = document.getElementById('outputcontainer')
             const final = document.getElementById('finalcontainer')
             const jwt = document.getElementById('jwt')
@@ -91,6 +91,8 @@
             const muteBtn = document.getElementById('mutebtn')
 
             let isMuted = false
+            let clientId = crypto.randomUUID()
+
             muteBtn.addEventListener('click', () => {
                 if (isMuted) {
                     microphone.getAudioTracks()[0].enabled = true
@@ -101,6 +103,13 @@
                     isMuted = true
                     muteBtn.innerHTML = 'Unmute'
                 }
+            })
+
+            clearBtn.addEventListener('click', () => {
+                finals = []
+                final.innerHTML = ''
+                interims = []
+                output.innerHTML = 'Waiting for interims...'
             })
 
             var isSpeaking = false
@@ -128,7 +137,8 @@
                     final.innerHTML += '<div class="columns">' +
                                          '<div class="column"><span class="tag is-info is-light is-family-monospace">' +
                                           h + ':' + m + ':' + s + '.' + ms + '</span>' + playButton + '</div>' +
-                                         '<div class="column is-three-fifths"><span class="transcript">' + msg.text + '</span>' +
+                                         '<div class="column is-three-fifths"><span class="tag is-info">' +
+                                         msg.variance.toFixed(2) + '</span><span class="transcript">' + msg.text + '</span>' +
                                          '</div></div>'
                 }
             }
@@ -156,7 +166,9 @@
             }
 
             function wsConnect() {
-                let wsConnectionString = wsHost.value.trim() + '/' + MEETINGID
+                let meetingId = crypto.randomUUID()
+                clientId = crypto.randomUUID()
+                let wsConnectionString = wsHost.value.trim() + '/' + meetingId
                 if (jwt.value.trim() != '') {
                     wsConnectionString += '?auth_token=' + jwt.value.trim()
                 }
@@ -173,7 +185,7 @@
 
             function preparePayload(data) {
                 let lang = langSel.value
-                let str = CLIENTID + "|" + lang
+                let str = clientId + "|" + lang
                 if (str.length < 60) {
                     str = str.padEnd(60, " ")
                 }
