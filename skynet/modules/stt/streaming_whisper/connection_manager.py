@@ -4,7 +4,7 @@ from asyncio import Task
 from fastapi import WebSocket, WebSocketDisconnect
 
 from skynet.auth.jwt import authorize
-from skynet.env import bypass_auth, whisper_max_connections
+from skynet.env import bypass_auth, whisper_max_connections, whisper_flush_interval
 from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER, TRANSCRIBE_STRESS_LEVEL_METRIC
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
@@ -81,7 +81,7 @@ class ConnectionManager:
                     log.debug(
                         f'Participant {participant} in meeting {meeting_id} has been silent for {diff} ms and has {len(state.working_audio)} bytes of audio'
                     )
-                    if diff > FLUSH_AFTER_MS and len(state.working_audio) > 0 and not state.is_transcribing:
+                    if diff > whisper_flush_interval and len(state.working_audio) > 0 and not state.is_transcribing:
                         log.info(f'Forcing a transcription in meeting {meeting_id} for {participant}')
                         results = await self.connections[meeting_id].force_transcription(participant)
                         await self.send(meeting_id, results)
