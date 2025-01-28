@@ -49,7 +49,7 @@ class State:
         self.is_transcribing = False
 
     def _extract_transcriptions(
-        self, last_pause: dict, ts_result: utils.WhisperResult
+        self, last_pause: utils.CutMark, ts_result: utils.WhisperResult
     ) -> List[utils.TranscriptionResponse]:
         if ts_result is None:
             return []
@@ -61,7 +61,7 @@ class State:
         for word in ts_result.words:
             space = ' ' if ' ' not in word.word else ''
             # search for final up to silence
-            if word.end < last_pause['end']:
+            if word.end < last_pause.end:
                 final_starts_at = word.start if final_starts_at is None else final_starts_at
                 final += word.word + space
                 log.debug(f'Participant {self.participant_id}: final is "{final}"')
@@ -72,23 +72,23 @@ class State:
                 log.debug(f'Participant {self.participant_id}: interim is "{interim}"')
 
         if final.strip():
-            cut_mark = self.get_num_bytes_for_slicing(last_pause['end'])
-            if cut_mark > 0:
-                log.debug(f'Participant {self.participant_id}: cut mark set at {cut_mark} bytes')
+            cut_mark_bytes = self.get_num_bytes_for_slicing(last_pause.end)
+            if cut_mark_bytes > 0:
+                log.debug(f'Participant {self.participant_id}: cut mark set at {cut_mark_bytes} bytes')
                 final_start_timestamp = self.working_audio_starts_at + int(final_starts_at * 1000)
                 final_audio = None
-                final_raw_audio = self.trim_working_audio(cut_mark)
+                final_raw_audio = self.trim_working_audio(cut_mark_bytes)
                 if return_audio:
                     final_audio_length = utils.convert_bytes_to_seconds(final_raw_audio)
                     final_audio = utils.get_wav_header([final_raw_audio], final_audio_length) + final_raw_audio
                 results.append(
                     self.get_response_payload(
-                        final, final_start_timestamp, final_audio, True, probability=last_pause['probability']
+                        final, final_start_timestamp, final_audio, True, probability=last_pause.probability
                     )
                 )
                 # advance the start timestamp of the working audio to the start of the interim
-                if self.working_audio_starts_at != 0:
-                    self.working_audio_starts_at += int(last_pause['end'] * 1000)
+                if self.working_audio_starts_at:
+                    self.working_audio_starts_at += int(last_pause.end * 1000)
             else:
                 # return everything as interim if failed to slice and acquire cut mark
                 results.append(
@@ -117,7 +117,7 @@ class State:
         if self.is_transcribing:
             return results
         ts_result = await self.do_transcription(self.working_audio, previous_tokens)
-        if ts_result.text.strip() != '':
+        if ts_result.text.strip():
             results = []
             start_timestamp = int(ts_result.words[0].start * 1000) + self.working_audio_starts_at
             final_audio = None

@@ -182,6 +182,11 @@ LANGUAGES = {
     "su": "sudanese",
 }
 
+# List of final transcriptions which should not be included in the initial prompt.
+# This is to prevent the model from repeating the same text over and over or become
+# biased towards a specific way of transcribing.
+black_listed_prompts = ['. .']
+
 
 def convert_bytes_to_seconds(byte_str: bytes) -> float:
     return round(len(byte_str) * cfg.one_byte_s, 3)
@@ -207,10 +212,10 @@ def get_phrase_prob(last_word_idx: int, words: list[WhisperWord]) -> float:
     return sum([word.probability for word in words[:word_number]]) / word_number
 
 
-def find_biggest_gap_between_words(word_list: list[WhisperWord]) -> dict:
+def find_biggest_gap_between_words(word_list: list[WhisperWord]) -> CutMark:
     prev_word = word_list[0]
     biggest_gap_so_far = 0.0
-    result = {'start': 0.0, 'end': 0.0, 'probability': 0.0}
+    result = CutMark()
     for i, word in enumerate(word_list):
         if i == 0:
             continue
@@ -218,13 +223,13 @@ def find_biggest_gap_between_words(word_list: list[WhisperWord]) -> dict:
         probability = get_phrase_prob(i - 1, word_list)
         if diff > biggest_gap_so_far:
             biggest_gap_so_far = diff
-            result = {'start': prev_word.end, 'end': word.start, 'probability': probability}
+            result = CutMark(start=prev_word.end, end=word.start, probability=probability)
             log.debug(f'Biggest gap between words:\n{result}')
         prev_word = word
     return result
 
 
-def get_cut_mark_from_segment_probability(ts_result: WhisperResult) -> dict:
+def get_cut_mark_from_segment_probability(ts_result: WhisperResult) -> CutMark:
     check_len = len(ts_result.words) - 1
     phrase = ''
     if len(ts_result.words) > 1:
@@ -244,11 +249,11 @@ def get_cut_mark_from_segment_probability(ts_result: WhisperResult) -> dict:
                 ):
                     log.debug(f'Found split at {word.word} ({word.end} - {ts_result.words[i+1].start})')
                     log.debug(f'Avg probability: {avg_probability}')
-                    return {'start': word.end, 'end': ts_result.words[i + 1].start, 'probability': avg_probability}
+                    return CutMark(start=word.end, end=ts_result.words[i + 1].start, probability=avg_probability)
                 else:
                     if ts_result.words[-1].end >= 15:
                         return find_biggest_gap_between_words(ts_result.words)
-    return {'start': 0.0, 'end': 0.0, 'probability': 0.0}
+    return CutMark()
 
 
 def get_wav_header(chunks: List[bytes], chunk_duration_s: float = 0.256, sample_rate: int = 16000) -> bytes:

@@ -12,7 +12,6 @@ from skynet.modules.stt.streaming_whisper.cfg import model
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.streaming_whisper.utils.utils import TranscriptionResponse
 
 log = get_logger(__name__)
 
@@ -32,9 +31,9 @@ class MeetingConnection:
         self.meeting_language = None
         self.tokenizer = None
 
-    async def update_initial_prompt(self, payloads: list[TranscriptionResponse]):
-        for payload in payloads:
-            if payload.type == 'final' and '. .' not in payload.text:
+    async def update_initial_prompt(self, previous_payloads: list[utils.TranscriptionResponse]):
+        for payload in previous_payloads:
+            if payload.type == 'final' and not any(prompt in payload.text for prompt in utils.black_listed_prompts):
                 self.previous_transcription_store.append(self.tokenizer.encode(f' {payload.text.strip()}'))
                 if len(self.previous_transcription_tokens) > max_finals:
                     self.previous_transcription_store.pop(0)
@@ -68,5 +67,4 @@ class MeetingConnection:
             if payloads:
                 await self.update_initial_prompt(payloads)
             return payloads
-        log.warn(f'Participant {participant_id} not found in the meeting')
         return None
