@@ -42,7 +42,7 @@ torch = "2.5.1"
 torchaudio = "2.5.1"
 uuid6 = "2024.07.10"
 uvicorn = "0.32.1"
-vllm = "0.6.4post1"
+vllm = "0.7.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
