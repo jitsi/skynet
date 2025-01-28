@@ -47,6 +47,12 @@ class TranscriptionResponse(BaseModel):
     variance: float
 
 
+class CutMark(BaseModel):
+    start: float = 0.0
+    end: float = 0.0
+    probability: float = 0.0
+
+
 class WhisperResult:
     text: str
     segments: list[WhisperSegment]
