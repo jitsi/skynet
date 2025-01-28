@@ -4,15 +4,13 @@ from asyncio import Task
 from fastapi import WebSocket, WebSocketDisconnect
 
 from skynet.auth.jwt import authorize
-from skynet.env import bypass_auth, whisper_max_connections, whisper_flush_interval
+from skynet.env import bypass_auth, whisper_flush_interval, whisper_max_connections
 from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER, TRANSCRIBE_STRESS_LEVEL_METRIC
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
 
 log = get_logger(__name__)
-
-FLUSH_AFTER_MS = 3000
 
 
 class ConnectionManager:
