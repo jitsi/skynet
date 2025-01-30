@@ -1,17 +1,24 @@
 import random
 
-from fastapi import FastAPI, Request
+from fastapi import Request
 from fastapi_versionizer.versionizer import Versionizer
 
 from skynet import http_client
 from skynet.auth.user_info import setup_credentials
-from skynet.env import echo_requests_base_url, echo_requests_percent, echo_requests_token
+from skynet.env import (
+    echo_requests_base_url,
+    echo_requests_percent,
+    echo_requests_token,
+    llama_n_ctx,
+    llama_path,
+    openai_api_port,
+)
 from skynet.logs import get_logger
-from skynet.modules.ttt.openai_api.app import initialize as initialize_openai_api
+from skynet.modules.ttt.openai_api.app import initialize as initialize_openai_api, TaskType
 from skynet.utils import create_app
+from ..persistence import db
 
 from .jobs import start_monitoring_jobs
-from .persistence import db
 from .v1.router import router as v1_router
 
 
@@ -54,7 +61,9 @@ async def app_startup():
 async def executor_startup():
     await setup_credentials()
 
-    initialize_openai_api()
+    initialize_openai_api(
+        model_path=llama_path, max_model_len=llama_n_ctx, port=openai_api_port, task=TaskType.GENERATE
+    )
 
     log.info('summaries:executor module initialized')
 

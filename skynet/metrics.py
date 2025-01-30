@@ -6,8 +6,8 @@ from skynet.modules.monitoring import (
     PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM,
     PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
+from skynet.modules.ttt.persistence import db
 from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
-from skynet.modules.ttt.summaries.persistence import db
 from skynet.utils import create_app
 
 log = get_logger(__name__)
