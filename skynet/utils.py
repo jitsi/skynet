@@ -3,7 +3,14 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, ws_max_ping_interval, ws_max_ping_timeout, ws_max_queue_size, ws_max_size_bytes
+from skynet.env import (
+    bypass_auth,
+    listen_ip,
+    ws_max_ping_interval,
+    ws_max_ping_timeout,
+    ws_max_queue_size,
+    ws_max_size_bytes,
+)
 from skynet.logs import get_logger, uvicorn_log_config
 
 log = get_logger(__name__)
@@ -36,7 +43,7 @@ def get_router() -> APIRouter:
 async def create_webserver(app, port):
     server_config = uvicorn.Config(
         app,
-        host='0.0.0.0',
+        host=listen_ip,
         port=port,
         log_config=uvicorn_log_config,
         ws_max_size=ws_max_size_bytes,
