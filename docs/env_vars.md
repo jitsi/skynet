@@ -6,7 +6,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 
 | **Name**                       | **Description**                                             | **Default**                               | **Available values**                                                            |
 |--------------------------------|-------------------------------------------------------------|-------------------------------------------|---------------------------------------------------------------------------------|
-| `ENABLED_MODULES`              | Which modules should be enabled, separated by commas        | `summaries:dispatcher,summaries:executor` | `summaries:dispatcher`, `summaries:executor`, `openai-api`, `streaming_whisper` |
+| `ENABLED_MODULES`              | Which modules should be enabled, separated by commas        | `summaries:dispatcher,summaries:executor` | `summaries:dispatcher`, `summaries:executor`, `streaming_whisper` |
 | `BYPASS_AUTHORIZATION`         | If signed JWT authorization should be enabled               | `false`                                   | `true`, `false`                                                                 |
 | `ENABLE_MONITORING`            | If the Prometheus metrics endpoint should be enabled or not | `true`                                    | `true`, `false`                                                                 |
 | `ASAP_PUB_KEYS_REPO_URL`       | Public key repository URL                                   | `NULL`                                    | N/A                                                                             |
@@ -20,10 +20,9 @@ Skynet is configurable via environment variables. Some are shared by all modules
 
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
 |----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
-| `LLAMA_PATH`                     | The path where the llama GGUF model is located.                                                                                                    | `NULL`                              | N/A                  |
-| `LLAMA_N_GPU_LAYERS`             | The number of layers to offload to the GPU. Depends on the hardware. The more layers are offloaded to the GPU, the faster it churns out responses. | `1` if running on Mac, `40` if not. | N/A                  |
-| `LLAMA_N_BATCH`                  | The batch size used when parsing long texts.                                                                                                       | `512`                               | N/A                  |
-| `JOB_TIMEOUT`                    | Timeout in seconds after which an inference job will be considered stuck and the app killed.                                                       | `600`                               | N/A                  |
+| `LLAMA_PATH`                     | The path where the llama model is located.                                                                                                         | `NULL`                              | N/A                  |
+| `LLAMA_N_CTX`                    | The context size of the llama model                                                                                                                | `128000`                            | N/A                  |
+| `JOB_TIMEOUT`                    | Timeout in seconds after which an inference job will be considered stuck and the app killed.                                                       | `300`                               | N/A                  |
 | `REDIS_EXP_SECONDS`              | After how many seconds will a completed job expire/be deleted from Redis                                                                           | `1800`                              | N/A                  |
 | `REDIS_HOST`                     | Redis host                                                                                                                                         | `localhost`                         | N/A                  |
 | `REDIS_PORT`                     | Redis port                                                                                                                                         | `6379`                              | N/A                  |
@@ -36,6 +35,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `REDIS_NAMESPACE`                | Prefix for each Redis key                                                                                                                          | `skynet`                            | N/A                  |
 | `REDIS_AWS_REGION`               | The AWS region. Needed when using AWS Secrets Manager to retrieve credentials.                                                                     | `us-west-2`                         | N/A                  |
 | `SUMMARY_MINIMUM_PAYLOAD_LENGTH` | The minimum payload length allowed for summarization.                                                                                              | `100`                               | N/A                  |
+| `SKYNET_LISTEN_IP`               | Default ip address on which the webserver is started.                                                                                              | `0.0.0.0`                           | N/A                  |
 
 ## Streaming Whisper Module Environment Variables
 
