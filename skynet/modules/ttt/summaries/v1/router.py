@@ -3,7 +3,7 @@ from fastapi_versionizer.versionizer import api_version
 
 from skynet.env import summary_minimum_payload_length
 
-from skynet.utils import get_router
+from skynet.utils import get_app_id, get_customer_id, get_router
 
 from ..jobs import create_job, get_job as get_job
 from .models import (
@@ -17,19 +17,6 @@ from .models import (
 )
 
 router = get_router()
-
-
-def get_customer_id(request: Request) -> str:
-    id = request.query_params.get("customerId")
-
-    if not id:
-        id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
-
-    return id
-
-
-def get_app_id(request: Request) -> str:
-    return request.state.decoded_jwt.get('appId') if hasattr(request.state, 'decoded_jwt') else None
 
 
 def get_metadata(request: Request) -> DocumentMetadata:

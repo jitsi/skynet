@@ -6,3 +6,4 @@ models
 .idea
 llama.log
 dump.rdb
+_vector_store_

@@ -17,7 +17,7 @@ from skynet.modules.monitoring import (
 from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready
 from skynet.modules.ttt.processor import get_job_processor, process
 
-from .persistence import db
+from ..persistence import db
 from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Priority, Processors
 
 log = get_logger(__name__)
