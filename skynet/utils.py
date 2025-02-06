@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from skynet.auth.bearer import JWTBearer
@@ -53,3 +53,16 @@ async def create_webserver(app, port):
     )
     server = uvicorn.Server(server_config)
     await server.serve()
+
+
+def get_customer_id(request: Request) -> str:
+    id = request.query_params.get("customerId")
+
+    if not id:
+        id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
+
+    return id
+
+
+def get_app_id(request: Request) -> str:
+    return request.state.decoded_jwt.get('appId') if hasattr(request.state, 'decoded_jwt') else None
