@@ -113,3 +113,13 @@ enable_haproxy_agent = tobool(os.environ.get('ENABLE_HAPROXY_AGENT'))
 echo_requests_base_url = os.environ.get('ECHO_REQUESTS_BASE_URL')
 echo_requests_percent = int(os.environ.get('ECHO_REQUESTS_PERCENT', 100))
 echo_requests_token = os.environ.get('ECHO_REQUESTS_TOKEN')
+
+# oci
+use_oci = llama_path.startswith('oci://')
+oci_model_id = os.environ.get('OCI_MODEL_ID')
+oci_service_endpoint = os.environ.get(
+    'OCI_SERVICE_ENDPOINT', 'https://inference.generativeai.us-chicago-1.oci.oraclecloud.com'
+)
+oci_compartment_id = os.environ.get('OCI_COMPARTMENT_ID')
+oci_auth_type = os.environ.get('OCI_AUTH_TYPE', 'API_KEY')
+oci_config_profile = os.environ.get('OCI_CONFIG_PROFILE', 'DEFAULT')

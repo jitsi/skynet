@@ -1,11 +1,25 @@
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.chat_models import ChatOCIGenAI
 from langchain_core.documents import Document
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from skynet.auth.user_info import CredentialsType, get_credentials
-from skynet.env import app_uuid, azure_openai_api_version, llama_n_ctx, llama_path, openai_api_base_url
+from skynet.env import (
+    app_uuid,
+    azure_openai_api_version,
+    llama_n_ctx,
+    llama_path,
+    oci_auth_type,
+    oci_compartment_id,
+    oci_config_profile,
+    oci_model_id,
+    oci_service_endpoint,
+    openai_api_base_url,
+    use_oci,
+)
 from skynet.logs import get_logger
 
 from skynet.modules.ttt.summaries.prompts.action_items import (
@@ -55,7 +69,29 @@ def get_job_processor(customer_id: str) -> Processors:
     return Processors.LOCAL
 
 
+# Cached instance since it performs some initialization we'd
+# like to avoid on every request.
+oci_llm = None
+
+
 def get_local_llm(**kwargs):
+    # OCI hosted llama
+    if use_oci:
+        global oci_llm
+
+        if oci_llm is None:
+            oci_llm = ChatOCIGenAI(
+                model_id=oci_model_id,
+                service_endpoint=oci_service_endpoint,
+                compartment_id=oci_compartment_id,
+                provider="meta",
+                model_kwargs={"temperature": 0, "frequency_penalty": 1, "max_tokens": kwargs['max_completion_tokens']},
+                auth_type=oci_auth_type,
+                auth_profile=oci_config_profile,
+            )
+        return oci_llm
+
+    # Locally hosted llama
     return ChatOpenAI(
         model=llama_path,
         api_key='placeholder',  # use a placeholder value to bypass validation, and allow the custom base url to be used
@@ -68,7 +104,7 @@ def get_local_llm(**kwargs):
     )
 
 
-async def summarize(payload: DocumentPayload, job_type: JobType, model: ChatOpenAI = None) -> str:
+async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChatModel = None) -> str:
     current_model = model or get_local_llm(max_completion_tokens=payload.max_completion_tokens)
     chain = None
     text = payload.text
