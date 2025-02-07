@@ -9,7 +9,12 @@ app_uuid = str(uuid.uuid4())
 is_mac = sys.platform == 'darwin'
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-use_vllm = device == 'cuda'
+try:
+    import vllm
+except ImportError:
+    use_vllm = False
+else:
+    use_vllm = device == 'cuda'
 
 
 # utilities

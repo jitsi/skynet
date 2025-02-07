@@ -17,7 +17,7 @@ RUN \
     apt-dpkg-wrap apt-get install -y build-essential libcurl4-openssl-dev python3.11 python3.11-venv && \
     apt-cleanup
 
-COPY requirements.txt /app/
+COPY requirements-vllm.txt /app/
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=on
 RUN \
     python3.11 -m venv .venv && \
     . .venv/bin/activate && \
-    pip install -vvv -r requirements.txt
+    pip install -vvv -r requirements-vllm.txt
 
 ## Build ffmpeg
 

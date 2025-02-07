@@ -6,8 +6,6 @@ from aiohttp.client_exceptions import ClientConnectorError
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from vllm.entrypoints.openai.api_server import router as vllm_router
-
 from skynet import http_client
 from skynet.auth.bearer import JWTBearer
 from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, use_oci, use_vllm, vllm_server_port
@@ -16,10 +14,18 @@ from skynet.utils import create_app, dependencies, responses
 
 log = get_logger(__name__)
 
+app = create_app()
+whitelisted_routes = []
+
 
 def initialize():
     if not use_vllm:
         return
+
+    from vllm.entrypoints.openai.api_server import router as vllm_router
+
+    app.include_router(vllm_router, dependencies=dependencies, responses=responses)
+    whitelisted_routes.extend(['/openai/docs', '/openai/openapi.json'])
 
     log.info('Starting OpenAI API server...')
 
@@ -55,11 +61,6 @@ async def is_ready():
     except Exception:
         return False
 
-
-app = create_app()
-app.include_router(vllm_router, dependencies=dependencies, responses=responses)
-
-whitelisted_routes = ['/openai/docs', '/openai/openapi.json']
 
 bearer = JWTBearer()
 

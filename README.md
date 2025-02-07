@@ -4,7 +4,7 @@ Skynet is an API server for AI services wrapping several apps and models.
 
 It is comprised of specialized modules which can be enabled or disabled as needed.
 
-- **Summary and Action Items** with vllm (or llama.cpp)
+- **Summary and Action Items** with vllm (or Ollama)
 - **Live Transcriptions** with Faster Whisper via websockets
 - 🚧 _More to follow_
 
@@ -16,7 +16,7 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 ## Summaries Quickstart
 
 ```bash
-# if VLLM cannot be used, make sure to have Ollama started. In that case LLAMA_PATH should be the model name, like "llama3.1".
+# If VLLM cannot be used, make sure to have Ollama started. In that case LLAMA_PATH should be the model name, like "llama3.1".
 export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct"
 
 # disable authorization (for testing)
@@ -25,7 +25,7 @@ export BYPASS_AUTHORIZATION=1
 # start Redis
 docker run -d --rm -p 6379:6379 redis 
 
-poetry install
+poetry install --with vllm
 ./run.sh
 
 # open http://localhost:8000/summaries/docs in a browser
