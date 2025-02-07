@@ -10,7 +10,7 @@ from vllm.entrypoints.openai.api_server import router as vllm_router
 
 from skynet import http_client
 from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, use_vllm, vllm_server_port
+from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, use_oci, use_vllm, vllm_server_port
 from skynet.logs import get_logger
 from skynet.utils import create_app, dependencies, responses
 
@@ -40,6 +40,9 @@ def initialize():
 
 
 async def is_ready():
+    if use_oci:
+        return True
+
     url = f'{openai_api_base_url}/health' if use_vllm else openai_api_base_url
 
     try:
