@@ -1,1 +1,1 @@
-deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main
+deb [signed-by=/opt/python-ppa.gpg] https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main
