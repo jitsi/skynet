@@ -50,6 +50,7 @@ uuid6 = "2024.07.10"
 uvicorn = "0.32.1"
 oci = "^2.144.0"
 langchain-community = "0.3.8"
+transformers = "^4.48.3"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
