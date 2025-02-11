@@ -66,6 +66,10 @@ def get_job_processor(customer_id: str) -> Processors:
         elif api_type == CredentialsType.AZURE_OPENAI.value:
             return Processors.AZURE
 
+    # OCI doesn't have a secret since it's provisioned for the instance as a whole.
+    if api_type == CredentialsType.OCI.value:
+        return Processors.OCI
+
     return Processors.LOCAL
 
 
@@ -74,22 +78,26 @@ def get_job_processor(customer_id: str) -> Processors:
 oci_llm = None
 
 
+def get_oci_llm(max_tokens):
+    global oci_llm
+
+    if oci_llm is None:
+        oci_llm = ChatOCIGenAI(
+            model_id=oci_model_id,
+            service_endpoint=oci_service_endpoint,
+            compartment_id=oci_compartment_id,
+            provider="meta",
+            model_kwargs={"temperature": 0, "frequency_penalty": 1, "max_tokens": max_tokens},
+            auth_type=oci_auth_type,
+            auth_profile=oci_config_profile,
+        )
+    return oci_llm
+
+
 def get_local_llm(**kwargs):
     # OCI hosted llama
     if use_oci:
-        global oci_llm
-
-        if oci_llm is None:
-            oci_llm = ChatOCIGenAI(
-                model_id=oci_model_id,
-                service_endpoint=oci_service_endpoint,
-                compartment_id=oci_compartment_id,
-                provider="meta",
-                model_kwargs={"temperature": 0, "frequency_penalty": 1, "max_tokens": kwargs['max_completion_tokens']},
-                auth_type=oci_auth_type,
-                auth_profile=oci_config_profile,
-            )
-        return oci_llm
+        return get_oci_llm(kwargs['max_completion_tokens'])
 
     # Locally hosted llama
     return ChatOpenAI(
@@ -176,6 +184,12 @@ async def process_azure(
     return await summarize(payload, job_type, llm)
 
 
+async def process_oci(payload: DocumentPayload, job_type: JobType) -> str:
+    llm = get_oci_llm(payload.max_completion_tokens)
+
+    return await summarize(payload, job_type, llm)
+
+
 async def process(payload: DocumentPayload, job_type: JobType, customer_id: str | None = None) -> str:
     processor = get_job_processor(customer_id)
     options = get_credentials(customer_id)
@@ -188,12 +202,16 @@ async def process(payload: DocumentPayload, job_type: JobType, customer_id: str 
         model = options.get('metadata').get('model')
         result = await process_open_ai(payload, job_type, secret, model)
     elif processor == Processors.AZURE:
-        log.info(f"Forwarding inference to Azure openai for customer {customer_id}")
+        log.info(f"Forwarding inference to Azure-OpenAI for customer {customer_id}")
 
         metadata = options.get('metadata')
         result = await process_azure(
             payload, job_type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
         )
+    elif processor == Processors.OCI:
+        log.info(f"Forwarding inference to OCI for customer {customer_id}")
+
+        result = await process_oci(payload, job_type)
     else:
         if customer_id:
             log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
