@@ -68,6 +68,7 @@ class Processors(Enum):
     OPENAI = 'OPENAI'
     AZURE = 'AZURE'
     LOCAL = 'LOCAL'
+    OCI = 'OCI'
 
 
 class JobStatus(Enum):
