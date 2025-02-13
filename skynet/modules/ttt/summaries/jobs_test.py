@@ -3,15 +3,15 @@ from unittest.mock import patch
 
 import pytest
 
-from skynet.modules.ttt.summaries.persistence import db
+from skynet.modules.ttt.persistence import db
 from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, Job, JobType
 
 
 @pytest.fixture(scope='module', autouse=True)
 def default_session_fixture() -> Iterator[None]:
-    with patch('skynet.modules.ttt.summaries.persistence.db.set'), patch(
-        'skynet.modules.ttt.summaries.persistence.db.rpush'
-    ), patch('skynet.modules.ttt.summaries.persistence.db.llen'):
+    with patch('skynet.modules.ttt.persistence.db.set'), patch('skynet.modules.ttt.persistence.db.rpush'), patch(
+        'skynet.modules.ttt.persistence.db.llen'
+    ):
         yield
 
 
@@ -121,10 +121,10 @@ class TestRestoreStaleJobs:
             {'id': '1'}
         ]  # only one worker connected, any jobs that were running on worker 2 should be restored (jobs 2 and 3 in this case)
 
-        mocker.patch('skynet.modules.ttt.summaries.persistence.db.lrange')
-        mocker.patch('skynet.modules.ttt.summaries.persistence.db.mget', return_value=running_jobs)
-        mocker.patch('skynet.modules.ttt.summaries.persistence.db.lpush')
-        mocker.patch('skynet.modules.ttt.summaries.persistence.db.client_list', return_value=client_list)
+        mocker.patch('skynet.modules.ttt.persistence.db.lrange')
+        mocker.patch('skynet.modules.ttt.persistence.db.mget', return_value=running_jobs)
+        mocker.patch('skynet.modules.ttt.persistence.db.lpush')
+        mocker.patch('skynet.modules.ttt.persistence.db.client_list', return_value=client_list)
 
         await restore_stale_jobs()
 

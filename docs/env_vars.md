@@ -6,7 +6,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 
 | **Name**                       | **Description**                                             | **Default**                               | **Available values**                                                            |
 |--------------------------------|-------------------------------------------------------------|-------------------------------------------|---------------------------------------------------------------------------------|
-| `ENABLED_MODULES`              | Which modules should be enabled, separated by commas        | `summaries:dispatcher,summaries:executor` | `summaries:dispatcher`, `summaries:executor`, `streaming_whisper` |
+| `ENABLED_MODULES`              | Which modules should be enabled, separated by commas        | `summaries:dispatcher,summaries:executor,assistant` | `summaries:dispatcher`, `summaries:executor`, `assistant`, `streaming_whisper` |
 | `BYPASS_AUTHORIZATION`         | If signed JWT authorization should be enabled               | `false`                                   | `true`, `false`                                                                 |
 | `ENABLE_MONITORING`            | If the Prometheus metrics endpoint should be enabled or not | `true`                                    | `true`, `false`                                                                 |
 | `ASAP_PUB_KEYS_REPO_URL`       | Public key repository URL                                   | `NULL`                                    | N/A                                                                             |
