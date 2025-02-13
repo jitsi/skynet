@@ -32,6 +32,47 @@ test-trackers = ["comet-ml", "dvclive", "tensorboard", "wandb"]
 testing = ["bitsandbytes", "datasets", "diffusers", "evaluate", "parameterized", "pytest (>=7.2.0,<=8.0.0)", "pytest-subtests", "pytest-xdist", "scikit-learn", "scipy", "timm", "torchdata (>=0.8.0)", "torchpippy (>=0.2.0)", "tqdm", "transformers"]
 
 [[package]]
+name = "aioboto3"
+version = "13.3.0"
+description = "Async boto3 wrapper"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "aioboto3-13.3.0-py3-none-any.whl", hash = "sha256:a97d58fa84dc91030be7820724daea59a1603987b535a1d15613eff78c3b3781"},
+    {file = "aioboto3-13.3.0.tar.gz", hash = "sha256:74c2ee3018dcf5714b92bbbe4ce6b78b6dde1e1804de42c784555e40634f8872"},
+]
+
+[package.dependencies]
+aiobotocore = {version = "2.16.0", extras = ["boto3"]}
+aiofiles = ">=23.2.1"
+
+[package.extras]
+chalice = ["chalice (>=1.24.0)"]
+s3cse = ["cryptography (>=2.3.1)"]
+
+[[package]]
+name = "aiobotocore"
+version = "2.16.0"
+description = "Async client for aws services using botocore and aiohttp"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "aiobotocore-2.16.0-py3-none-any.whl", hash = "sha256:eb3641a7b9c51113adbc33a029441de6201ebb026c64ff2e149c7fa802c9abfc"},
+    {file = "aiobotocore-2.16.0.tar.gz", hash = "sha256:6d6721961a81570e9b920b98778d95eec3d52a9f83b7844c6c5cfdbf2a2d6a11"},
+]
+
+[package.dependencies]
+aiohttp = ">=3.9.2,<4.0.0"
+aioitertools = ">=0.5.1,<1.0.0"
+boto3 = {version = ">=1.35.74,<1.35.82", optional = true, markers = "extra == \"boto3\""}
+botocore = ">=1.35.74,<1.35.82"
+wrapt = ">=1.10.10,<2.0.0"
+
+[package.extras]
+awscli = ["awscli (>=1.36.15,<1.36.23)"]
+boto3 = ["boto3 (>=1.35.74,<1.35.82)"]
+
+[[package]]
 name = "aiofiles"
 version = "24.1.0"
 description = "File support for asyncio."
@@ -163,6 +204,21 @@ files = [
 
 [package.dependencies]
 aiohttp = ">=1.1"
+
+[[package]]
+name = "aioitertools"
+version = "0.12.0"
+description = "itertools and builtins for AsyncIO and mixed iterables"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "aioitertools-0.12.0-py3-none-any.whl", hash = "sha256:fc1f5fac3d737354de8831cbba3eb04f79dd649d8f3afb4c5b114925e662a796"},
+    {file = "aioitertools-0.12.0.tar.gz", hash = "sha256:c2a9055b4fbb7705f561b9d86053e8af5d10cc845d22c32008c43490b2d8dd6b"},
+]
+
+[package.extras]
+dev = ["attribution (==1.8.0)", "black (==24.8.0)", "build (>=1.2)", "coverage (==7.6.1)", "flake8 (==7.1.1)", "flit (==3.9.0)", "mypy (==1.11.2)", "ufmt (==2.7.1)", "usort (==1.0.8.post1)"]
+docs = ["sphinx (==8.0.2)", "sphinx-mdinclude (==0.6.2)"]
 
 [[package]]
 name = "aiosignal"
@@ -519,17 +575,17 @@ files = [
 
 [[package]]
 name = "boto3"
-version = "1.35.99"
+version = "1.35.81"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.35.99-py3-none-any.whl", hash = "sha256:83e560faaec38a956dfb3d62e05e1703ee50432b45b788c09e25107c5058bd71"},
-    {file = "boto3-1.35.99.tar.gz", hash = "sha256:e0abd794a7a591d90558e92e29a9f8837d25ece8e3c120e530526fe27eba5fca"},
+    {file = "boto3-1.35.81-py3-none-any.whl", hash = "sha256:742941b2424c0223d2d94a08c3485462fa7c58d816b62ca80f08e555243acee1"},
+    {file = "boto3-1.35.81.tar.gz", hash = "sha256:d2e95fa06f095b8e0c545dd678c6269d253809b2997c30f5ce8a956c410b4e86"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.99,<1.36.0"
+botocore = ">=1.35.81,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -538,13 +594,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.99"
+version = "1.35.81"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.99-py3-none-any.whl", hash = "sha256:b22d27b6b617fc2d7342090d6129000af2efd20174215948c0d7ae2da0fab445"},
-    {file = "botocore-1.35.99.tar.gz", hash = "sha256:1eab44e969c39c5f3d9a3104a0836c24715579a455f12b3979a31d7cde51b3c3"},
+    {file = "botocore-1.35.81-py3-none-any.whl", hash = "sha256:a7b13bbd959bf2d6f38f681676aab408be01974c46802ab997617b51399239f7"},
+    {file = "botocore-1.35.81.tar.gz", hash = "sha256:564c2478e50179e0b766e6a87e5e0cdd35e1bc37eb375c1cf15511f5dd13600d"},
 ]
 
 [package.dependencies]
@@ -7222,4 +7278,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "b2bd32ea18382bbd5088022aec790733a6d2a402440a34ce2e95ba10b2fc9e5c"
+content-hash = "989a3e87bf2e3865bcf05f775393c2ad9ec613c7575d5eeb4649b41e1f08397f"

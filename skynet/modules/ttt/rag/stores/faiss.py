@@ -63,7 +63,7 @@ class FAISSVectorStore(SkynetVectorStore):
         duration = round((end - start) / 1e9)
 
         if use_s3:
-            self.s3.upload(self.get_vector_store_path(store_id))
+            await self.s3.upload(self.get_vector_store_path(store_id))
 
         log.info(f'Saving vector store took {duration} seconds')
 
@@ -76,7 +76,7 @@ class FAISSVectorStore(SkynetVectorStore):
         shutil.rmtree(path, ignore_errors=True)
 
         if use_s3:
-            self.s3.delete(path)
+            await self.s3.delete(path)
 
 
 __all__ = ['FAISSVectorStore']
