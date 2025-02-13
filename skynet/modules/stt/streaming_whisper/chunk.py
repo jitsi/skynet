@@ -9,8 +9,6 @@ class Chunk:
     timestamp: int
     duration: float
     size: int
-    silent: bool
-    speech_timestamps: iter
     participant_id: str
     language: str
 
@@ -19,7 +17,6 @@ class Chunk:
         self.timestamp = chunk_timestamp
         self.duration = utils.convert_bytes_to_seconds(self.raw)
         self.size = len(self.raw)
-        self.silent, self.speech_timestamps = utils.is_silent(self.raw)
 
     def _extract(self, chunk: bytes):
         header = chunk[0:60].decode('utf-8').strip('\x00')
