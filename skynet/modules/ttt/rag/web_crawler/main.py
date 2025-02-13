@@ -1,3 +1,4 @@
+import asyncio
 import re
 import time
 from typing import List
@@ -62,8 +63,10 @@ async def crawl(payload: RagPayload) -> List[Document]:
     """
 
     documents = []
-    for url in payload.urls:
-        docs = await crawl_url(url, payload.max_depth)
+    tasks = [crawl_url(url, payload.max_depth) for url in payload.urls]
+    results = await asyncio.gather(*tasks)
+
+    for docs in results:
         documents.extend(docs)
 
     return documents
