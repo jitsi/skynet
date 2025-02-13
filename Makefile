@@ -3,7 +3,7 @@ ifneq (,$(wildcard ./.env))
 endif
 
 GIT_HASH ?= $(shell git rev-parse --short HEAD)
-PLATFORMS ?= linux/amd64
+PLATFORMS ?= linux/arm64
 
 _login:
 	${DOCKER_LOGIN_CMD}

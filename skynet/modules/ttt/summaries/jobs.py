@@ -22,7 +22,7 @@ from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus,
 
 log = get_logger(__name__)
 
-TIME_BETWEEN_JOBS_CHECK = 1
+TIME_BETWEEN_JOBS_CHECK = 0.1
 TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
 
 PENDING_JOBS_KEY = "jobs:pending"
