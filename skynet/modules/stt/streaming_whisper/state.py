@@ -20,17 +20,13 @@ class State:
     long_silence: bool
     chunk_count: int
     working_audio_starts_at: int
-    chunk_duration: float
     last_received_chunk: int
+    last_speech_timestamp: float
 
     def __init__(
         self,
         participant_id: str,
         lang: str = 'en',
-        # number of silent chunks which can be appended
-        # before starting to drop them
-        add_max_silent_chunks: int = 1,
-        final_after_x_silent_chunks: int = 2,
     ):
         self.working_audio_starts_at = 0
         self.participant_id = participant_id
@@ -39,14 +35,11 @@ class State:
         self.working_audio = b''
         self.lang = lang
         self.long_silence = False
-        self.chunk_duration = 0.0
-        # silence count before starting to drop incoming silent chunks
-        self.silence_count_before_ignore = add_max_silent_chunks
-        self.final_after_x_silent_chunks = final_after_x_silent_chunks
         self.uuid = utils.Uuid7()
         self.transcription_id = str(self.uuid.get())
         self.last_received_chunk = utils.now()
         self.is_transcribing = False
+        self.last_speech_timestamp = 0.0
 
     def _extract_transcriptions(
         self, last_pause: utils.CutMark, ts_result: utils.WhisperResult
@@ -103,15 +96,6 @@ class State:
             )
         return results
 
-    def should_transcribe(self) -> bool:
-        # prevents hallucinations at the start of the audio
-        if self.silent_chunks == self.chunk_count:
-            return False
-        working_audio_duration = utils.convert_bytes_to_seconds(self.working_audio)
-        if working_audio_duration >= 1 and not self.long_silence:
-            return True
-        return False
-
     async def force_transcription(self, previous_tokens) -> List[utils.TranscriptionResponse] | None:
         results = None
         if self.is_transcribing:
@@ -137,18 +121,8 @@ class State:
         return results
 
     async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
-        self.last_received_chunk = self.last_received_chunk if chunk.silent else utils.now()
-        self.chunk_count += 1
-        if self.chunk_duration == 0:
-            self.chunk_duration = chunk.duration
-        log.debug(
-            f'Participant {self.participant_id}: chunk length {chunk.size} bytes, '
-            f'duration {chunk.duration}s, '
-            f'total chunks {self.chunk_count}.'
-        )
-        self.add_to_store(chunk)
-
-        if self.should_transcribe() and not self.is_transcribing:
+        await self.add_to_store(chunk, self.working_audio + chunk.raw)
+        if not self.long_silence and not self.is_transcribing:
             ts_result = await self.do_transcription(self.working_audio, previous_tokens)
             last_pause = utils.get_cut_mark_from_segment_probability(ts_result)
             results = self._extract_transcriptions(last_pause, ts_result)
@@ -157,23 +131,42 @@ class State:
         log.debug(f'Participant {self.participant_id}: no ts results')
         return None
 
-    def add_to_store(self, chunk: Chunk):
-        if not chunk.silent or (chunk.silent and self.silent_chunks < self.silence_count_before_ignore):
-            self.working_audio += chunk.raw
-            log.debug(
-                f'Participant {self.participant_id}: the audio buffer is '
-                + f'{utils.convert_bytes_to_seconds(self.working_audio)}s long'
-            )
-        if chunk.silent:
-            log.debug(f'Participant {self.participant_id}: the chunk is silent.')
-            self.silent_chunks += 1
-            if self.silent_chunks > self.final_after_x_silent_chunks:
-                self.long_silence = True
-        else:
-            if self.working_audio_starts_at == 0:
-                self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
+    async def add_to_store(self, chunk: Chunk, tmp_working_audio: bytes = b''):
+        now_millis = utils.now()
+        self.chunk_count += 1
+        # if the working audio is empty, set the start timestamp
+        if not self.working_audio:
+            self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
+        # retrieve the word timestamps from the new working audio
+        _, speech_timestamps = utils.is_silent(tmp_working_audio)
+        log.debug(f'## Participant {self.participant_id}: speech timestamps {speech_timestamps}')
+        log.debug(f'## Participant {self.participant_id}: last speech timestamp {self.last_speech_timestamp}')
+        # if, after adding the chunk, Silero VAD detects that
+        # the last speech timestamp has changed
+        # update the buffer and the last received chunk timestamp
+        if speech_timestamps and speech_timestamps[-1]['end'] != self.last_speech_timestamp:
+            self.last_speech_timestamp = speech_timestamps[-1]['end']
+            self.last_received_chunk = now_millis
+            self.working_audio = tmp_working_audio
             self.long_silence = False
             self.silent_chunks = 0
+        else:
+            log.debug(f'## Participant {self.participant_id}: chunk is silent')
+            # if the last word timestamp is the same as the previous one
+            # the chunk is silent
+            self.silent_chunks += 1
+            # if the chunk is silent and the last word timestamp is older than 1s
+            # set the long silence flag
+            audio_length_seconds = utils.convert_bytes_to_seconds(tmp_working_audio)
+            if speech_timestamps and audio_length_seconds - speech_timestamps[-1]['end'] >= 1:
+                log.debug(f'## Participant {self.participant_id}: long silence detected')
+                self.long_silence = True
+
+        log.debug(
+            f'Participant {self.participant_id}: chunk length {chunk.size} bytes, '
+            f'duration {chunk.duration}s, '
+            f'total chunks {self.chunk_count}.'
+        )
 
     def trim_working_audio(self, bytes_to_cut: int) -> bytes:
         log.debug(
@@ -216,6 +209,7 @@ class State:
         log.debug(f'Participant {self.participant_id}: flushing working audio')
         self.working_audio_starts_at = 0
         self.working_audio = b''
+        self.last_speech_timestamp = 0.0
 
     @staticmethod
     def get_num_bytes_for_slicing(cut_mark: float) -> int:

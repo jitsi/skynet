@@ -80,7 +80,7 @@ redis_aws_region = os.environ.get('REDIS_AWS_REGION', 'us-west-2')
 
 
 # modules > stt > streaming_whisper
-whisper_beam_size = int(os.environ.get('BEAM_SIZE', 1))
+whisper_beam_size = int(os.environ.get('BEAM_SIZE', 5))
 whisper_model_name = os.environ.get('WHISPER_MODEL_NAME')
 # https://opennmt.net/CTranslate2/quantization.html
 whisper_compute_type = os.environ.get('WHISPER_COMPUTE_TYPE', 'int8')
