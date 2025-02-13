@@ -48,7 +48,7 @@ embeddings_model_n_ctx = int(os.environ.get('EMBEDDINGS_MODEL_N_CTX', 8192))
 azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
 
 # openai api
-openai_api_port = int(os.environ.get('OPENAI_API_PORT', 8003))
+openai_api_port = 8003
 openai_api_base_url = os.environ.get(
     'OPENAI_API_BASE_URL', f'http://localhost:{openai_api_port}' if use_vllm else "http://localhost:11434"
 )

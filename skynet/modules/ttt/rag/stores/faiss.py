@@ -24,7 +24,7 @@ class FAISSVectorStore(SkynetVectorStore):
         if use_s3:
             from skynet.modules.ttt.rag.stores.s3 import RagS3
 
-            log.info('Using S3 for vector store')
+            log.info('Using S3 for vector store persistence')
             self.s3 = RagS3()
 
     def get_vector_store_path(self, store_id):

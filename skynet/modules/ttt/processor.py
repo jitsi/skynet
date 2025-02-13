@@ -63,7 +63,7 @@ hint_type_to_prompt = {
 
 def format_docs(docs: list[Document]) -> str:
     for doc in docs:
-        log.info(doc.metadata.get('source'))
+        log.debug(doc.metadata.get('source'))
 
     return '\n\n'.join(doc.page_content for doc in docs)
 
@@ -128,41 +128,39 @@ def get_local_llm(**kwargs):
 compressor = FlashrankRerank()
 
 
-async def assist(payload: DocumentPayload, customer_id: str | None = None, model: ChatOpenAI = None) -> str:
+async def assist(payload: DocumentPayload, customer_id: str | None = None, model: BaseChatModel = None) -> str:
     current_model = model or get_local_llm(max_completion_tokens=payload.max_completion_tokens)
 
-    if customer_id:
-        store = await get_vector_store()
-        vector_store = await store.get(customer_id)
+    store = await get_vector_store()
+    vector_store = await store.get(customer_id)
 
-        if vector_store:
-            base_retriever = vector_store.as_retriever(search_kwargs={'k': 3})
-            retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
+    base_retriever = vector_store.as_retriever(search_kwargs={'k': 3}) if vector_store else None
+    retriever = (
+        ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
+        if base_retriever
+        else None
+    )
 
-            prompt_template = '''
-            Context: {context}
-            Additional context: {additional_context}
-            User prompt: {user_prompt}
-            '''
+    prompt_template = '''
+    Context: {context}
+    Additional context: {additional_context}
+    User prompt: {user_prompt}
+    '''
 
-            prompt = PromptTemplate(
-                template=prompt_template, input_variables=['context', 'user_prompt', 'additional_context']
-            )
+    prompt = PromptTemplate(template=prompt_template, input_variables=['context', 'user_prompt', 'additional_context'])
 
-            rag_chain = (
-                {
-                    'context': itemgetter('user_prompt') | retriever | format_docs,
-                    'user_prompt': itemgetter('user_prompt'),
-                    'additional_context': itemgetter('additional_context'),
-                }
-                | prompt
-                | current_model
-                | StrOutputParser()
-            )
+    rag_chain = (
+        {
+            'context': (itemgetter('user_prompt') | retriever | format_docs) if retriever else lambda x: '',
+            'user_prompt': itemgetter('user_prompt'),
+            'additional_context': itemgetter('additional_context'),
+        }
+        | prompt
+        | current_model
+        | StrOutputParser()
+    )
 
-            return await rag_chain.ainvoke(input={'user_prompt': payload.prompt, 'additional_context': payload.text})
-
-    return payload.text
+    return await rag_chain.ainvoke(input={'user_prompt': payload.prompt, 'additional_context': payload.text})
 
 
 async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChatModel = None) -> str:
