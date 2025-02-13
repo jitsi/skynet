@@ -13,6 +13,11 @@ filenames = dict(
 )
 
 
+async def files_aiter():
+    for filename in filenames[vector_store_type]:
+        yield filename
+
+
 class RagS3:
     def __init__(self):
         self.s3 = S3()
@@ -24,16 +29,16 @@ class RagS3:
             folder = prefix_function(key)
             os.makedirs(folder, exist_ok=True)
 
-            for filename in filenames[vector_store_type]:
-                self.s3.download_file(f'{folder}/{filename}')
+            async for filename in files_aiter():
+                await self.s3.download_file(f'{folder}/{filename}')
 
-    def upload(self, folder):
-        for filename in filenames[vector_store_type]:
-            self.s3.upload_file(f'{folder}/{filename}')
+    async def upload(self, folder):
+        async for filename in files_aiter():
+            await self.s3.upload_file(f'{folder}/{filename}')
 
-    def delete(self, folder):
-        for filename in filenames[vector_store_type]:
-            self.s3.delete_file(f'{folder}/{filename}')
+    async def delete(self, folder):
+        async for filename in files_aiter():
+            await self.s3.delete_file(f'{folder}/{filename}')
 
 
 __all__ = ['RagS3']

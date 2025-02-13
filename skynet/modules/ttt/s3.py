@@ -12,53 +12,42 @@ log = get_logger(__name__)
 
 class S3:
     def __init__(self):
-        import boto3
+        import aioboto3
 
+        self.session = aioboto3.Session(
+            aws_access_key_id=skynet_s3_access_key,
+            aws_secret_access_key=skynet_s3_secret_key,
+            region_name=skynet_s3_region,
+        )
+
+    async def download_file(self, filename):
         try:
-            self.s3 = boto3.resource(
-                's3',
-                aws_access_key_id=skynet_s3_access_key,
-                aws_secret_access_key=skynet_s3_secret_key,
-                endpoint_url=skynet_s3_endpoint,
-                region_name=skynet_s3_region,
-            )
-        except Exception as e:
-            log.error(f'Failed to connect to S3: {e}')
+            async with self.session.resource('s3', endpoint_url=skynet_s3_endpoint) as s3:
+                obj = await s3.Object(bucket_name=skynet_s3_bucket, key=filename)
 
-    def download_file(self, filename):
-        if not self.s3:
-            return
-
-        try:
-            obj = self.s3.Object(bucket_name=skynet_s3_bucket, key=filename)
-
-            with open(filename, 'wb') as data:
-                obj.download_fileobj(data)
-                log.info(f'Downloaded file from S3: {filename}')
+                with open(filename, 'wb') as data:
+                    await obj.download_fileobj(data)
+                    log.info(f'Downloaded file from S3: {filename}')
         except Exception as e:
             log.error(f'Failed to download file from S3: {e}')
 
-    def upload_file(self, filename):
-        if not self.s3:
-            return
-
+    async def upload_file(self, filename):
         try:
-            bucket = self.s3.Bucket(skynet_s3_bucket)
+            async with self.session.resource('s3', endpoint_url=skynet_s3_endpoint) as s3:
+                bucket = await s3.Bucket(skynet_s3_bucket)
 
-            with open(filename, 'rb') as data:
-                bucket.upload_fileobj(data, filename)
-                log.info(f'Uploaded file to S3: {filename}')
+                with open(filename, 'rb') as data:
+                    await bucket.upload_fileobj(data, filename)
+                    log.info(f'Uploaded file to S3: {filename}')
         except Exception as e:
             log.error(f'Failed to upload file to S3: {e}')
 
-    def delete_file(self, filename):
-        if not self.s3:
-            return
-
+    async def delete_file(self, filename):
         try:
-            obj = self.s3.Object(bucket_name=skynet_s3_bucket, key=filename)
-            obj.delete()
-            log.info(f'Deleted file from S3: {filename}')
+            async with self.session.resource('s3', endpoint_url=skynet_s3_endpoint) as s3:
+                obj = await s3.Object(bucket_name=skynet_s3_bucket, key=filename)
+                await obj.delete()
+                log.info(f'Deleted file from S3: {filename}')
         except Exception as e:
             log.error(f'Failed to delete file from S3: {e}')
 

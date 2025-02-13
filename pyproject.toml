@@ -26,12 +26,12 @@ optional = true
 vllm = "0.7.0"
 
 [tool.poetry.dependencies]
+aioboto3 = "13.3.0"
 aiofiles = "24.1.0"
 aiohttp = "3.11.9"
 async-lru = "2.0.4"
 av = "^12.3.0"
 beautifulsoup4 = "^4.12.3"
-boto3 = "1.35.99"
 faiss-cpu = "^1.9.0.post1"
 fake-useragent = "^2.0.3"
 fastapi = "0.115.5"
