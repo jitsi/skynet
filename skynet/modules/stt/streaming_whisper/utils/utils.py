@@ -196,7 +196,7 @@ def convert_seconds_to_bytes(cut_mark: float) -> int:
     return int(cut_mark / cfg.one_byte_s)
 
 
-def is_silent(audio: bytes) -> Tuple[bool, iter]:
+async def is_silent(audio: bytes) -> Tuple[bool, iter]:
     chunk_duration = convert_bytes_to_seconds(audio)
     wav_header = get_wav_header([audio], chunk_duration_s=chunk_duration)
     stream = wav_header + b'' + audio
