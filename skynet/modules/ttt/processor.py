@@ -1,7 +1,6 @@
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.chat_models import ChatOCIGenAI
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -35,6 +34,8 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_text,
 )
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType, Processors
+
+from .oci_utils import AsyncChatOCIGenAI
 
 log = get_logger(__name__)
 
@@ -80,7 +81,7 @@ def get_local_llm(**kwargs):
         global oci_llm
 
         if oci_llm is None:
-            oci_llm = ChatOCIGenAI(
+            oci_llm = AsyncChatOCIGenAI(
                 model_id=oci_model_id,
                 service_endpoint=oci_service_endpoint,
                 compartment_id=oci_compartment_id,
