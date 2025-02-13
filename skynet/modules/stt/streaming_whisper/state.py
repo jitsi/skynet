@@ -138,7 +138,7 @@ class State:
         if not self.working_audio:
             self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
         # retrieve the word timestamps from the new working audio
-        _, speech_timestamps = await utils.is_silent(tmp_working_audio)
+        _, speech_timestamps = utils.is_silent(tmp_working_audio)
         log.debug(f'## Participant {self.participant_id}: speech timestamps {speech_timestamps}')
         log.debug(f'## Participant {self.participant_id}: last speech timestamp {self.last_speech_timestamp}')
         # if, after adding the chunk, Silero VAD detects that
