@@ -1,6 +1,6 @@
 import random
 
-from fastapi import FastAPI, Request
+from fastapi import Request
 from fastapi_versionizer.versionizer import Versionizer
 
 from skynet import http_client
@@ -9,9 +9,9 @@ from skynet.env import echo_requests_base_url, echo_requests_percent, echo_reque
 from skynet.logs import get_logger
 from skynet.modules.ttt.openai_api.app import initialize as initialize_openai_api
 from skynet.utils import create_app
+from ..persistence import db
 
 from .jobs import start_monitoring_jobs
-from .persistence import db
 from .v1.router import router as v1_router
 
 

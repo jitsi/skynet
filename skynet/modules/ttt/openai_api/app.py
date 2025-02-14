@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from skynet import http_client
 from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, use_oci, use_vllm, vllm_server_port
+from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, openai_api_port, use_oci, use_vllm
 from skynet.logs import get_logger
 from skynet.utils import create_app, dependencies, responses
 
@@ -27,15 +27,23 @@ def initialize():
     app.include_router(vllm_router, dependencies=dependencies, responses=responses)
     whitelisted_routes.extend(['/openai/docs', '/openai/openapi.json'])
 
-    log.info('Starting OpenAI API server...')
+    log.info(f'Starting vLLM server on port {openai_api_port} using model {llama_path}')
 
     proc = subprocess.Popen(
-        f'{sys.executable} -m vllm.entrypoints.openai.api_server \
-            --disable-log-requests \
-            --model {llama_path} \
-            --gpu_memory_utilization 0.98 \
-            --max-model-len {llama_n_ctx} \
-            --port {vllm_server_port}'.split(),
+        [
+            sys.executable,
+            '-m',
+            'vllm.entrypoints.openai.api_server',
+            '--disable-log-requests',
+            '--model',
+            llama_path,
+            '--gpu_memory_utilization',
+            str(0.98),
+            '--max-model-len',
+            str(llama_n_ctx),
+            '--port',
+            str(openai_api_port),
+        ],
         shell=False,
     )
 

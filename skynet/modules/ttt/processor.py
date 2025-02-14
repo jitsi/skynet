@@ -1,9 +1,14 @@
+from operator import itemgetter
+
 from langchain.chains.summarize import load_summarize_chain
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import FlashrankRerank
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.chat_models import ChatOCIGenAI
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from skynet.auth.user_info import CredentialsType, get_credentials
@@ -22,6 +27,7 @@ from skynet.env import (
 )
 from skynet.logs import get_logger
 
+from skynet.modules.ttt.rag.app import get_vector_store
 from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_conversation,
     action_items_emails,
@@ -53,6 +59,13 @@ hint_type_to_prompt = {
         HintType.TEXT: action_items_text,
     },
 }
+
+
+def format_docs(docs: list[Document]) -> str:
+    for doc in docs:
+        log.debug(doc.metadata.get('source'))
+
+    return '\n\n'.join(doc.page_content for doc in docs)
 
 
 def get_job_processor(customer_id: str) -> Processors:
@@ -104,12 +117,50 @@ def get_local_llm(**kwargs):
         model=llama_path,
         api_key='placeholder',  # use a placeholder value to bypass validation, and allow the custom base url to be used
         base_url=f'{openai_api_base_url}/v1',
-        default_headers={"X-Skynet-UUID": app_uuid},
+        default_headers={'X-Skynet-UUID': app_uuid},
         frequency_penalty=1,
         max_retries=0,
         temperature=0,
         **kwargs,
     )
+
+
+compressor = FlashrankRerank()
+
+
+async def assist(payload: DocumentPayload, customer_id: str | None = None, model: BaseChatModel = None) -> str:
+    current_model = model or get_local_llm(max_completion_tokens=payload.max_completion_tokens)
+
+    store = await get_vector_store()
+    vector_store = await store.get(customer_id)
+
+    base_retriever = vector_store.as_retriever(search_kwargs={'k': 3}) if vector_store else None
+    retriever = (
+        ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
+        if base_retriever
+        else None
+    )
+
+    prompt_template = '''
+    Context: {context}
+    Additional context: {additional_context}
+    User prompt: {user_prompt}
+    '''
+
+    prompt = PromptTemplate(template=prompt_template, input_variables=['context', 'user_prompt', 'additional_context'])
+
+    rag_chain = (
+        {
+            'context': (itemgetter('user_prompt') | retriever | format_docs) if retriever else lambda x: '',
+            'user_prompt': itemgetter('user_prompt'),
+            'additional_context': itemgetter('additional_context'),
+        }
+        | prompt
+        | current_model
+        | StrOutputParser()
+    )
+
+    return await rag_chain.ainvoke(input={'user_prompt': payload.prompt, 'additional_context': payload.text})
 
 
 async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChatModel = None) -> str:
@@ -118,14 +169,14 @@ async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChat
     text = payload.text
 
     if not text:
-        return ""
+        return ''
 
     system_message = payload.prompt or hint_type_to_prompt[job_type][payload.hint]
 
     prompt = ChatPromptTemplate(
         [
-            ("system", system_message),
-            ("human", "{text}"),
+            ('system', system_message),
+            ('human', '{text}'),
         ]
     )
 
@@ -136,20 +187,20 @@ async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChat
     threshold = llama_n_ctx * 3 / 4
 
     if num_tokens < threshold:
-        chain = load_summarize_chain(current_model, chain_type="stuff", prompt=prompt)
+        chain = load_summarize_chain(current_model, chain_type='stuff', prompt=prompt)
         docs = [Document(page_content=text)]
     else:
         # split the text into roughly equal chunks
         num_chunks = num_tokens // threshold + 1
         chunk_size = num_tokens // num_chunks
 
-        log.info(f"Splitting text into {num_chunks} chunks of {chunk_size} tokens")
+        log.info(f'Splitting text into {num_chunks} chunks of {chunk_size} tokens')
 
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=100)
         docs = text_splitter.create_documents([text])
-        chain = load_summarize_chain(current_model, chain_type="map_reduce", combine_prompt=prompt, map_prompt=prompt)
+        chain = load_summarize_chain(current_model, chain_type='map_reduce', combine_prompt=prompt, map_prompt=prompt)
 
-    result = await chain.ainvoke(input={"input_documents": docs})
+    result = await chain.ainvoke(input={'input_documents': docs})
     formatted_result = result['output_text'].replace('Response:', '', 1).strip()
 
     log.info(f'input length: {len(system_message) + len(text)}')
@@ -158,7 +209,9 @@ async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChat
     return formatted_result
 
 
-async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: str, model_name=None) -> str:
+async def process_open_ai(
+    payload: DocumentPayload, job_type: JobType, api_key: str, model_name=None, customer_id: str | None = None
+) -> str:
     llm = ChatOpenAI(
         api_key=api_key,
         max_completion_tokens=payload.max_completion_tokens,
@@ -166,11 +219,19 @@ async def process_open_ai(payload: DocumentPayload, job_type: JobType, api_key: 
         temperature=0,
     )
 
+    if job_type == JobType.ASSIST:
+        return await assist(payload, customer_id, llm)
+
     return await summarize(payload, job_type, llm)
 
 
 async def process_azure(
-    payload: DocumentPayload, job_type: JobType, api_key: str, endpoint: str, deployment_name: str
+    payload: DocumentPayload,
+    job_type: JobType,
+    api_key: str,
+    endpoint: str,
+    deployment_name: str,
+    customer_id: str | None = None,
 ) -> str:
     llm = AzureChatOpenAI(
         api_key=api_key,
@@ -181,11 +242,17 @@ async def process_azure(
         temperature=0,
     )
 
+    if job_type == JobType.ASSIST:
+        return await assist(payload, customer_id, llm)
+
     return await summarize(payload, job_type, llm)
 
 
-async def process_oci(payload: DocumentPayload, job_type: JobType) -> str:
+async def process_oci(payload: DocumentPayload, job_type: JobType, customer_id: str | None = None) -> str:
     llm = get_oci_llm(payload.max_completion_tokens)
+
+    if job_type == JobType.ASSIST:
+        return await assist(payload, customer_id, llm)
 
     return await summarize(payload, job_type, llm)
 
@@ -197,25 +264,28 @@ async def process(payload: DocumentPayload, job_type: JobType, customer_id: str 
     secret = options.get('secret')
 
     if processor == Processors.OPENAI:
-        log.info(f"Forwarding inference to OpenAI for customer {customer_id}")
+        log.info(f'Forwarding inference to OpenAI for customer {customer_id}')
 
         model = options.get('metadata').get('model')
-        result = await process_open_ai(payload, job_type, secret, model)
+        result = await process_open_ai(payload, job_type, secret, model, customer_id)
     elif processor == Processors.AZURE:
         log.info(f"Forwarding inference to Azure-OpenAI for customer {customer_id}")
 
         metadata = options.get('metadata')
         result = await process_azure(
-            payload, job_type, secret, metadata.get('endpoint'), metadata.get('deploymentName')
+            payload, job_type, secret, metadata.get('endpoint'), metadata.get('deploymentName'), customer_id
         )
     elif processor == Processors.OCI:
         log.info(f"Forwarding inference to OCI for customer {customer_id}")
 
-        result = await process_oci(payload, job_type)
+        result = await process_oci(payload, job_type, customer_id)
     else:
         if customer_id:
             log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
 
-        result = await summarize(payload, job_type)
+        if job_type == JobType.ASSIST:
+            result = await assist(payload, customer_id)
+        else:
+            result = await summarize(payload, job_type)
 
     return result

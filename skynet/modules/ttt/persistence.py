@@ -72,6 +72,9 @@ class Redis:
     async def get(self, key):
         return await self.db.get(self.__get_namespaced_key(key))
 
+    async def delete(self, key):
+        return await self.db.delete(self.__get_namespaced_key(key))
+
     async def set(self, key, *args, **kwargs):
         return await self.db.set(self.__get_namespaced_key(key), *args, **kwargs)
 
