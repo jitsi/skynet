@@ -40,7 +40,7 @@ file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 
-embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-embed-text')
+embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-ai/nomic-embed-text-v1.5')
 embeddings_model_n_ctx = int(os.environ.get('EMBEDDINGS_MODEL_N_CTX', 8192))
 
 # azure openai api
