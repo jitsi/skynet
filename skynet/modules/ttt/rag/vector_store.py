@@ -31,6 +31,13 @@ class SkynetVectorStore(ABC):
         pass
 
     @abstractmethod
+    async def cleanup(self):
+        """
+        Clean up the vector store.
+        """
+        pass
+
+    @abstractmethod
     def get_vector_store_path(self, store_id: str):
         """
         Get the path where the vector store with the given id is saved.
@@ -94,14 +101,15 @@ class SkynetVectorStore(ABC):
             documents = await crawl(payload)
 
             await self.create(store_id, documents)
-            await db.lrem(RUNNING_RAG_KEY, 0, store_id)
+            await db.lrem(STORED_RAG_KEY, 0, store_id)  # ensure no duplicates
             await db.rpush(STORED_RAG_KEY, store_id)
             await self.update_config(store_id, status=RagStatus.SUCCESS)
         except Exception as e:
-            await db.lrem(RUNNING_RAG_KEY, 0, store_id)
             await db.rpush(ERROR_RAG_KEY, store_id)
             await self.update_config(store_id, status=RagStatus.ERROR, error=str(e))
             log.error(e)
+
+        await db.lrem(RUNNING_RAG_KEY, 0, store_id)
 
     async def create_from_urls(self, payload: RagPayload, store_id: str) -> Optional[RagConfig]:
         """

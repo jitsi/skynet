@@ -68,6 +68,11 @@ async def lifespan(main_app: FastAPI):
 
         await executor_shutdown()
 
+    if 'assistant' in modules:
+        from skynet.modules.ttt.assistant.app import app_shutdown as assistant_shutdown
+
+        await assistant_shutdown()
+
     await http_client.close()
 
 

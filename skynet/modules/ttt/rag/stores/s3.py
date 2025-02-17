@@ -25,7 +25,7 @@ class RagS3:
         self.s3 = S3()
         self.listen_task = None
 
-    def __del__(self):
+    async def cleanup(self):
         if self.listen_task:
             self.listen_task.cancel()
 

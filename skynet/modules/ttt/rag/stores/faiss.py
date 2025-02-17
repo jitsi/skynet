@@ -29,6 +29,12 @@ class FAISSVectorStore(SkynetVectorStore):
     def get_vector_store_path(self, store_id):
         return f'{vector_store_path}/faiss/{store_id}'
 
+    async def cleanup(self):
+        await super().cleanup()
+
+        if self.s3:
+            await self.s3.cleanup()
+
     async def initialize(self):
         await super().initialize()
 
