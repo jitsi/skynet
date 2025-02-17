@@ -1,4 +1,3 @@
-import asyncio
 import shutil
 import time
 
@@ -33,8 +32,9 @@ class FAISSVectorStore(SkynetVectorStore):
     async def initialize(self):
         await super().initialize()
 
-        if use_s3:
+        if self.s3:
             await self.s3.replicate(self.get_vector_store_path)
+            await self.s3.listen()
 
     async def get(self, store_id):
         try:
@@ -62,7 +62,7 @@ class FAISSVectorStore(SkynetVectorStore):
         end = time.perf_counter_ns()
         duration = round((end - start) / 1e9)
 
-        if use_s3:
+        if self.s3:
             await self.s3.upload(self.get_vector_store_path(store_id))
 
         log.info(f'Saving vector store took {duration} seconds')
@@ -75,7 +75,7 @@ class FAISSVectorStore(SkynetVectorStore):
         path = self.get_vector_store_path(store_id)
         shutil.rmtree(path, ignore_errors=True)
 
-        if use_s3:
+        if self.s3:
             await self.s3.delete(path)
 
 

@@ -83,7 +83,7 @@ async def main():
         duration = response['duration']
         total_duration += duration
 
-        print(f'Job {job_id} status: {status} duration: {duration} \n')
+        print(f'Job {job_id} status: {status} duration: {duration} \n {response["result"]} \n')
 
         if status != 'success':
             success = False
