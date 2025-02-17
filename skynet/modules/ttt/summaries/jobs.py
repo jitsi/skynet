@@ -38,7 +38,8 @@ def restart():
 
     OPENAI_API_RESTART_COUNTER.inc()
 
-    # rely on the supervisor to restart the process
+    # Rely on the supervisor to restart the process.
+    # TODO: consider just restarting the vllm subprocess.
     os._exit(1)
 
 
@@ -229,11 +230,15 @@ async def monitor_candidate_jobs() -> None:
 async def restart_on_timeout(job: Job) -> None:
     await asyncio.sleep(job_timeout)
 
-    log.warning(f"Job {job.id} timed out after {job_timeout} seconds, restarting...")
+    log.warning(f"Job {job.id} timed out after {job_timeout} seconds")
 
-    await update_done_job(job, "Job timed out", Processors.LOCAL, has_failed=True)
+    customer_id = job.metadata.customer_id
+    processor = get_job_processor(customer_id)
 
-    restart()
+    await update_done_job(job, "Job timed out", processor, has_failed=True)
+
+    if processor == Processors.LOCAL:
+        restart()
 
 
 def start_monitoring_jobs() -> None:
