@@ -30,7 +30,7 @@ RUNNING_JOBS_KEY = "jobs:running"
 ERROR_JOBS_KEY = "jobs:error"
 
 background_task = None
-current_task = None
+current_tasks = set()
 
 
 def restart():
@@ -46,10 +46,11 @@ def can_run_next_job() -> bool:
     if 'summaries:executor' not in modules:
         return False
 
+    # TODO: add limit even when batching is enabled.
     if enable_batching:
         return True
 
-    return current_task is None or current_task.done()
+    return all(t.done() for t in current_tasks)
 
 
 async def update_summary_queue_metric() -> None:
@@ -190,8 +191,9 @@ async def _run_job(job: Job) -> None:
 
 
 def create_run_job_task(job: Job) -> asyncio.Task:
-    global current_task
-    current_task = asyncio.create_task(run_job(job))
+    task = asyncio.create_task(run_job(job))
+    task.add_done_callback(lambda t: current_tasks.discard(t))
+    current_tasks.add(task)
 
 
 async def maybe_run_next_job() -> None:
