@@ -18,10 +18,15 @@ log = get_logger(__name__)
 
 
 class SkynetVectorStore(ABC):
-    embedding = HuggingFaceEmbeddings(
-        model_name=embeddings_model_path, model_kwargs={'device': 'cpu', 'trust_remote_code': True}
-    )
     tasks = set()
+
+    @property
+    def embedding(self):
+        if self.__dict__.get('embedding') is None:
+            self.embedding = HuggingFaceEmbeddings(
+                model_name=embeddings_model_path, model_kwargs={'device': 'cpu', 'trust_remote_code': True}
+            )
+        return self.__dict__.get('embedding')
 
     @abstractmethod
     async def initialize(self):

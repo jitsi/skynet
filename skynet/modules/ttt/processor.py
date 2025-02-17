@@ -125,7 +125,14 @@ def get_local_llm(**kwargs):
     )
 
 
-compressor = FlashrankRerank()
+compressor = None
+
+
+def get_compressor():
+    global compressor
+    if compressor is None:
+        compressor = FlashrankRerank()
+    return compressor
 
 
 async def assist(payload: DocumentPayload, customer_id: str | None = None, model: BaseChatModel = None) -> str:
@@ -136,7 +143,7 @@ async def assist(payload: DocumentPayload, customer_id: str | None = None, model
 
     base_retriever = vector_store.as_retriever(search_kwargs={'k': 3}) if vector_store else None
     retriever = (
-        ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
+        ContextualCompressionRetriever(base_compressor=get_compressor(), base_retriever=base_retriever)
         if base_retriever
         else None
     )
