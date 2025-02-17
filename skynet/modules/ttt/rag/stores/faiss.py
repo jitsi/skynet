@@ -17,6 +17,8 @@ log = get_logger(__name__)
 
 
 class FAISSVectorStore(SkynetVectorStore):
+    s3 = None
+
     def __init__(self):
         super().__init__()
 
