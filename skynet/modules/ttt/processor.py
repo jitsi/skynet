@@ -65,6 +65,8 @@ def format_docs(docs: list[Document]) -> str:
     for doc in docs:
         log.debug(doc.metadata.get('source'))
 
+    log.info(f'Using {len(docs)} documents for RAG')
+
     return '\n\n'.join(doc.page_content for doc in docs)
 
 

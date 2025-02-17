@@ -25,4 +25,13 @@ async def app_startup():
     log.info('assistant module initialized')
 
 
-__all__ = ['app', 'app_startup']
+async def app_shutdown():
+    await db.close()
+    log.info('Persistence closed')
+
+    vector_store = await get_vector_store()
+    await vector_store.cleanup()
+    log.info('vector store cleaned up')
+
+
+__all__ = ['app', 'app_startup', 'app_shutdown']
