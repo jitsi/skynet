@@ -149,7 +149,7 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
 
     await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
 
-    SUMMARY_DURATION_METRIC.labels(updated_job.metadata.app_id).observe(updated_job.computed_duration)
+    SUMMARY_DURATION_METRIC.labels(updated_job.metadata.app_id, processor.value).observe(updated_job.computed_duration)
     SUMMARY_FULL_DURATION_METRIC.observe(updated_job.computed_full_duration)
     SUMMARY_INPUT_LENGTH_METRIC.observe(len(updated_job.payload.text))
 

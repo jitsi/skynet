@@ -2,7 +2,7 @@
 
 Skynet exposes a Prometheus `/metrics` endpoint on port `8001`.
 
-The metrics endpoint can be disabled by setting the `ENABLE_MONITORING` env var to `false`.
+The metrics endpoint can be disabled by setting the `ENABLE_METRICS` env var to `false`.
 
 ## Exposed metrics
 
