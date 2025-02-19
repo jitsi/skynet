@@ -11,7 +11,9 @@ app = FastAPI()  # No need for CORS middleware
 
 
 @app.websocket('/ws/{meeting_id}')
-async def websocket_endpoint(websocket: WebSocket, meeting_id: str, auth_token: str | None = None, record: bool = False):
+async def websocket_endpoint(
+    websocket: WebSocket, meeting_id: str, auth_token: str | None = None, record: bool = False
+):
     await ws_connection_manager.connect(websocket, meeting_id, auth_token, record)
     try:
         while True:

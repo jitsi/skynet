@@ -11,7 +11,7 @@ from skynet.env import (
     whisper_model_name,
     whisper_model_path,
     whisper_recorder_model_name,
-    whisper_recorder_model_path
+    whisper_recorder_model_path,
 )
 from skynet.logs import get_logger
 
@@ -31,7 +31,9 @@ if whisper_gpu_indices is not None:
     num_workers = len(gpu_indices)
 
 path_or_model_name = whisper_model_name if whisper_model_name is not None else whisper_model_path
-path_or_model_name_for_recording = whisper_recorder_model_name if whisper_recorder_model_name is not None else whisper_recorder_model_path
+path_or_model_name_for_recording = (
+    whisper_recorder_model_name if whisper_recorder_model_name is not None else whisper_recorder_model_path
+)
 model = WhisperModel(
     path_or_model_name,
     device=device,
