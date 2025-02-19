@@ -1,7 +1,10 @@
+import asyncio
 import secrets
 import time
+from multiprocessing import cpu_count
 from datetime import datetime, timezone
 from typing import List, Tuple
+from faster_whisper import WhisperModel
 
 import numpy as np
 from numpy import ndarray
@@ -342,3 +345,67 @@ def get_jwt(ws_headers, ws_url_param=None) -> str:
     if auth_header is not None:
         return auth_header.split(' ')[-1]
     return ws_url_param if ws_url_param is not None else ''
+
+async def recording_transcriber_worker():
+    # use 50% of the available core count
+    workers = int(cpu_count() * 0.5)
+    # load the model in the worker process
+    recording_model = WhisperModel(
+        cfg.path_or_model_name,
+        device='cpu',
+        compute_type='int8_float16',
+        num_workers=workers,
+        download_root=cfg.whisper_recorder_model_path,
+    )
+    while True:
+        try:
+            data = cfg.recording_audio_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            log.debug('No data in the queue')
+            await asyncio.sleep(1)
+            continue
+        meeting_id = data['meeting_id']
+        participant_id = data['participant_id']
+        audio_bytes =data['audio']
+        audio = load_audio(audio_bytes)
+        audio_start_timestamp = data['start_timestamp']
+        lang = data['lang'] if 'lang' in data else 'auto'
+        previous_tokens = data['previous_tokens'] if 'previous_tokens' in data else []
+        iterator, _ = recording_model.transcribe(
+            audio,
+            language=lang,
+            task='transcribe',
+            word_timestamps=True,
+            beam_size=whisper_beam_size,
+            initial_prompt=previous_tokens,
+            condition_on_previous_text=False,
+            vad_filter=True,
+        )
+        res = list(iterator)
+        ts_result = WhisperResult(res)
+        if ts_result.text.strip():
+            results = []
+            temp_result_words = []
+            start_timestamp = None
+            for word in ts_result.words:
+                if not start_timestamp:
+                    start_timestamp = int(word.start * 1000) + audio_start_timestamp
+                temp_result_words.append(word)
+                temp_result_prob = sum([word.probability for word in temp_result_words]) / len(temp_result_words)
+                if word.word[-1] in ['.', '!', '?']:
+                    uuid = Uuid7()
+                    results.append(
+                        TranscriptionResponse(
+                            id=str(uuid.get(start_timestamp)),
+                            participant_id=participant_id,
+                            ts=start_timestamp,
+                            text=''.join([w.word for w in temp_result_words]),
+                            audio='',
+                            type='final',
+                            variance=temp_result_prob,
+                        )
+                    )
+                    temp_result_words = []
+                    start_timestamp = None
+            await cfg.recording_ts_messages_queue.put({'meeting_id': meeting_id, 'results': results})
+        await asyncio.sleep(0.1)
