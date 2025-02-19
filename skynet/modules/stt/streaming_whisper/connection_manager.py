@@ -8,13 +8,13 @@ from skynet.env import (
     bypass_auth,
     whisper_flush_interval,
     whisper_max_connections,
-    whisper_recorder_transcribe_after_seconds as transcribe_after_s
+    whisper_recorder_transcribe_after_seconds as transcribe_after_s,
 )
 from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER, TRANSCRIBE_STRESS_LEVEL_METRIC
+from skynet.modules.stt.streaming_whisper.cfg import recording_audio_queue, recording_ts_messages_queue
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.streaming_whisper.cfg import recording_audio_queue, recording_ts_messages_queue
 
 log = get_logger(__name__)
 
@@ -47,7 +47,6 @@ class ConnectionManager:
         if not self.recording_transcriber_task:
             log.info('Started the recording transcriber worker')
             self.recording_transcriber_task = asyncio.create_task(utils.recording_transcriber_worker())
-
 
     async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None, record: bool = False):
         if not bypass_auth:
@@ -107,8 +106,9 @@ class ConnectionManager:
                             continue
                         _, voice_timestamps = utils.is_silent(state.working_audio)
                         if len(voice_timestamps) > 0:
-                            last_voice_timestamp_millis = voice_timestamps[-1][
-                                                              'end'] * 1000 + state.working_audio_starts_at
+                            last_voice_timestamp_millis = (
+                                voice_timestamps[-1]['end'] * 1000 + state.working_audio_starts_at
+                            )
                             diff = (utils.now() - last_voice_timestamp_millis) / 1000
                             log.debug(f'Participant {participant} in meeting {meeting_id} has been silent for {diff} s')
                             if diff >= transcribe_after_s and not state.is_transcribing:
@@ -122,7 +122,7 @@ class ConnectionManager:
                                         'audio': audio,
                                         'start_timestamp': start_timestamp,
                                         'previous_tokens': meeting.previous_transcription_tokens,
-                                        'language': meeting.meeting_language
+                                        'language': meeting.meeting_language,
                                     }
                                 )
                                 state.reset()

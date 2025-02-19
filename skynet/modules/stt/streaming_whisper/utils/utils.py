@@ -1,12 +1,12 @@
 import asyncio
 import secrets
 import time
-from multiprocessing import cpu_count
 from datetime import datetime, timezone
+from multiprocessing import cpu_count
 from typing import List, Tuple
-from faster_whisper import WhisperModel
 
 import numpy as np
+from faster_whisper import WhisperModel
 from numpy import ndarray
 from pydantic import BaseModel
 from silero_vad import get_speech_timestamps, read_audio
@@ -346,6 +346,7 @@ def get_jwt(ws_headers, ws_url_param=None) -> str:
         return auth_header.split(' ')[-1]
     return ws_url_param if ws_url_param is not None else ''
 
+
 async def recording_transcriber_worker():
     # use 50% of the available core count
     workers = int(cpu_count() * 0.5)
@@ -366,7 +367,7 @@ async def recording_transcriber_worker():
             continue
         meeting_id = data['meeting_id']
         participant_id = data['participant_id']
-        audio_bytes =data['audio']
+        audio_bytes = data['audio']
         audio = load_audio(audio_bytes)
         audio_start_timestamp = data['start_timestamp']
         lang = data['lang'] if 'lang' in data else 'auto'
