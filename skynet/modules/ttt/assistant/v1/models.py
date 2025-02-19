@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from skynet.modules.ttt.summaries.v1.models import DocumentPayload
+from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType
 
 default_max_depth = 5
 
@@ -15,12 +15,19 @@ class RagStatus(Enum):
 
 
 class RagPayload(BaseModel):
+    system_message: Optional[str] = None
     max_depth: Optional[int] = default_max_depth
     urls: list[str]
 
     model_config = {
         'json_schema_extra': {
-            'examples': [{'urls': ['https://jitsi.github.io/handbook'], 'max_depth': default_max_depth}]
+            'examples': [
+                {
+                    'urls': ['https://jitsi.github.io/handbook'],
+                    'max_depth': default_max_depth,
+                    'system_message': 'You are an AI assistant of Jitsi, a video conferencing platform. You provide response suggestions to the support agent',
+                }
+            ]
         }
     }
 
@@ -36,6 +43,7 @@ class RagConfig(RagPayload):
                     'error': None,
                     'max_depth': default_max_depth,
                     'status': 'running',
+                    'system_message': 'You are an AI assistant of Jitsi, a video conferencing platform. You provide response suggestions to the support agent',
                     'urls': ['https://jitsi.github.io/handbook'],
                 }
             ]
@@ -44,6 +52,9 @@ class RagConfig(RagPayload):
 
 
 class AssistantDocumentPayload(DocumentPayload):
+    hint: HintType = HintType.CONVERSATION
+    use_only_rag_data: bool = False
+
     model_config = {
         'json_schema_extra': {
             'examples': [
@@ -51,6 +62,8 @@ class AssistantDocumentPayload(DocumentPayload):
                     'text': 'User provided context here (will be appended to the RAG one)',
                     'prompt': 'User prompt here',
                     'max_completion_tokens': None,
+                    'hint': 'conversation',
+                    'use_only_rag_data': False,  # If True a vector store is available, only the RAG data will be used for assistance
                 }
             ]
         }

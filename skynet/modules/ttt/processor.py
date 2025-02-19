@@ -1,7 +1,7 @@
 from operator import itemgetter
 
 from langchain.chains.summarize import load_summarize_chain
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.prompts import ChatPromptTemplate
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import FlashrankRerank
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -26,6 +26,7 @@ from skynet.env import (
     use_oci,
 )
 from skynet.logs import get_logger
+from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 
 from skynet.modules.ttt.rag.app import get_vector_store
 from skynet.modules.ttt.summaries.prompts.action_items import (
@@ -41,6 +42,7 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_text,
 )
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType, Processors
+from skynet.modules.ttt.utils import get_assistant_chat_messages
 
 log = get_logger(__name__)
 
@@ -135,6 +137,8 @@ async def assist(payload: DocumentPayload, customer_id: str | None = None, model
 
     store = await get_vector_store()
     vector_store = await store.get(customer_id)
+    config = await store.get_config(customer_id)
+    question = payload.prompt
 
     base_retriever = vector_store.as_retriever(search_kwargs={'k': 3}) if vector_store else None
     retriever = (
@@ -143,26 +147,30 @@ async def assist(payload: DocumentPayload, customer_id: str | None = None, model
         else None
     )
 
-    prompt_template = '''
-    Context: {context}
-    Additional context: {additional_context}
-    User prompt: {user_prompt}
-    '''
+    if retriever and payload.text:
+        question_payload = DocumentPayload(**(payload.model_dump() | {'prompt': assistant_rag_question_extractor}))
+        question = await summarize(question_payload, JobType.SUMMARY, current_model)
 
-    prompt = PromptTemplate(template=prompt_template, input_variables=['context', 'user_prompt', 'additional_context'])
+    log.info(f'Using question: {question}')
+
+    template = ChatPromptTemplate(
+        get_assistant_chat_messages(
+            use_rag=bool(retriever),
+            use_only_rag_data=payload.use_only_rag_data,
+            text=payload.text,
+            prompt=payload.prompt,
+            system_message=config.system_message,
+        )
+    )
 
     rag_chain = (
-        {
-            'context': (itemgetter('user_prompt') | retriever | format_docs) if retriever else lambda x: '',
-            'user_prompt': itemgetter('user_prompt'),
-            'additional_context': itemgetter('additional_context'),
-        }
-        | prompt
+        {'context': (itemgetter('question') | retriever | format_docs) if retriever else lambda _: ''}
+        | template
         | current_model
         | StrOutputParser()
     )
 
-    return await rag_chain.ainvoke(input={'user_prompt': payload.prompt, 'additional_context': payload.text})
+    return await rag_chain.ainvoke(input={'question': question})
 
 
 async def summarize(payload: DocumentPayload, job_type: JobType, model: BaseChatModel = None) -> str:
