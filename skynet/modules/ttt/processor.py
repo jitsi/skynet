@@ -27,6 +27,7 @@ from skynet.env import (
 )
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
+from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 
 from skynet.modules.ttt.rag.app import get_vector_store
 from skynet.modules.ttt.summaries.prompts.action_items import (
@@ -42,7 +43,6 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_text,
 )
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType, Processors
-from skynet.modules.ttt.utils import get_assistant_chat_messages
 
 log = get_logger(__name__)
 

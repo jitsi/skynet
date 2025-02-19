@@ -63,7 +63,7 @@ class AssistantDocumentPayload(DocumentPayload):
                     'prompt': 'User prompt here',
                     'max_completion_tokens': None,
                     'hint': 'conversation',
-                    'use_only_rag_data': False,  # If True a vector store is available, only the RAG data will be used for assistance
+                    'use_only_rag_data': False,  # If True and a vector store is available, only the RAG data will be used for assistance
                 }
             ]
         }
