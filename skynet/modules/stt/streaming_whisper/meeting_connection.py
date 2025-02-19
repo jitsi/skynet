@@ -54,9 +54,7 @@ class MeetingConnection:
             )
 
         if participant_id not in self.participants:
-            log.debug(
-                f'The participant {participant_id} is not in the participants list, creating a new state.'
-            )
+            log.debug(f'The participant {participant_id} is not in the participants list, creating a new state.')
             self.participants[participant_id] = State(participant_id, a_chunk.language)
 
         if self.recording:
