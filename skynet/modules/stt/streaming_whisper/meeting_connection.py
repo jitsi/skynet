@@ -22,14 +22,16 @@ class MeetingConnection:
     previous_transcription_store: List[List[int]]
     tokenizer: Tokenizer | None
     meeting_language: str | None
+    recording: bool
 
-    def __init__(self, ws: WebSocket):
+    def __init__(self, ws: WebSocket, is_recording: bool = False):
         self.participants = {}
         self.ws = ws
         self.previous_transcription_tokens = []
         self.previous_transcription_store = []
         self.meeting_language = None
         self.tokenizer = None
+        self.recording = is_recording
 
     async def update_initial_prompt(self, previous_payloads: list[utils.TranscriptionResponse]):
         for payload in previous_payloads:
@@ -42,6 +44,7 @@ class MeetingConnection:
 
     async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
         a_chunk = Chunk(chunk, chunk_timestamp)
+        participant_id = a_chunk.participant_id
 
         # The first chunk sets the meeting language and initializes the Tokenizer
         if not self.meeting_language:
@@ -50,13 +53,17 @@ class MeetingConnection:
                 model.hf_tokenizer, multilingual=False, task='transcribe', language=self.meeting_language
             )
 
-        if a_chunk.participant_id not in self.participants:
+        if participant_id not in self.participants:
             log.debug(
-                f'The participant {a_chunk.participant_id} is not in the participants list, creating a new state.'
+                f'The participant {participant_id} is not in the participants list, creating a new state.'
             )
-            self.participants[a_chunk.participant_id] = State(a_chunk.participant_id, a_chunk.language)
+            self.participants[participant_id] = State(participant_id, a_chunk.language)
 
-        payloads = await self.participants[a_chunk.participant_id].process(a_chunk, self.previous_transcription_tokens)
+        if self.recording:
+            await self.participants[participant_id].process_recording(a_chunk)
+            return None
+
+        payloads = await self.participants[participant_id].process(a_chunk, self.previous_transcription_tokens)
         if payloads:
             await self.update_initial_prompt(payloads)
         return payloads

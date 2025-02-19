@@ -100,6 +100,7 @@ class State:
         results = None
         if self.is_transcribing:
             return results
+        self.is_transcribing = True
         ts_result = await self.do_transcription(self.working_audio, previous_tokens)
         if ts_result.text.strip():
             results = []
@@ -118,6 +119,7 @@ class State:
                 )
             )
         self.reset()
+        self.is_transcribing = False
         return results
 
     async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
@@ -129,6 +131,13 @@ class State:
             if len(results) > 0:
                 return results
         log.debug(f'Participant {self.participant_id}: no ts results')
+        return None
+
+    async def process_recording(self, chunk: Chunk):
+        if not self.working_audio:
+            self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
+        self.chunk_count += 1
+        self.working_audio += chunk.raw
         return None
 
     async def add_to_store(self, chunk: Chunk, tmp_working_audio: bytes = b''):
