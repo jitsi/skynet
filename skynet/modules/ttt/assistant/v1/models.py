@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from skynet.modules.ttt.assistant.constants import assistant_default_system_message
+
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType
 
 default_max_depth = 5
@@ -25,7 +27,7 @@ class RagPayload(BaseModel):
                 {
                     'urls': ['https://jitsi.github.io/handbook'],
                     'max_depth': default_max_depth,
-                    'system_message': 'You are an AI assistant of Jitsi, a video conferencing platform. You provide response suggestions to the support agent',
+                    'system_message': assistant_default_system_message,
                 }
             ]
         }
@@ -43,7 +45,7 @@ class RagConfig(RagPayload):
                     'error': None,
                     'max_depth': default_max_depth,
                     'status': 'running',
-                    'system_message': 'You are an AI assistant of Jitsi, a video conferencing platform. You provide response suggestions to the support agent',
+                    'system_message': assistant_default_system_message,
                     'urls': ['https://jitsi.github.io/handbook'],
                 }
             ]

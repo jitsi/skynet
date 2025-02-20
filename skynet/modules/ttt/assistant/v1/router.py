@@ -37,7 +37,7 @@ async def create_rag_db(payload: RagPayload, customer_id=Depends(CustomerId())) 
     """
 
     store = await get_vector_store()
-    return await store.create_from_urls(payload, customer_id)
+    return await store.update_from_urls(payload, customer_id)
 
 
 @api_version(1)
