@@ -14,8 +14,9 @@ from skynet.modules.monitoring import (
     SUMMARY_QUEUE_SIZE_METRIC,
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
+from skynet.modules.ttt.llm_selector import LLMSelector
 from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready
-from skynet.modules.ttt.processor import get_job_processor, process
+from skynet.modules.ttt.processor import process
 
 from ..persistence import db
 from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Priority, Processors
@@ -164,7 +165,7 @@ async def _run_job(job: Job) -> None:
     worker_id = await db.db.client_id()
     start = time.time()
     customer_id = job.metadata.customer_id
-    processor = get_job_processor(customer_id)
+    processor = LLMSelector.get_job_processor(customer_id)
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
@@ -233,7 +234,7 @@ async def restart_on_timeout(job: Job) -> None:
     log.warning(f"Job {job.id} timed out after {job_timeout} seconds")
 
     customer_id = job.metadata.customer_id
-    processor = get_job_processor(customer_id)
+    processor = LLMSelector.get_job_processor(customer_id)
 
     await update_done_job(job, "Job timed out", processor, has_failed=True)
 

@@ -4,6 +4,7 @@ models
 .DS_Store
 .env
 .idea
+.vscode
 llama.log
 dump.rdb
 _vector_store_
