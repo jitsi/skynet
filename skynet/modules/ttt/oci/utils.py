@@ -3,16 +3,16 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from skynet.env import (
     oci_auth_type,
+    oci_available,
     oci_compartment_id,
     oci_config_profile,
     oci_model_id,
     oci_service_endpoint,
-    use_oci,
 )
 
 
 async def initialize():
-    if not use_oci:
+    if not oci_available:
         return
 
     # Prime it so all transformers config is downloaded.

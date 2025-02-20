@@ -123,7 +123,6 @@ echo_requests_percent = int(os.environ.get('ECHO_REQUESTS_PERCENT', 100))
 echo_requests_token = os.environ.get('ECHO_REQUESTS_TOKEN')
 
 # oci
-use_oci = llama_path.startswith('oci://')
 oci_model_id = os.environ.get('OCI_MODEL_ID')
 oci_service_endpoint = os.environ.get(
     'OCI_SERVICE_ENDPOINT', 'https://inference.generativeai.us-chicago-1.oci.oraclecloud.com'
@@ -131,6 +130,8 @@ oci_service_endpoint = os.environ.get(
 oci_compartment_id = os.environ.get('OCI_COMPARTMENT_ID')
 oci_auth_type = os.environ.get('OCI_AUTH_TYPE', 'API_KEY')
 oci_config_profile = os.environ.get('OCI_CONFIG_PROFILE', 'DEFAULT')
+oci_available = oci_model_id and oci_service_endpoint and oci_compartment_id and oci_auth_type and oci_config_profile
+use_oci = oci_available and llama_path.startswith('oci://')
 
 # rag
 vector_store_path = os.environ.get('VECTOR_STORE_PATH', '_vector_store_')
