@@ -1,4 +1,5 @@
 import asyncio
+import importlib.metadata
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -30,7 +31,7 @@ else:
 
 @asynccontextmanager
 async def lifespan(main_app: FastAPI):
-    log.info('Skynet became self aware')
+    log.info(f'Skynet {importlib.metadata.version("skynet")} became self aware')
 
     if 'streaming_whisper' in modules:
         from skynet.modules.stt.streaming_whisper.app import app as streaming_whisper_app
