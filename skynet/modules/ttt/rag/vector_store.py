@@ -17,6 +17,19 @@ from ..persistence import db
 log = get_logger(__name__)
 
 
+def bypass_ingestion(existing_payload: RagPayload, new_payload: RagPayload):
+    existing_urls = existing_payload.urls
+    new_urls = new_payload.urls
+
+    existing_urls.sort()
+    new_urls.sort()
+
+    return (
+        list(dict.fromkeys(existing_urls)) == list(dict.fromkeys(new_urls))
+        and existing_payload.max_depth == new_payload.max_depth
+    )
+
+
 class SkynetVectorStore(ABC):
     embedding = HuggingFaceEmbeddings(
         model_name=embeddings_model_path, model_kwargs={'device': 'cpu', 'trust_remote_code': True}
@@ -111,13 +124,18 @@ class SkynetVectorStore(ABC):
 
         await db.lrem(RUNNING_RAG_KEY, 0, store_id)
 
-    async def create_from_urls(self, payload: RagPayload, store_id: str) -> Optional[RagConfig]:
+    async def update_from_urls(self, payload: RagPayload, store_id: str) -> Optional[RagConfig]:
         """
         Create a vector store with the given id, using the documents crawled from the given URL.
         """
 
+        config = await self.get_config(store_id)
+
         if store_id in await db.lrange(RUNNING_RAG_KEY, 0, -1):
-            return await self.get_config(store_id)
+            return config
+
+        if config and config.status == RagStatus.SUCCESS and bypass_ingestion(config, payload):
+            return await self.update_config(store_id, system_message=payload.system_message)
 
         await db.rpush(RUNNING_RAG_KEY, store_id)
         config = RagConfig(urls=payload.urls, max_depth=payload.max_depth)
