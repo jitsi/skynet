@@ -1,0 +1,40 @@
+name: "Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version number
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: cache poetry install
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: poetry-2.0.1-0
+      - uses: snok/install-poetry@v1
+        with:
+          version: 2.0.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - run: poetry version ${{ github.event.inputs.version }}
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+            commit_message: Bump version
+      - name: release
+        uses: softprops/action-gh-release@v2
+        with:
+            tag_name: ${{ github.event.inputs.version }}
+            generate_release_notes: true
+            make_latest: true
