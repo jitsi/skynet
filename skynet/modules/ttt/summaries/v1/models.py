@@ -60,6 +60,23 @@ class SummaryDocumentPayload(DocumentPayload):
     }
 
 
+class ProcessTextDocumentPayload(DocumentPayload):
+    prompt: str
+
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {
+                    'text': 'Your text here',
+                    'max_completion_tokens': None,
+                    'priority': 'normal',
+                    'prompt': 'Rewrite the following text in middle English',
+                }
+            ]
+        }
+    }
+
+
 class DocumentMetadata(BaseModel):
     app_id: Optional[str] = None
     customer_id: Optional[str] = None
@@ -69,6 +86,7 @@ class JobType(Enum):
     ASSIST = 'assist'
     ACTION_ITEMS = 'action_items'
     SUMMARY = 'summary'
+    PROCESS_TEXT = 'process-text'
 
 
 class Processors(Enum):

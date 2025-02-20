@@ -76,8 +76,7 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
 
     if retriever and payload.text:
         question_payload = DocumentPayload(**(payload.model_dump() | {'prompt': assistant_rag_question_extractor}))
-        # TODO: add a generic document processor and use that.
-        question = await summarize(model, question_payload, JobType.SUMMARY)
+        question = await process_text(model, question_payload)
 
     log.info(f'Using question: {question}')
 
@@ -104,9 +103,6 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
 async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: JobType) -> str:
     chain = None
     text = payload.text
-
-    if not text:
-        return ''
 
     system_message = payload.prompt or hint_type_to_prompt[job_type][payload.hint]
 
@@ -147,12 +143,36 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
     return formatted_result
 
 
+async def process_text(model: BaseChatModel, payload: DocumentPayload) -> str:
+    prompt = payload.prompt.strip()
+    text = payload.text.strip()
+
+    prompt = ChatPromptTemplate(
+        [
+            ('system', prompt),
+            ('human', '{text}'),
+        ]
+    )
+
+    chain = prompt | model | StrOutputParser()
+    result = await chain.ainvoke(input={'text': text})
+
+    log.info(f'input length: {len(prompt) + len(text)}')
+    log.info(f'output length: {len(result)}')
+
+    return result
+
+
 async def process(payload: DocumentPayload, job_type: JobType, customer_id: str | None = None) -> str:
     llm = LLMSelector.select(customer_id, max_completion_tokens=payload.max_completion_tokens)
 
     if job_type == JobType.ASSIST:
         result = await assist(llm, payload, customer_id)
-    else:
+    elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS]:
         result = await summarize(llm, payload, job_type)
+    elif job_type == JobType.PROCESS_TEXT:
+        result = await process_text(llm, payload)
+    else:
+        raise ValueError(f'Invalid job type {job_type}')
 
     return result

@@ -13,6 +13,7 @@ from .models import (
     DocumentPayload,
     JobId,
     JobType,
+    ProcessTextDocumentPayload,
     SummaryDocumentPayload,
 )
 
@@ -23,14 +24,19 @@ def get_metadata(request: Request) -> DocumentMetadata:
     return DocumentMetadata(app_id=get_app_id(request), customer_id=get_customer_id(request))
 
 
-def validate_payload(payload: DocumentPayload) -> None:
-    if len(payload.text) < summary_minimum_payload_length:
+def validate_summaries_payload(payload: DocumentPayload) -> None:
+    if len(payload.text.strip()) < summary_minimum_payload_length:
         raise HTTPException(status_code=422, detail="Payload is too short")
 
 
+def validate_process_text_payload(payload: DocumentPayload) -> None:
+    if not payload.prompt.strip():
+        raise HTTPException(status_code=422, detail="Prompt is required")
+
+
 @api_version(1)
-@router.post("/action-items", dependencies=[Depends(validate_payload)])
-async def get_action_items(payload: ActionItemsDocumentPayload, request: Request) -> JobId:
+@router.post("/action-items", dependencies=[Depends(validate_summaries_payload)])
+async def action_items(payload: ActionItemsDocumentPayload, request: Request) -> JobId:
     """
     Starts a job to extract action items from the given payload.
     """
@@ -39,13 +45,23 @@ async def get_action_items(payload: ActionItemsDocumentPayload, request: Request
 
 
 @api_version(1)
-@router.post("/summary", dependencies=[Depends(validate_payload)])
-async def get_summary(payload: SummaryDocumentPayload, request: Request) -> JobId:
+@router.post("/summary", dependencies=[Depends(validate_summaries_payload)])
+async def summary(payload: SummaryDocumentPayload, request: Request) -> JobId:
     """
     Starts a job to summarize the given payload.
     """
 
     return await create_job(job_type=JobType.SUMMARY, payload=payload, metadata=get_metadata(request))
+
+
+@api_version(1)
+@router.post("/process-text", dependencies=[Depends(validate_process_text_payload)])
+async def process_text(payload: ProcessTextDocumentPayload, request: Request) -> JobId:
+    """
+    Starts a job to process the given text.
+    """
+
+    return await create_job(job_type=JobType.PROCESS_TEXT, payload=payload, metadata=get_metadata(request))
 
 
 @api_version(1)

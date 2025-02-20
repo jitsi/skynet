@@ -6,6 +6,7 @@ from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPay
 @pytest.fixture()
 def process_fixture(mocker):
     mocker.patch('skynet.modules.ttt.processor.summarize')
+    mocker.patch('skynet.modules.ttt.processor.process_text')
     mocker.patch('skynet.modules.ttt.llm_selector.LLMSelector.select')
 
     return mocker
@@ -13,8 +14,29 @@ def process_fixture(mocker):
 
 class TestProcess:
     @pytest.mark.asyncio
-    async def test_process(self, process_fixture):
-        '''Test that a job is sent for inference.'''
+    async def test_process_action_items(self, process_fixture):
+        '''Test that an action items job is sent for inference.'''
+
+        from skynet.modules.ttt.llm_selector import LLMSelector
+        from skynet.modules.ttt.processor import process, summarize
+
+        job = Job(
+            payload=DocumentPayload(
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+            ),
+            metadata=DocumentMetadata(customer_id=None),
+            type=JobType.ACTION_ITEMS,
+            id='job_id',
+        )
+
+        await process(job.payload, job.type, job.metadata.customer_id)
+
+        summarize.assert_called_once()
+        LLMSelector.select.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_summary(self, process_fixture):
+        '''Test that a summary job is sent for inference.'''
 
         from skynet.modules.ttt.llm_selector import LLMSelector
         from skynet.modules.ttt.processor import process, summarize
@@ -31,6 +53,28 @@ class TestProcess:
         await process(job.payload, job.type, job.metadata.customer_id)
 
         summarize.assert_called_once()
+        LLMSelector.select.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_process_text(self, process_fixture):
+        '''Test that a process-text job is sent for inference.'''
+
+        from skynet.modules.ttt.llm_selector import LLMSelector
+        from skynet.modules.ttt.processor import process, process_text
+
+        job = Job(
+            payload=DocumentPayload(
+                prompt='Rewrite the following text in middle English',
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train.",
+            ),
+            metadata=DocumentMetadata(customer_id=None),
+            type=JobType.PROCESS_TEXT,
+            id='job_id',
+        )
+
+        await process(job.payload, job.type, job.metadata.customer_id)
+
+        process_text.assert_called_once()
         LLMSelector.select.assert_called_once()
 
     @pytest.mark.asyncio
