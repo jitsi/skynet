@@ -7,6 +7,7 @@ from skynet import http_client
 from skynet.auth.user_info import setup_credentials
 from skynet.env import echo_requests_base_url, echo_requests_percent, echo_requests_token
 from skynet.logs import get_logger
+from skynet.modules.ttt.oci.utils import initialize as initialize_oci
 from skynet.modules.ttt.openai_api.app import initialize as initialize_openai_api
 from skynet.utils import create_app
 from ..persistence import db
@@ -56,13 +57,15 @@ async def executor_startup():
 
     initialize_openai_api()
 
-    log.info('summaries:executor module initialized')
+    await initialize_oci()
 
     await db.initialize()
     log.info('Persistence initialized')
 
     start_monitoring_jobs()
     log.info('Jobs monitoring started')
+
+    log.info('summaries:executor module initialized')
 
 
 async def executor_shutdown():
