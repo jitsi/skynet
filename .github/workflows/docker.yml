@@ -1,0 +1,28 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          push: false
+          build-args: |
+            BASE_IMAGE_BUILD=ubuntu:22.04
+            BASE_IMAGE_RUN=ubuntu:22.04
+            BUILD_WITH_VLLM=0
+          platforms: linux/amd64,linux/arm64
