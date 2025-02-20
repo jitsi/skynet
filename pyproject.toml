@@ -5,10 +5,12 @@ description = ""
 authors = ["Jitsi Team <team@jitsi.org>"]
 readme = "README.md"
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [tool.poetry.group.dev.dependencies]
 black = "23.12.1"
 poetry-githooks = "^3.0.0"
-poetry-plugin-export = "^1.6.0"
 usort = "^1.0.7"
 argparse = "^1.4.0"
 tqdm = "^4.66.5"
