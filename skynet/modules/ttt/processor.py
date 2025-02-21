@@ -66,6 +66,7 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
     vector_store = await store.get(customer_id)
     config = await store.get_config(customer_id)
     question = payload.prompt
+    is_generated_question = False
 
     base_retriever = vector_store.as_retriever(search_kwargs={'k': 3}) if vector_store else None
     retriever = (
@@ -77,8 +78,11 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
     if retriever and payload.text:
         question_payload = DocumentPayload(**(payload.model_dump() | {'prompt': assistant_rag_question_extractor}))
         question = await process_text(model, question_payload)
+        is_generated_question = True
 
-    log.info(f'Using question: {question}')
+    log.info(
+        f'Using {"generated" if is_generated_question else ""} question: {question} and system message: {config.system_message or "default"}'
+    )
 
     template = ChatPromptTemplate(
         get_assistant_chat_messages(
