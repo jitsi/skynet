@@ -71,7 +71,7 @@ async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None
 
                     task = asyncio.create_task(
                         ws_connection_manager.process(
-                            session_id, participant['header'] + decoded_raw, media['timestamp'], participant_id
+                            session_id, participant['header'] + decoded_raw, media['timestamp']
                         )
                     )
 
