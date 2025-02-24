@@ -6,9 +6,9 @@ Skynet is configurable via environment variables. Some are shared by all modules
 
 | **Name**                       | **Description**                                             | **Default**                               | **Available values**                                                            |
 |--------------------------------|-------------------------------------------------------------|-------------------------------------------|---------------------------------------------------------------------------------|
+| `ENABLE_METRICS`               | If the Prometheus metrics endpoint should be enabled or not | `true`                                    | `true`, `false`                                                                 |
 | `ENABLED_MODULES`              | Which modules should be enabled, separated by commas        | `summaries:dispatcher,summaries:executor,assistant` | `summaries:dispatcher`, `summaries:executor`, `assistant`, `streaming_whisper` |
 | `BYPASS_AUTHORIZATION`         | If signed JWT authorization should be enabled               | `false`                                   | `true`, `false`                                                                 |
-| `ENABLE_METRICS`               | If the Prometheus metrics endpoint should be enabled or not | `true`                                    | `true`, `false`                                                                 |
 | `ASAP_PUB_KEYS_REPO_URL`       | Public key repository URL                                   | `NULL`                                    | N/A                                                                             |
 | `ASAP_PUB_KEYS_FOLDER`         | Public key repository root path                             | `NULL`                                    | N/A                                                                             |
 | `ASAP_PUB_KEYS_AUDS`           | Allowed JWT audiences, separated by commas                  | `NULL`                                    | N/A                                                                             |
@@ -16,13 +16,30 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `LOG_LEVEL`                    | Log level                                                   | `DEBUG`                                   | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                 |
 
 
+## Assistant Module Environment Variables
+
+| Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| `EMBEDDINGS_MODEL_PATH`          | The path where the embeddings model is located.                                                                                                    | `nomic-ai/nomic-embed-text-v1.5`    | N/A                  |
+| `VECTOR_STORE_PATH`              | The default path where the vector store is saved locally                                                                                           | `_vector_store_`                    | N/A                  |
+
+
 ## Summaries Module Environment Variables
 
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
 |----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
-| `LLAMA_PATH`                     | The path where the llama model is located.                                                                                                         | `NULL`                              | N/A                  |
+| `ENABLE_BATCHING`                | Enable submitting jobs for inference while others are running. The actual batching needs to be supported by the underlying inference processor     | `true`                              | `true`,`false`       |
+| `LLAMA_PATH`                     | The path where the llama model is located.                                                                                                         | `llama3.1`                          | N/A                  |
 | `LLAMA_N_CTX`                    | The context size of the llama model                                                                                                                | `128000`                            | N/A                  |
 | `JOB_TIMEOUT`                    | Timeout in seconds after which an inference job will be considered stuck and the app killed.                                                       | `300`                               | N/A                  |
+| `SUMMARY_MINIMUM_PAYLOAD_LENGTH` | The minimum payload length allowed for summarization.                                                                                              | `100`                               | N/A                  |
+| `SKYNET_LISTEN_IP`               | Default ip address on which the webserver is started.                                                                                              | `0.0.0.0`                           | N/A                  |
+| `SKYNET_PORT`                    | Default port on which the webserver is started.                                                                                                    | `8000`                              | N/A                  |
+
+## Redis vars
+
+| Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
 | `REDIS_EXP_SECONDS`              | After how many seconds will a completed job expire/be deleted from Redis                                                                           | `1800`                              | N/A                  |
 | `REDIS_HOST`                     | Redis host                                                                                                                                         | `localhost`                         | N/A                  |
 | `REDIS_PORT`                     | Redis port                                                                                                                                         | `6379`                              | N/A                  |
@@ -34,8 +51,24 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `REDIS_USE_SECRETS_MANAGER`      | Use AWS Secrets Manager to retrieve credentials                                                                                                    | `false`                             | N/A                  |
 | `REDIS_NAMESPACE`                | Prefix for each Redis key                                                                                                                          | `skynet`                            | N/A                  |
 | `REDIS_AWS_REGION`               | The AWS region. Needed when using AWS Secrets Manager to retrieve credentials.                                                                     | `us-west-2`                         | N/A                  |
-| `SUMMARY_MINIMUM_PAYLOAD_LENGTH` | The minimum payload length allowed for summarization.                                                                                              | `100`                               | N/A                  |
-| `SKYNET_LISTEN_IP`               | Default ip address on which the webserver is started.                                                                                              | `0.0.0.0`                           | N/A                  |
+
+## OCI vars
+| Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| `OCI_MODEL_ID`                   | OCI Model id                                                                                                                                       | NULL                                | N/A                  |
+| `OCI_SERVICE_ENDPOINT`           | OCI Service endpoint                                                                                                                               | `https://inference.generativeai.us-chicago-1.oci.oraclecloud.com`                                | N/A                  |
+| `OCI_COMPARTMENT_ID`             | OCI Compartment ID                                                                                                                                 | NULL                                | N/A                  |
+| `OCI_AUTH_TYPE`                  | OCI Authorization type                                                                                                                             | `API KEY`                           | N/A                  |
+| `OCI_CONFIG_PROFILE`             | OCI Config profile                                                                                                                                 | `DEFAULT`                           | N/A                  |
+
+## S3 vars (used for RAG vector store replication)
+| Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| `SKYNET_S3_ACCESS_KEY`           | S3 access key                                                                                                                                      | NULL                                | N/A                  |
+| `SKYNET_S3_BUCKET`               | S3 bucket                                                                                                                                          | NULL                                | N/A                  |
+| `SKYNET_S3_ENDPOINT`             | S3 endpoint                                                                                                                                        | NULL                                | N/A                  |
+| `SKYNET_S3_REGION`               | S3 region                                                                                                                                          | NULL                                | N/A                  |
+| `SKYNET_S3_SECRET_KEY`           | S3 secret key                                                                                                                                      | NULL                                | N/A                  |
 
 ## Streaming Whisper Module Environment Variables
 

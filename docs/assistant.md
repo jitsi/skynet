@@ -1,8 +1,8 @@
-# Skynet Summaries Module
+# Skynet RAG Assistant Module
 
-Extracts summaries and action items from a given text. The service can be deployed to use either vllm or Ollama. It is split into two sub-modules: `summaries:dispatcher` and `summaries:executor`.
+Enable the module by setting the `ENABLED_MODULES` env var to `assistant`.
 
-`summaries:dispatcher` will do CRUD for jobs with a Redis installation, while `summaries:executor` performs the actual inference. They can both be enabled at the same time or deployed separately.
+Allows you to index a crawled website into a vector store, save the store locally and in an s3 bucket and have it augment the prompt with relevant information for various AI assistant tasks.
 
 > All requests to this service will require a standard HTTP Authorization header with a Bearer JWT. Check the [**Authorization page**](auth.md) for detailed information on how to generate JWTs or disable authorization.
 
@@ -11,20 +11,19 @@ Extracts summaries and action items from a given text. The service can be deploy
 - Redis
 - Poetry
 
-## Flowchart
-
-<img src="flowchart.jpg" alt="Skynet Summaries Module Flowchart">
-
 ## Configuration
 
 All of the configuration is done via env vars. Check the [Skynet Environment Variables](env_vars.md) page for a list of values.
 
+## Authorization
+
+Each vector store corresponds to a unique identifier, which the current implementation expects to be provided as a customer id parameter, which can be either be a `cid` field in a JWT, or as a `customer_id` query parameter
+
+Thus, when deploying this module, the deployer will also have the responsibility for establishing the access-control list based on this spec.
+
 ## First run
 
 ```bash
-# disable authorization
-export BYPASS_AUTHORIZATION=1
-
 # start Redis
 docker run -d --rm -p 6379:6379 redis
 

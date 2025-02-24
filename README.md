@@ -6,6 +6,7 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 
 - **Summary and Action Items** with vllm (or Ollama)
 - **Live Transcriptions** with Faster Whisper via websockets
+- **RAG Assistant**
 - 🚧 _More to follow_
 
 ## Requirements
@@ -13,23 +14,27 @@ It is comprised of specialized modules which can be enabled or disabled as neede
 - Poetry
 - Redis
 
-## Summaries Quickstart
+## Summaries / Assistant Quickstart
 
 ```bash
-# If VLLM cannot be used, make sure to have Ollama started. In that case LLAMA_PATH should be the model name, like "llama3.1".
-export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct"
-
-# disable authorization (for testing)
+# disable authorization
 export BYPASS_AUTHORIZATION=1
 
 # start Redis
-docker run -d --rm -p 6379:6379 redis 
+docker run -d --rm -p 6379:6379 redis
 
+# If using vLLM (running on NVIDIA GPU)
+export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct"
 poetry install --with vllm
-./run.sh
 
-# open http://localhost:8000/summaries/docs in a browser
+# If using Ollama
+export LLAMA_PATH="llama.3.1"
+poetry install
+
+./run.sh
 ```
+
+Visit http://127.0.0.1:8000
 
 ## Live Transcriptions Quickstart
 

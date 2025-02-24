@@ -41,11 +41,10 @@ llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 
 embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-ai/nomic-embed-text-v1.5')
-embeddings_model_n_ctx = int(os.environ.get('EMBEDDINGS_MODEL_N_CTX', 8192))
 
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
-azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
+azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-10-21')
 
 # openai api
 openai_api_port = 8003
