@@ -32,7 +32,7 @@ app_port = int(os.environ.get('SKYNET_PORT', 8000))
 listen_ip = os.environ.get('SKYNET_LISTEN_IP', '0.0.0.0')
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant'}
-enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor,assistant').split(','))
+enabled_modules = set(os.environ.get('ENABLED_MODULES', 'assistant').split(','))
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
@@ -41,11 +41,10 @@ llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 
 embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-ai/nomic-embed-text-v1.5')
-embeddings_model_n_ctx = int(os.environ.get('EMBEDDINGS_MODEL_N_CTX', 8192))
 
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
-azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-01')
+azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-10-21')
 
 # openai api
 openai_api_port = 8003
@@ -109,7 +108,6 @@ job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
-enable_batching = tobool(os.environ.get('ENABLE_BATCHING', 'true'))
 
 # monitoring
 enable_metrics = tobool(os.environ.get('ENABLE_METRICS', 'true'))
@@ -146,3 +144,5 @@ skynet_s3_endpoint = os.environ.get('SKYNET_S3_ENDPOINT')
 skynet_s3_region = os.environ.get('SKYNET_S3_REGION')
 skynet_s3_secret_key = os.environ.get('SKYNET_S3_SECRET_KEY')
 use_s3 = all([skynet_s3_access_key, skynet_s3_secret_key, skynet_s3_bucket, skynet_s3_endpoint, skynet_s3_region])
+
+enable_batching = use_vllm or use_oci
