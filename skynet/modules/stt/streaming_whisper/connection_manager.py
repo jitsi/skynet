@@ -1,27 +1,29 @@
 import asyncio
 from asyncio import Task
+
 import aiofiles
 from aiomultiprocess import Worker
 from aiomultiprocess.core import get_manager
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+import skynet.modules.stt.shared.utils as shared_utils
+
 from skynet.auth.jwt import authorize
 from skynet.env import (
     bypass_auth,
     whisper_flush_interval,
     whisper_max_connections,
-    whisper_recorder_transcribe_after_seconds as transcribe_after_s,
     whisper_recorder_audio_path as recording_audio_folder,
-    whisper_recorder_num_processes
+    whisper_recorder_num_processes,
+    whisper_recorder_transcribe_after_seconds as transcribe_after_s,
 )
 from skynet.logs import get_logger
 from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER, TRANSCRIBE_STRESS_LEVEL_METRIC
+from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
+from skynet.modules.stt.shared.processes.recording_worker import recording_transcriber_worker
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.shared.processes.recording_worker import recording_transcriber_worker
-from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
-import skynet.modules.stt.shared.utils as shared_utils
 
 log = get_logger(__name__)
 
@@ -94,7 +96,6 @@ class ConnectionManager:
             CONNECTIONS_METRIC.set(len(self.connections))
             TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections) / whisper_max_connections)
 
-
     async def flush_working_audio_worker(self):
         """
         Will force a transcription for all participants that haven't received any chunks for more than `flush_after_ms`
@@ -151,7 +152,9 @@ class ConnectionManager:
                                     async with aiofiles.open(f'{recording_audio_folder}/{audio_file_name}', 'wb') as f:
                                         await f.write(audio)
                                 except Exception as e:
-                                    log.error(f'Failed to write audio to {recording_audio_folder}/{audio_file_name}: {e}')
+                                    log.error(
+                                        f'Failed to write audio to {recording_audio_folder}/{audio_file_name}: {e}'
+                                    )
                                     await asyncio.sleep(sleep_for)
                                     continue
                                 metadata = {
@@ -199,9 +202,7 @@ class ConnectionManager:
                 self.running_processes.remove(worker)
                 log.warning(f'Restarting worker {worker.name}')
                 new_worker = Worker(
-                    name=name,
-                    target=recording_transcriber_worker,
-                    args=(self.audio_queue, self.transcriptions_queue)
+                    name=name, target=recording_transcriber_worker, args=(self.audio_queue, self.transcriptions_queue)
                 )
                 new_worker.start()
                 self.running_processes.add(new_worker)
@@ -216,10 +217,10 @@ class ConnectionManager:
     def start_recording_processes(self):
         for i in range(whisper_recorder_num_processes):
             worker_name = f'recording_transcriber_worker-{i}'
-            worker  = Worker(
+            worker = Worker(
                 name=worker_name,
                 target=recording_transcriber_worker,
-                args=(self.audio_queue, self.transcriptions_queue, worker_name)
+                args=(self.audio_queue, self.transcriptions_queue, worker_name),
             )
             worker.start()
             self.running_processes.add(worker)
