@@ -17,6 +17,8 @@ RUN \
     apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv
 
 COPY requirements*.txt /app/
+COPY pyproject.toml /app/
+COPY skynet /app/skynet
 
 WORKDIR /app
 
@@ -27,10 +29,10 @@ RUN \
     . .venv/bin/activate && \
     if [ "$BUILD_WITH_VLLM" = "1" ]; then \
         echo "Building with VLLM"; \
-        pip install -r requirements-vllm.txt; \
+        pip install -r requirements-vllm.txt . ; \
     else \
         echo "Building without VLLM"; \
-        pip install -r requirements.txt; \
+        pip install -r requirements.txt . ; \
     fi
 
 ## Build ffmpeg
@@ -78,7 +80,6 @@ COPY --from=ffmpeg_builder /usr/local/include /usr/local/include
 COPY --from=ffmpeg_builder /usr/local/lib/lib* /usr/local/lib/
 COPY --from=ffmpeg_builder /usr/local/lib/pkgconfig /usr/local/lib/pkgconfig
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
-COPY --chown=jitsi:jitsi /skynet /app/skynet/
 
 RUN \
     apt-get update && \
