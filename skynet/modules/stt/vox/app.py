@@ -5,10 +5,10 @@ import pybase64
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from skynet.logs import get_logger
-from skynet.modules.stt.streaming_whisper.utils import utils
 from skynet.modules.stt.vox.connection_manager import ConnectionManager
 from skynet.modules.stt.vox.decoder import PcmaDecoder
 from skynet.modules.stt.vox.resampler import PcmResampler
+import skynet.modules.stt.shared.utils as shared_utils
 
 log = get_logger(__name__)
 
@@ -22,7 +22,8 @@ whisper_sampling_rate = 16000
 async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None):
     decoder = PcmaDecoder()
     resampler = PcmResampler()
-    session_id = utils.Uuid7().get()
+    uuid7 = shared_utils.Uuid7()
+    session_id = str(uuid7.get())
     await ws_connection_manager.connect(websocket, session_id, auth_token)
 
     data_map = dict()

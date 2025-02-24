@@ -1,5 +1,3 @@
-import asyncio
-
 from faster_whisper import WhisperModel
 from silero_vad import load_silero_vad
 
@@ -10,8 +8,6 @@ from skynet.env import (
     whisper_gpu_indices,
     whisper_model_name,
     whisper_model_path,
-    whisper_recorder_model_name,
-    whisper_recorder_model_path,
 )
 from skynet.logs import get_logger
 
@@ -31,9 +27,7 @@ if whisper_gpu_indices is not None:
     num_workers = len(gpu_indices)
 
 path_or_model_name = whisper_model_name if whisper_model_name is not None else whisper_model_path
-path_or_model_name_for_recording = (
-    whisper_recorder_model_name if whisper_recorder_model_name is not None else whisper_recorder_model_path
-)
+
 model = WhisperModel(
     path_or_model_name,
     device=device,
@@ -42,10 +36,6 @@ model = WhisperModel(
     num_workers=num_workers,
     download_root=whisper_model_path,
 )
-
-recording_audio_queue = asyncio.Queue()
-recording_ts_messages_queue = asyncio.Queue()
-
 
 one_byte_s = 0.00003125  # the equivalent of one byte in seconds for 16kHz audio, 2 bytes per sample, mono
 
