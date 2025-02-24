@@ -1,19 +1,19 @@
-from faster_whisper import WhisperModel
 import asyncio
+
+from faster_whisper import WhisperModel
+
+from skynet.env import whisper_recorder_model_name, whisper_recorder_model_path, whisper_recorder_quantization
 from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
 from skynet.modules.stt.shared.models.whisper import WhisperResult
-from skynet.modules.stt.shared.utils import Uuid7, load_audio
-from skynet.env import (
-    whisper_recorder_quantization,
-    whisper_recorder_model_path,
-    whisper_recorder_model_name
-)
+from skynet.modules.stt.shared.utils import load_audio, Uuid7
 
 worker_name = 'recording_transcriber_worker'
+
 
 def lognow(msg):
     with open(f'/tmp/{worker_name}.log', 'a') as f:
         f.write(f'{msg}\n')
+
 
 async def recording_transcriber_worker(audio_queue: asyncio.Queue, transcription_queue: asyncio.Queue, name: str):
     global worker_name
@@ -52,7 +52,7 @@ async def recording_transcriber_worker(audio_queue: asyncio.Queue, transcription
             condition_on_previous_text=False,
             vad_filter=True,
             language_detection_segments=3,
-            language_detection_threshold=0.7
+            language_detection_threshold=0.7,
         )
         lognow('After transcribe')
         ts_result = WhisperResult([res for res in segments])
