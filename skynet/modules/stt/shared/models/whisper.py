@@ -1,11 +1,14 @@
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel
+
 
 class WhisperWord(BaseModel):
     probability: float
     word: str
     start: float
     end: float
+
 
 class WhisperSegment(BaseModel):
     id: int
@@ -19,6 +22,7 @@ class WhisperSegment(BaseModel):
     compression_ratio: float
     no_speech_prob: float
     words: List
+
 
 class WhisperResult:
     text: str
