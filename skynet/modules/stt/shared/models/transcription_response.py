@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class TranscriptionResponse(BaseModel):
     id: str
     participant_id: str
