@@ -1,10 +1,12 @@
+import secrets
 import time
-import numpy as np
 from datetime import datetime, timezone
+
+import numpy as np
 
 from numpy import ndarray
 from uuid6 import UUID
-import secrets
+
 
 class Uuid7:
     def __init__(self):
@@ -24,9 +26,11 @@ class Uuid7:
         uuid_int |= secrets.randbits(76)
         return UUID(int=uuid_int, version=7)
 
+
 # returns now UTC timestamp since epoch in millis
 def now() -> int:
     return int(datetime.now(timezone.utc).timestamp() * 1000)
+
 
 def load_audio(byte_array: bytes) -> ndarray:
     return np.frombuffer(byte_array, np.int16).flatten().astype(np.float32) / 32768.0

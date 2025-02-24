@@ -4,11 +4,12 @@ import pybase64
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
+import skynet.modules.stt.shared.utils as shared_utils
+
 from skynet.logs import get_logger
 from skynet.modules.stt.vox.connection_manager import ConnectionManager
 from skynet.modules.stt.vox.decoder import PcmaDecoder
 from skynet.modules.stt.vox.resampler import PcmResampler
-import skynet.modules.stt.shared.utils as shared_utils
 
 log = get_logger(__name__)
 

@@ -3,14 +3,15 @@ import base64
 import time
 from typing import List
 
+import skynet.modules.stt.shared.utils as shared_utils
+
 from skynet.env import whisper_return_transcribed_audio as return_audio
 
 from skynet.logs import get_logger
 from skynet.modules.monitoring import TRANSCRIBE_DURATION_METRIC
+from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
-import skynet.modules.stt.shared.utils as shared_utils
 
 log = get_logger(__name__)
 

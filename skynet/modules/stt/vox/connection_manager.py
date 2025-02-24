@@ -3,8 +3,8 @@ from typing import List
 from fastapi import WebSocketDisconnect
 
 from skynet.logs import get_logger
-from skynet.modules.stt.streaming_whisper.connection_manager import ConnectionManager as BaseConnectionManager
 from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
+from skynet.modules.stt.streaming_whisper.connection_manager import ConnectionManager as BaseConnectionManager
 
 log = get_logger(__name__)
 

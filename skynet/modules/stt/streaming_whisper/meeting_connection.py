@@ -8,11 +8,11 @@ from starlette.websockets import WebSocket
 from skynet.env import whisper_max_finals_in_initial_prompt as max_finals
 
 from skynet.logs import get_logger
+from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
 from skynet.modules.stt.streaming_whisper.cfg import model
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
 
 log = get_logger(__name__)
 

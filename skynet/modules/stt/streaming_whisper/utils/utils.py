@@ -1,19 +1,23 @@
 from typing import List, Tuple
+
 from pydantic import BaseModel
 from silero_vad import get_speech_timestamps, read_audio
 
-import skynet.modules.stt.streaming_whisper.cfg as cfg
-from skynet.modules.stt.shared.models.whisper import WhisperWord, WhisperResult
 import skynet.modules.stt.shared.utils as shared_utils
+
+import skynet.modules.stt.streaming_whisper.cfg as cfg
 from skynet.env import whisper_beam_size, whisper_min_probability
 from skynet.logs import get_logger
+from skynet.modules.stt.shared.models.whisper import WhisperResult, WhisperWord
 
 log = get_logger(__name__)
+
 
 class CutMark(BaseModel):
     start: float = 0.0
     end: float = 0.0
     probability: float = 0.0
+
 
 LANGUAGES = {
     "en": "english",
