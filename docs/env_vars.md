@@ -28,6 +28,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
 |----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| `ENABLE_BATCHING`                | Enable submitting jobs for inference while others are running. The actual batching needs to be supported by the underlying inference processor     | `true`                              | `true`,`false`       |
 | `LLAMA_PATH`                     | The path where the llama model is located.                                                                                                         | `llama3.1`                          | N/A                  |
 | `LLAMA_N_CTX`                    | The context size of the llama model                                                                                                                | `128000`                            | N/A                  |
 | `JOB_TIMEOUT`                    | Timeout in seconds after which an inference job will be considered stuck and the app killed.                                                       | `300`                               | N/A                  |
@@ -50,6 +51,15 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `REDIS_USE_SECRETS_MANAGER`      | Use AWS Secrets Manager to retrieve credentials                                                                                                    | `false`                             | N/A                  |
 | `REDIS_NAMESPACE`                | Prefix for each Redis key                                                                                                                          | `skynet`                            | N/A                  |
 | `REDIS_AWS_REGION`               | The AWS region. Needed when using AWS Secrets Manager to retrieve credentials.                                                                     | `us-west-2`                         | N/A                  |
+
+## OCI vars
+| Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| `OCI_MODEL_ID`                   | OCI Model id                                                                                                                                       | NULL                                | N/A                  |
+| `OCI_SERVICE_ENDPOINT`           | OCI Service endpoint                                                                                                                               | `https://inference.generativeai.us-chicago-1.oci.oraclecloud.com`                                | N/A                  |
+| `OCI_COMPARTMENT_ID`             | OCI Compartment ID                                                                                                                                 | NULL                                | N/A                  |
+| `OCI_AUTH_TYPE`                  | OCI Authorization type                                                                                                                             | `API KEY`                           | N/A                  |
+| `OCI_CONFIG_PROFILE`             | OCI Config profile                                                                                                                                 | `DEFAULT`                           | N/A                  |
 
 ## S3 vars (used for RAG vector store replication)
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |

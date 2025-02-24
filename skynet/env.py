@@ -32,7 +32,7 @@ app_port = int(os.environ.get('SKYNET_PORT', 8000))
 listen_ip = os.environ.get('SKYNET_LISTEN_IP', '0.0.0.0')
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
 supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant'}
-enabled_modules = set(os.environ.get('ENABLED_MODULES', 'assistant').split(','))
+enabled_modules = set(os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor,assistant').split(','))
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 
@@ -108,6 +108,7 @@ job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
+enable_batching = tobool(os.environ.get('ENABLE_BATCHING', 'true'))
 
 # monitoring
 enable_metrics = tobool(os.environ.get('ENABLE_METRICS', 'true'))
@@ -144,5 +145,3 @@ skynet_s3_endpoint = os.environ.get('SKYNET_S3_ENDPOINT')
 skynet_s3_region = os.environ.get('SKYNET_S3_REGION')
 skynet_s3_secret_key = os.environ.get('SKYNET_S3_SECRET_KEY')
 use_s3 = all([skynet_s3_access_key, skynet_s3_secret_key, skynet_s3_bucket, skynet_s3_endpoint, skynet_s3_region])
-
-enable_batching = use_vllm or use_oci
