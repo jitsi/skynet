@@ -1,9 +1,7 @@
 [tool.poetry]
 name = "skynet"
 version = "0.1.0"
-description = ""
 authors = ["Jitsi Team <team@jitsi.org>"]
-readme = "README.md"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"
