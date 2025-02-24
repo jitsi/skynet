@@ -9,6 +9,8 @@ from skynet.logs import get_logger
 from skynet.modules.monitoring import TRANSCRIBE_DURATION_METRIC
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.utils import utils
+from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
+import skynet.modules.stt.shared.utils as shared_utils
 
 log = get_logger(__name__)
 
@@ -35,15 +37,15 @@ class State:
         self.working_audio = b''
         self.lang = lang
         self.long_silence = False
-        self.uuid = utils.Uuid7()
+        self.uuid = shared_utils.Uuid7()
         self.transcription_id = str(self.uuid.get())
-        self.last_received_chunk = utils.now()
+        self.last_received_chunk = shared_utils.now()
         self.is_transcribing = False
         self.last_speech_timestamp = 0.0
 
     def _extract_transcriptions(
         self, last_pause: utils.CutMark, ts_result: utils.WhisperResult
-    ) -> List[utils.TranscriptionResponse]:
+    ) -> List[TranscriptionResponse]:
         if ts_result is None:
             return []
         results = []
@@ -96,7 +98,7 @@ class State:
             )
         return results
 
-    async def force_transcription(self, previous_tokens) -> List[utils.TranscriptionResponse] | None:
+    async def force_transcription(self, previous_tokens) -> List[TranscriptionResponse] | None:
         results = None
         if self.is_transcribing:
             return results
@@ -122,7 +124,7 @@ class State:
         self.is_transcribing = False
         return results
 
-    async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
+    async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[TranscriptionResponse] | None:
         await self.add_to_store(chunk, self.working_audio + chunk.raw)
         if not self.long_silence and not self.is_transcribing:
             ts_result = await self.do_transcription(self.working_audio, previous_tokens)
@@ -134,6 +136,7 @@ class State:
         return None
 
     async def process_recording(self, chunk: Chunk):
+        log.debug(f'Participant {self.participant_id}: processing recording chunk')
         if not self.working_audio:
             self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
         self.chunk_count += 1
@@ -141,7 +144,7 @@ class State:
         return None
 
     async def add_to_store(self, chunk: Chunk, tmp_working_audio: bytes = b''):
-        now_millis = utils.now()
+        now_millis = shared_utils.now()
         self.chunk_count += 1
         # if the working audio is empty, set the start timestamp
         if not self.working_audio:
@@ -194,14 +197,14 @@ class State:
 
     def get_response_payload(
         self, transcription: str, start_timestamp: int, final_audio: bytes | None = None, final: bool = False, **kwargs
-    ) -> utils.TranscriptionResponse:
+    ) -> TranscriptionResponse:
         prob = kwargs.get('probability', 0.5)
         if not self.transcription_id:
             self.transcription_id = str(self.uuid.get(start_timestamp))
         ts_id = self.transcription_id
         if final:
             self.transcription_id = ''
-        return utils.TranscriptionResponse(
+        return TranscriptionResponse(
             id=ts_id,
             participant_id=self.participant_id,
             ts=start_timestamp,

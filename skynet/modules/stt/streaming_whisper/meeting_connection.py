@@ -12,6 +12,7 @@ from skynet.modules.stt.streaming_whisper.cfg import model
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
+from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
 
 log = get_logger(__name__)
 
@@ -33,7 +34,7 @@ class MeetingConnection:
         self.tokenizer = None
         self.recording = is_recording
 
-    async def update_initial_prompt(self, previous_payloads: list[utils.TranscriptionResponse]):
+    async def update_initial_prompt(self, previous_payloads: list[TranscriptionResponse]):
         for payload in previous_payloads:
             if payload.type == 'final' and not any(prompt in payload.text for prompt in utils.black_listed_prompts):
                 self.previous_transcription_store.append(self.tokenizer.encode(f' {payload.text.strip()}'))
@@ -42,7 +43,7 @@ class MeetingConnection:
                 # flatten the list of lists
                 self.previous_transcription_tokens = list(chain.from_iterable(self.previous_transcription_store))
 
-    async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
+    async def process(self, chunk: bytes, chunk_timestamp: int) -> List[TranscriptionResponse] | None:
         a_chunk = Chunk(chunk, chunk_timestamp)
         participant_id = a_chunk.participant_id
 

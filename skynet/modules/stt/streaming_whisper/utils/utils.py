@@ -1,87 +1,19 @@
-import asyncio
-import secrets
-import time
-from datetime import datetime, timezone
-from multiprocessing import cpu_count
 from typing import List, Tuple
-
-import numpy as np
-from faster_whisper import WhisperModel
-from numpy import ndarray
 from pydantic import BaseModel
 from silero_vad import get_speech_timestamps, read_audio
-from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
+from skynet.modules.stt.shared.models.whisper import WhisperWord, WhisperResult
+import skynet.modules.stt.shared.utils as shared_utils
 from skynet.env import whisper_beam_size, whisper_min_probability
 from skynet.logs import get_logger
 
 log = get_logger(__name__)
 
-
-class WhisperWord(BaseModel):
-    probability: float
-    word: str
-    start: float
-    end: float
-
-
-class WhisperSegment(BaseModel):
-    id: int
-    seek: int
-    start: float
-    end: float
-    text: str
-    tokens: List[int]
-    temperature: float
-    avg_logprob: float
-    compression_ratio: float
-    no_speech_prob: float
-    words: List
-
-
-class TranscriptionResponse(BaseModel):
-    id: str
-    participant_id: str
-    ts: int
-    text: str
-    audio: str
-    type: str
-    variance: float
-
-
 class CutMark(BaseModel):
     start: float = 0.0
     end: float = 0.0
     probability: float = 0.0
-
-
-class WhisperResult:
-    text: str
-    segments: list[WhisperSegment]
-    words: list[WhisperWord]
-    confidence: float
-    language: str
-
-    def __init__(self, ts_result):
-        self.text = ''.join([segment.text for segment in ts_result])
-        self.segments = [WhisperSegment.model_validate(segment._asdict()) for segment in ts_result]
-        self.words = [WhisperWord.model_validate(word._asdict()) for segment in ts_result for word in segment.words]
-        self.confidence = self.get_confidence()
-
-    def __str__(self):
-        return (
-            f'Text: {self.text}\n'
-            + f'Confidence avg: {self.confidence}\n'
-            + f'Segments: {self.segments}\n'
-            + f'Words: {self.words}'
-        )
-
-    def get_confidence(self) -> float:
-        if len(self.words) > 0:
-            return float(sum(word.probability for word in self.words) / len(self.words))
-        return 0.0
-
 
 LANGUAGES = {
     "en": "english",
@@ -281,20 +213,11 @@ def get_wav_header(chunks: List[bytes], chunk_duration_s: float = 0.256, sample_
     return o
 
 
-def load_audio(byte_array: bytes) -> ndarray:
-    return np.frombuffer(byte_array, np.int16).flatten().astype(np.float32) / 32768.0
-
-
-# returns now UTC timestamp since epoch in millis
-def now() -> int:
-    return int(datetime.now(timezone.utc).timestamp() * 1000)
-
-
 def transcribe(buffer_list: List[bytes], lang: str = 'en', previous_tokens=None) -> WhisperResult:
     if previous_tokens is None:
         previous_tokens = []
     audio_bytes = b''.join(buffer_list)
-    audio = load_audio(audio_bytes)
+    audio = shared_utils.load_audio(audio_bytes)
     iterator, _ = cfg.model.transcribe(
         audio,
         language=lang,
@@ -321,92 +244,8 @@ def get_lang(lang: str, short=True) -> str:
     return lang.lower().strip()
 
 
-class Uuid7:
-    def __init__(self):
-        self.last_v7_timestamp = None
-
-    def get(self, time_arg_millis: int = None) -> UUID:
-        nanoseconds = time.time_ns()
-        timestamp_ms = nanoseconds // 10**6
-
-        if time_arg_millis is not None:
-            timestamp_ms = time_arg_millis
-
-        if self.last_v7_timestamp is not None and timestamp_ms <= self.last_v7_timestamp:
-            timestamp_ms = self.last_v7_timestamp + 1
-        self.last_v7_timestamp = timestamp_ms
-        uuid_int = (timestamp_ms & 0xFFFFFFFFFFFF) << 80
-        uuid_int |= secrets.randbits(76)
-        return UUID(int=uuid_int, version=7)
-
-
 def get_jwt(ws_headers, ws_url_param=None) -> str:
     auth_header = ws_headers.get('authorization', None)
     if auth_header is not None:
         return auth_header.split(' ')[-1]
     return ws_url_param if ws_url_param is not None else ''
-
-
-async def recording_transcriber_worker():
-    # use 50% of the available core count
-    workers = int(cpu_count() * 0.5)
-    # load the model in the worker process
-    recording_model = WhisperModel(
-        cfg.path_or_model_name,
-        device='cpu',
-        compute_type='int8_float16',
-        num_workers=workers,
-        download_root=cfg.whisper_recorder_model_path,
-    )
-    while True:
-        try:
-            data = cfg.recording_audio_queue.get_nowait()
-        except asyncio.QueueEmpty:
-            log.debug('No data in the queue')
-            await asyncio.sleep(1)
-            continue
-        meeting_id = data['meeting_id']
-        participant_id = data['participant_id']
-        audio_bytes = data['audio']
-        audio = load_audio(audio_bytes)
-        audio_start_timestamp = data['start_timestamp']
-        lang = data['lang'] if 'lang' in data else 'auto'
-        previous_tokens = data['previous_tokens'] if 'previous_tokens' in data else []
-        iterator, _ = recording_model.transcribe(
-            audio,
-            language=lang,
-            task='transcribe',
-            word_timestamps=True,
-            beam_size=whisper_beam_size,
-            initial_prompt=previous_tokens,
-            condition_on_previous_text=False,
-            vad_filter=True,
-        )
-        res = list(iterator)
-        ts_result = WhisperResult(res)
-        if ts_result.text.strip():
-            results = []
-            temp_result_words = []
-            start_timestamp = None
-            for word in ts_result.words:
-                if not start_timestamp:
-                    start_timestamp = int(word.start * 1000) + audio_start_timestamp
-                temp_result_words.append(word)
-                temp_result_prob = sum([word.probability for word in temp_result_words]) / len(temp_result_words)
-                if word.word[-1] in ['.', '!', '?']:
-                    uuid = Uuid7()
-                    results.append(
-                        TranscriptionResponse(
-                            id=str(uuid.get(start_timestamp)),
-                            participant_id=participant_id,
-                            ts=start_timestamp,
-                            text=''.join([w.word for w in temp_result_words]),
-                            audio='',
-                            type='final',
-                            variance=temp_result_prob,
-                        )
-                    )
-                    temp_result_words = []
-                    start_timestamp = None
-            await cfg.recording_ts_messages_queue.put({'meeting_id': meeting_id, 'results': results})
-        await asyncio.sleep(0.1)

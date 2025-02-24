@@ -2,7 +2,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from skynet.logs import get_logger
 from skynet.modules.stt.streaming_whisper.connection_manager import ConnectionManager
-from skynet.modules.stt.streaming_whisper.utils import utils
+import skynet.modules.stt.shared.utils as shared_utils
 
 log = get_logger(__name__)
 
@@ -27,7 +27,7 @@ async def websocket_endpoint(
                 log.info(f'Received disconnect message for {meeting_id}')
                 ws_connection_manager.disconnect(meeting_id)
                 break
-            await ws_connection_manager.process(meeting_id, chunk, utils.now())
+            await ws_connection_manager.process(meeting_id, chunk, shared_utils.now())
     except WebSocketDisconnect:
         ws_connection_manager.disconnect(meeting_id)
         log.info(f'Meeting {meeting_id} has ended')

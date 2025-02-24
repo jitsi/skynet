@@ -27,7 +27,9 @@
                           <button class="button" id="clearbtn">Clear</button>
                           <div class="select is-disabled">
                               <select id="langselector" name="langselector">
-                                <option value="en" selected="selected">English</option>
+                                  <option value="en" selected="selected">English</option>
+                                  <option value="ro" >Romanian</option>
+                                  <option value="it" >Italian</option>
                               </select>
                           </div>
                           <div class="button" id="mutebtn">Mute</div>
@@ -171,12 +173,16 @@
             function wsConnect(recording=false) {
                 let meetingId = crypto.randomUUID()
                 clientId = crypto.randomUUID()
+                let params = []
+                let wsConnectionString = wsHost.value.trim() + '/' + meetingId
                 if (recording === true) {
-                    record_string = '?record=true'
+                    params.push('record=true')
                 }
-                let wsConnectionString = wsHost.value.trim() + '/' + meetingId + record_string
                 if (jwt.value.trim() != '') {
-                    wsConnectionString += '?auth_token=' + jwt.value.trim()
+                    params.push('auth_token=' + jwt.value.trim())
+                }
+                if (params.length > 0) {
+                    wsConnectionString += '?' + params.join('&')
                 }
                 ws = new WebSocket(wsConnectionString)
                 ws.binaryType = 'blob'
@@ -221,6 +227,7 @@
                 context.resume()
                 isSpeaking = true
                 transcribeBtn.disabled = true
+                recordBtn.disabled = true
                 stopBtn.disabled = false
                 langSel.disabled = true
                 wsConnect(true)
