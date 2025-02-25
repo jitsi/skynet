@@ -1,11 +1,12 @@
 __pycache__
 llm
 models
-!skynet/modules/stt/shared/models
 .DS_Store
 .env
 .idea
 .vscode
 llama.log
+<<<<<<< HEAD
 dump.rdb
 _vector_store_
+!skynet/modules/stt/shared/models
