@@ -204,7 +204,7 @@ class ConnectionManager:
                 new_worker = Worker(
                     name=name,
                     target=recording_transcriber_worker,
-                    args=(self.audio_queue, self.transcriptions_queue, name)
+                    args=(self.audio_queue, self.transcriptions_queue, name),
                 )
                 new_worker.start()
                 self.running_processes.add(new_worker)
