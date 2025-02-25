@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+from logging import Formatter, getLogger, handlers
 
 from faster_whisper import WhisperModel
 
@@ -7,7 +8,7 @@ from skynet.env import whisper_recorder_model_name, whisper_recorder_model_path,
 from skynet.modules.stt.shared.models.transcription_response import TranscriptionResponse
 from skynet.modules.stt.shared.models.whisper import WhisperResult
 from skynet.modules.stt.shared.utils import load_audio, Uuid7
-from logging import getLogger, handlers, Formatter
+
 
 def setup_logger(worker_name: str):
     log = getLogger(worker_name)
@@ -16,6 +17,7 @@ def setup_logger(worker_name: str):
     log.addHandler(log_handler)
     log.setLevel('DEBUG')
     return log
+
 
 async def recording_transcriber_worker(audio_queue: asyncio.Queue, transcription_queue: asyncio.Queue, name: str):
     log = setup_logger(name)
