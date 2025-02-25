@@ -128,7 +128,7 @@ class ConnectionManager:
                         if len(state.working_audio) == 0:
                             await asyncio.sleep(sleep_for)
                             continue
-                        _, voice_timestamps = utils.is_silent(state.working_audio)
+                        _, voice_timestamps = await asyncio.to_thread(utils.is_silent, state.working_audio)
                         if len(voice_timestamps) > 0:
                             last_voice_timestamp_millis = (
                                 voice_timestamps[-1]['end'] * 1000 + state.working_audio_starts_at
