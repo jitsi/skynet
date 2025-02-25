@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import WebSocketDisconnect
 
 from skynet.logs import get_logger
