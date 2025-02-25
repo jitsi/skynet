@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime, timezone
 from logging import Formatter, getLogger, handlers
 
 from faster_whisper import WhisperModel
