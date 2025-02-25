@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 
-from skynet.env import enable_batching, job_timeout, modules, redis_exp_seconds
+from skynet.env import enable_batching, job_timeout, max_concurrency, modules, redis_exp_seconds
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
@@ -23,7 +23,7 @@ from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus,
 
 log = get_logger(__name__)
 
-TIME_BETWEEN_JOBS_CHECK = 1
+TIME_BETWEEN_JOBS_CHECK = 0.3
 TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
 
 PENDING_JOBS_KEY = "jobs:pending"
@@ -31,7 +31,7 @@ RUNNING_JOBS_KEY = "jobs:running"
 ERROR_JOBS_KEY = "jobs:error"
 
 background_task = None
-current_tasks = set()
+current_tasks = set[asyncio.Task]()
 
 
 def restart():
@@ -48,11 +48,10 @@ def can_run_next_job() -> bool:
     if 'summaries:executor' not in modules:
         return False
 
-    # TODO: add limit even when batching is enabled.
     if enable_batching:
-        return True
+        return len(current_tasks) < max_concurrency
 
-    return all(t.done() for t in current_tasks)
+    return len(current_tasks) == 0
 
 
 async def update_summary_queue_metric() -> None:
