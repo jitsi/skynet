@@ -26,7 +26,7 @@ SUMMARY_DURATION_METRIC = Histogram(
     namespace=PROMETHEUS_NAMESPACE,
     subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
     buckets=[5**n for n in range(4)],
-    labelnames=['app_id', 'processor'],
+    labelnames=['app_id', 'processor', 'customer_id'],
 )
 
 SUMMARY_FULL_DURATION_METRIC = Histogram(
