@@ -1,3 +1,4 @@
+from skynet.constants import PENDING_JOBS_KEY
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -7,7 +8,6 @@ from skynet.modules.monitoring import (
     PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
 from skynet.modules.ttt.persistence import db
-from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY
 from skynet.utils import create_app
 
 log = get_logger(__name__)
