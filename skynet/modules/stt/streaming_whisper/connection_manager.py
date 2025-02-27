@@ -2,6 +2,7 @@ import asyncio
 from asyncio import Task
 
 import aiofiles
+import aiofiles.os
 from aiomultiprocess import Worker
 from aiomultiprocess.core import get_manager
 
