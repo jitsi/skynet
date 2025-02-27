@@ -3,6 +3,7 @@ import os
 import time
 import uuid
 
+from skynet.constants import ERROR_JOBS_KEY, PENDING_JOBS_KEY, RUNNING_JOBS_KEY
 from skynet.env import enable_batching, job_timeout, max_concurrency, modules, redis_exp_seconds
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -25,10 +26,6 @@ log = get_logger(__name__)
 
 TIME_BETWEEN_JOBS_CHECK = 0.3
 TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
-
-PENDING_JOBS_KEY = "jobs:pending"
-RUNNING_JOBS_KEY = "jobs:running"
-ERROR_JOBS_KEY = "jobs:error"
 
 background_task = None
 current_tasks = set[asyncio.Task]()

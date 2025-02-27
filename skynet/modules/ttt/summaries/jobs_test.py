@@ -24,7 +24,8 @@ class TestCreateJob:
         mocker.patch('skynet.modules.ttt.summaries.jobs.can_run_next_job', return_value=False)
         mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
 
-        from skynet.modules.ttt.summaries.jobs import create_job, PENDING_JOBS_KEY, update_summary_queue_metric
+        from skynet.constants import PENDING_JOBS_KEY
+        from skynet.modules.ttt.summaries.jobs import create_job, update_summary_queue_metric
 
         job_id = await create_job(JobType.SUMMARY, DocumentPayload(text='test'), DocumentMetadata(customer_id='test'))
 
@@ -89,7 +90,8 @@ class TestRestoreStaleJobs:
     async def test_restore_stales_jobs(self, mocker):
         '''Test that if there are stale jobs, they will be restored. A job is considered stale if it is running and the worker is no longer connected.'''
 
-        from skynet.modules.ttt.summaries.jobs import PENDING_JOBS_KEY, restore_stale_jobs
+        from skynet.constants import PENDING_JOBS_KEY
+        from skynet.modules.ttt.summaries.jobs import restore_stale_jobs
 
         job_1 = Job(
             id='job_id_1',
