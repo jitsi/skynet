@@ -17,6 +17,7 @@ _login:
 build : _login
 	docker buildx build \
 		--progress plain \
+		--no-cache \
 		--push \
 		--platform ${PLATFORMS} \
 		$(BUILD_ARGS) \
