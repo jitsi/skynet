@@ -11,7 +11,6 @@ _login:
 build : _login
 	docker buildx build \
 		--progress plain \
-		--no-cache \
 		--push \
 		--platform ${PLATFORMS} \
 		-t ${IMAGE_REGISTRY}/skynet:summaries-${GIT_HASH} \
