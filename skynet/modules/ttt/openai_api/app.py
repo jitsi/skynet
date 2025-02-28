@@ -101,4 +101,5 @@ if use_vllm:
         except Exception as e:
             return JSONResponse(content=str(e), status_code=500)
 
-    __all__ = ['app', 'initialize', 'is_ready']
+
+__all__ = ['app', 'initialize', 'is_ready']
