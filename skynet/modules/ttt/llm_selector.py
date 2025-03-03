@@ -42,8 +42,7 @@ class LLMSelector:
         if use_oci or api_type == CredentialsType.OCI.value:
             if oci_available:
                 return Processors.OCI
-            else:
-                log.warning(f'OCI is not available, falling back to local processing for customer {customer_id}')
+            log.warning(f'OCI is not available, falling back to local processing for customer {customer_id}')
 
         return Processors.LOCAL
 
