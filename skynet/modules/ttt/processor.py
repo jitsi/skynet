@@ -22,6 +22,7 @@ from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_meeting,
     action_items_text,
 )
+from skynet.modules.ttt.summaries.prompts.common import response_prefix, set_response_language
 from skynet.modules.ttt.summaries.prompts.summary import (
     summary_conversation,
     summary_emails,
@@ -112,6 +113,7 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
 
     prompt = ChatPromptTemplate(
         [
+            ('system', set_response_language(payload.preferred_locale)),
             ('system', system_message),
             ('human', '{text}'),
         ]
@@ -139,7 +141,7 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
         chain = load_summarize_chain(model, chain_type='map_reduce', combine_prompt=prompt, map_prompt=prompt)
 
     result = await chain.ainvoke(input={'input_documents': docs})
-    formatted_result = result['output_text'].replace('Response:', '', 1).strip()
+    formatted_result = result['output_text'].replace(response_prefix, '').strip()
 
     log.info(f'input length: {len(system_message) + len(text)}')
     log.info(f'output length: {len(formatted_result)}')

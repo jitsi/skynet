@@ -4,6 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, computed_field, Field
 
+from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.action_items import action_items_meeting
 from skynet.modules.ttt.summaries.prompts.summary import summary_meeting
 
@@ -24,6 +25,7 @@ class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
     max_completion_tokens: Optional[int] = None
+    preferred_locale: Optional[Locale] = None
     priority: Priority = Priority.NORMAL
     prompt: Optional[str] = None
 
