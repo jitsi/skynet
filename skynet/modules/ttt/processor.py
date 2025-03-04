@@ -64,17 +64,17 @@ compressor = FlashrankRerank()
 
 async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Optional[str] = None) -> str:
     store = await get_vector_store()
-    vector_store = await store.get(customer_id)
-    config = await store.get_config(customer_id)
+    customer_store = await store.get(customer_id)
+    retriever = None
+    system_message = None
     question = payload.prompt
     is_generated_question = False
 
-    base_retriever = vector_store.as_retriever(search_kwargs={'k': 3}) if vector_store else None
-    retriever = (
-        ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
-        if base_retriever
-        else None
-    )
+    if customer_store:
+        config = await store.get_config(customer_id)
+        system_message = config.system_message
+        base_retriever = customer_store.as_retriever(search_kwargs={'k': 3})
+        retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
 
     if retriever and payload.text:
         question_payload = DocumentPayload(**(payload.model_dump() | {'prompt': assistant_rag_question_extractor}))
@@ -82,7 +82,7 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
         is_generated_question = True
 
     log.info(
-        f'Using {"generated" if is_generated_question else ""} question: {question} and system message: {config.system_message or "default"}'
+        f'Using {"generated " if is_generated_question else ""}question: {question}. System message: {system_message or "default"}'
     )
 
     template = ChatPromptTemplate(
@@ -91,7 +91,7 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
             use_only_rag_data=payload.use_only_rag_data,
             text=payload.text,
             prompt=payload.prompt,
-            system_message=config.system_message,
+            system_message=system_message,
         )
     )
 
