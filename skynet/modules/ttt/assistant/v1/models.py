@@ -54,7 +54,6 @@ class RagConfig(RagPayload):
 
 
 class AssistantDocumentPayload(DocumentPayload):
-    hint: HintType = HintType.CONVERSATION
     use_only_rag_data: bool = False
 
     model_config = {
@@ -64,7 +63,6 @@ class AssistantDocumentPayload(DocumentPayload):
                     'text': 'User provided context here (will be appended to the RAG one)',
                     'prompt': 'User prompt here',
                     'max_completion_tokens': None,
-                    'hint': 'conversation',
                     'use_only_rag_data': False,  # If True and a vector store is available, only the RAG data will be used for assistance
                 }
             ]

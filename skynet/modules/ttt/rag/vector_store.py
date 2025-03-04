@@ -138,7 +138,7 @@ class SkynetVectorStore(ABC):
             return await self.update_config(store_id, system_message=payload.system_message)
 
         await db.rpush(RUNNING_RAG_KEY, store_id)
-        config = RagConfig(urls=payload.urls, max_depth=payload.max_depth)
+        config = RagConfig(**payload.model_dump())
         await db.set(store_id, RagConfig.model_dump_json(config))
 
         task = asyncio.create_task(self.workflow(payload, store_id))
