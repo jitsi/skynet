@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Optional
+from typing import List, Optional
 
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
@@ -9,6 +9,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
+from openai.types.chat import ChatCompletionMessageParam
 
 from skynet.env import llama_n_ctx
 from skynet.logs import get_logger
@@ -180,5 +181,16 @@ async def process(payload: DocumentPayload, job_type: JobType, customer_id: str 
         result = await process_text(llm, payload)
     else:
         raise ValueError(f'Invalid job type {job_type}')
+
+    return result
+
+
+async def process_chat_completion(
+    messages: List[ChatCompletionMessageParam], customer_id: Optional[str] = None, **model_kwargs
+) -> str:
+    llm = LLMSelector.select(customer_id, **model_kwargs)
+
+    chain = llm | StrOutputParser()
+    result = await chain.ainvoke(messages)
 
     return result
