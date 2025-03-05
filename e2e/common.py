@@ -1,6 +1,8 @@
+import asyncio
 from argparse import ArgumentParser
 
 import aiohttp
+from tqdm import tqdm
 
 
 session = None
@@ -12,7 +14,7 @@ parser.add_argument(
     '--modules',
     dest='modules',
     help='modules to run e2e on',
-    default='assistant,summaries:dispatcher,summaries:executor',
+    default='assistant,summaries',
 )
 
 args = parser.parse_args()
@@ -53,4 +55,9 @@ async def delete(path):
     return await get_session().delete(url)
 
 
-__all__ = ['delete', 'get', 'post']
+async def sleep_progress(seconds, description):
+    for _ in tqdm(range(seconds), desc=description):
+        await asyncio.sleep(1)
+
+
+__all__ = ['close_session', 'delete', 'get', 'post', 'sleep_progress']

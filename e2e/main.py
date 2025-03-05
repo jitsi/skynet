@@ -5,15 +5,17 @@ from .common import close_session, modules
 
 async def main():
     success = True
-    tasks = []
-
-    if 'assistant' in modules:
-        from .assistant import run as assistant_run
-
-        tasks.append(assistant_run())
 
     try:
-        all(await asyncio.gather(*tasks))
+        if 'assistant' in modules:
+            from .assistant import run as assistant_run
+
+            await assistant_run()
+
+        if 'summaries' in modules:
+            from .summaries import run as summaries_run
+
+            await summaries_run()
     except Exception as e:
         success = False
     finally:

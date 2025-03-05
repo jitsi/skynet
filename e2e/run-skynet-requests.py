@@ -4,16 +4,23 @@
 
 import asyncio
 import json
-import aiohttp
 
 from argparse import ArgumentParser
+
+import aiohttp
 from tqdm import tqdm
 
 
 parser = ArgumentParser()
 parser.add_argument('-f', '--file', dest='filename', help='skynet jobs dump file ', metavar='FILE')
 parser.add_argument('-m', '--max', dest='max_requests', help='max requests to make', default=10)
-parser.add_argument('-s', '--sleep', dest='sleep', help='sleep time in seconds. Should be an estimate of how long max_requests needs to be processed', default=600)
+parser.add_argument(
+    '-s',
+    '--sleep',
+    dest='sleep',
+    help='sleep time in seconds. Should be an estimate of how long max_requests needs to be processed',
+    default=600,
+)
 parser.add_argument('-u', '--url', dest='url', help='skynet url', default='http://localhost:8000')
 parser.add_argument('-jwt', '--jwt', dest='jwt', help='jwt token', default=None)
 parser.add_argument('-t', '--type', dest='type', help='job type', default='any')
@@ -40,7 +47,7 @@ async def main():
 
         async with session.post(url, json=data) as response:
             return await response.json()
-        
+
     async def get(job_id):
         url = f'{base_url}/summaries/v1/job/{job_id}'
 
@@ -93,5 +100,6 @@ async def main():
     await session.close()
 
     exit(1 if not success else 0)
+
 
 asyncio.run(main())
