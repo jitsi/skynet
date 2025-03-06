@@ -1,3 +1,5 @@
+import asyncio
+
 from skynet.logs import get_logger
 
 from .common import delete, get, post, skip_smart_tests, sleep_progress
@@ -7,6 +9,11 @@ log = get_logger(__name__)
 
 async def get_rag():
     resp = await get('assistant/v1/rag?customerId=e2e')
+
+    if resp.status == 404:
+        await asyncio.sleep(1)
+        return await get_rag()
+
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
 
@@ -61,8 +68,6 @@ async def run():
 
     log.info('POST assistant/v1/rag?customerId=e2e - create a new RAG')
     await create_rag()
-
-    await sleep_progress(2, 'Waiting for RAG to be created')
 
     log.info('GET assistant/v1/rag?customerId=e2e - RAG exists')
     await get_rag()
