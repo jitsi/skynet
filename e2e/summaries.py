@@ -1,10 +1,7 @@
 import asyncio
-import json
-
-from tqdm import tqdm
 
 from skynet.logs import get_logger
-from .common import get, post, sleep_progress
+from .common import get, post
 
 log = get_logger(__name__)
 
@@ -45,6 +42,10 @@ async def get_job_result(job_id):
     result = await resp.json()
     status = result.get('status')
 
+    if status in ['running', 'pending']:
+        await asyncio.sleep(1)
+        return await get_job_result(job_id=job_id)
+
     assert status == 'success', log.error(f'Unexpected status: {status}')
     log.info(f'Response: {result.get("result")}')
 
@@ -55,27 +56,18 @@ async def run():
     log.info('POST summaries/v1/summary - create a new summarisation job')
     job = await create_summary()
     job_id = job.get('id')
-
-    await sleep_progress(5, 'Waiting for summary to be processed')
-
     log.info(f'GET summaries/v1/job/{job_id} - get the result of the summarisation job')
     await get_job_result(job_id)
 
     log.info('POST summaries/v1/action-items - create a new action items job')
     job = await create_action_items()
     job_id = job.get('id')
-
-    await sleep_progress(5, 'Waiting for action items to be processed')
-
     log.info(f'GET summaries/v1/job/{job_id} - get the result of the action items job')
     await get_job_result(job_id)
 
     log.info('POST summaries/v1/process-text - create a new process text job')
     job = await create_process_text()
     job_id = job.get('id')
-
-    await sleep_progress(5, 'Waiting for process text to be processed')
-
     log.info(f'GET summaries/v1/job/{job_id} - get the result of the process text job')
     await get_job_result(job_id)
 

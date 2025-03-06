@@ -17,6 +17,7 @@ async def main():
 
             await summaries_run()
     except Exception as e:
+        print(f'Error: {e}')
         success = False
     finally:
         await close_session()
