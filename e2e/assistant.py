@@ -2,7 +2,7 @@ import asyncio
 
 from skynet.logs import get_logger
 
-from .common import delete, get, post
+from .common import delete, get, post, sleep_progress
 
 log = get_logger(__name__)
 
@@ -38,7 +38,7 @@ async def assist():
 
     resp_json = await resp.json()
     text = resp_json.get('text')
-    log.info(f'### Response: {text}')
+    log.info(f'Response: {text}')
 
     verification = {
         'prompt': f'If I want to share a meeting can I do it like this: {text}? Respond with "yes" or "no".',
@@ -50,26 +50,26 @@ async def assist():
 
     resp_json = await resp.json()
     text = resp_json.get('text')
-    log.info(f'### Response verification: {text}')
+    log.info(f'Response verification: {text}')
 
     assert 'yes' in text.lower(), log.error(f'Unexpected response: {text}')
 
 
 async def run():
-    log.info('### Running assistant e2e tests')
+    log.info('#### Running assistant e2e tests')
 
-    log.info('### POST assistant/v1/rag - create a new RAG')
+    log.info('POST assistant/v1/rag - create a new RAG')
     await create_rag()
 
-    await asyncio.sleep(2)
+    await sleep_progress(2, 'Waiting for RAG to be created')
 
-    log.info('### GET assistant/v1/rag - RAG exists')
+    log.info('GET assistant/v1/rag - RAG exists')
     await get_rag()
 
-    log.info('### POST assistant/v1/assist - ask a question')
+    log.info('POST assistant/v1/assist - ask a question')
     await assist()
 
-    log.info('### DELETE assistant/v1/rag - delete the RAG')
+    log.info('DELETE assistant/v1/rag - delete the RAG')
     await delete_rag()
 
     return True
