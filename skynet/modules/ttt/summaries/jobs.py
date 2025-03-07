@@ -163,7 +163,6 @@ async def _run_job(job: Job) -> None:
     worker_id = await db.db.client_id()
     start = time.time()
     customer_id = job.metadata.customer_id
-    processor = LLMSelector.get_job_processor(customer_id)
 
     SUMMARY_TIME_IN_QUEUE_METRIC.observe(start - job.created)
 
@@ -178,11 +177,10 @@ async def _run_job(job: Job) -> None:
     try:
         result = await process(job)
     except Exception as e:
-        log.warning(f"Job {job.id} failed: {e}")
-
         has_failed = True
         result = str(e)
 
+    processor = LLMSelector.get_job_processor(customer_id, job.id)
     await update_done_job(job, result, processor, has_failed)
 
     # error returned from the api when vllm crashes with torch.OutOfMemoryError
@@ -232,7 +230,7 @@ async def restart_on_timeout(job: Job) -> None:
     log.warning(f"Job {job.id} timed out after {job_timeout} seconds")
 
     customer_id = job.metadata.customer_id
-    processor = LLMSelector.get_job_processor(customer_id)
+    processor = LLMSelector.get_job_processor(customer_id, job.id)
 
     await update_done_job(job, "Job timed out", processor, has_failed=True)
 

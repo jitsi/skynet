@@ -24,10 +24,19 @@ from skynet.modules.ttt.summaries.v1.models import Processors
 
 log = get_logger(__name__)
 
+overriden_processors = {}
+
 
 class LLMSelector:
     @staticmethod
-    def get_job_processor(customer_id: str) -> Processors:
+    def override_job_processor(job_id: str, processor: Processors) -> None:
+        overriden_processors[job_id] = processor
+
+    @staticmethod
+    def get_job_processor(customer_id: str, job_id: Optional[str] = None) -> Processors:
+        if job_id and job_id in overriden_processors:
+            return overriden_processors[job_id]
+
         options = get_credentials(customer_id)
         secret = options.get('secret')
         api_type = options.get('type')
@@ -47,8 +56,10 @@ class LLMSelector:
         return Processors.LOCAL
 
     @staticmethod
-    def select(customer_id: str, max_completion_tokens: Optional[int] = None) -> BaseChatModel:
-        processor = LLMSelector.get_job_processor(customer_id)
+    def select(
+        customer_id: str, max_completion_tokens: Optional[int] = None, job_id: Optional[str] = None
+    ) -> BaseChatModel:
+        processor = LLMSelector.get_job_processor(customer_id, job_id)
         options = get_credentials(customer_id)
 
         if processor == Processors.OPENAI:
