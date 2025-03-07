@@ -29,7 +29,7 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_meeting,
     summary_text,
 )
-from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType
+from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType
 
 log = get_logger(__name__)
 
@@ -169,7 +169,11 @@ async def process_text(model: BaseChatModel, payload: DocumentPayload) -> str:
     return result
 
 
-async def process(payload: DocumentPayload, job_type: JobType, customer_id: str | None = None) -> str:
+async def process(job: Job) -> str:
+    payload = job.payload
+    job_type = job.type
+    customer_id = job.metadata.customer_id
+
     llm = LLMSelector.select(customer_id, max_completion_tokens=payload.max_completion_tokens)
 
     if job_type == JobType.ASSIST:

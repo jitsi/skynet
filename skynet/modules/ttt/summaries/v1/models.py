@@ -1,4 +1,5 @@
 import time
+import uuid
 from enum import Enum
 from typing import Optional
 
@@ -108,7 +109,7 @@ class JobStatus(Enum):
 # job model to expose to the API
 class BaseJob(BaseModel):
     duration: float = 0.0
-    id: str
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     result: Optional[str] = None
     status: JobStatus = JobStatus.PENDING
     type: JobType

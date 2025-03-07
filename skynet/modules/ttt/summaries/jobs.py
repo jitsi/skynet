@@ -1,7 +1,6 @@
 import asyncio
 import os
 import time
-import uuid
 
 from skynet.constants import ERROR_JOBS_KEY, PENDING_JOBS_KEY, RUNNING_JOBS_KEY
 from skynet.env import enable_batching, job_timeout, max_concurrency, modules, redis_exp_seconds
@@ -82,9 +81,9 @@ async def restore_stale_jobs() -> list[Job]:
 async def create_job(job_type: JobType, payload: DocumentPayload, metadata: DocumentMetadata) -> JobId:
     """Create a job and add it to the db queue if it can't be started immediately."""
 
-    job_id = str(uuid.uuid4())
+    job = Job(payload=payload, type=job_type, metadata=metadata)
+    job_id = job.id
 
-    job = Job(id=job_id, payload=payload, type=job_type, metadata=metadata)
     await db.set(job_id, Job.model_dump_json(job))
 
     log.info(f"Created job {job.id}.")
@@ -177,7 +176,7 @@ async def _run_job(job: Job) -> None:
         await db.rpush(RUNNING_JOBS_KEY, job.id)
 
     try:
-        result = await process(job.payload, job.type, customer_id)
+        result = await process(job)
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 
