@@ -6,7 +6,7 @@ from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload, AssistantResponse, RagConfig, RagPayload
 from skynet.modules.ttt.processor import process
 from skynet.modules.ttt.rag.app import get_vector_store
-from skynet.modules.ttt.summaries.v1.models import JobType
+from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, Job, JobType
 from skynet.utils import get_customer_id, get_router
 
 router = get_router()
@@ -63,8 +63,12 @@ async def assist(payload: AssistantDocumentPayload, request: Request) -> Assista
     Assist the user using a RAG database.
     """
 
-    customer_id = get_customer_id(request)
+    job = Job(
+        payload=payload,
+        type=JobType.ASSIST,
+        metadata=DocumentMetadata(customer_id=get_customer_id(request)),
+    )
 
-    response = await process(payload, JobType.ASSIST, customer_id)
+    response = await process(job)
 
     return AssistantResponse(text=response)

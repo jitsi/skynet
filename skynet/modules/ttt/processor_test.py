@@ -26,10 +26,9 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id=None),
             type=JobType.ACTION_ITEMS,
-            id='job_id',
         )
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         summarize.assert_called_once()
         LLMSelector.select.assert_called_once()
@@ -47,10 +46,9 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id=None),
             type=JobType.SUMMARY,
-            id='job_id',
         )
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         summarize.assert_called_once()
         LLMSelector.select.assert_called_once()
@@ -69,10 +67,9 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id=None),
             type=JobType.PROCESS_TEXT,
-            id='job_id',
         )
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         process_text.assert_called_once()
         LLMSelector.select.assert_called_once()
@@ -98,12 +95,11 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id='test'),
             type=JobType.SUMMARY,
-            id='job_id',
         )
 
         assert LLMSelector.get_job_processor('test') == Processors.OPENAI
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         LLMSelector.select.assert_called_once()
 
@@ -133,12 +129,11 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id='test'),
             type=JobType.SUMMARY,
-            id='job_id',
         )
 
         assert LLMSelector.get_job_processor('test') == Processors.AZURE
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         LLMSelector.select.assert_called_once()
 
@@ -161,12 +156,11 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id='test'),
             type=JobType.SUMMARY,
-            id='job_id',
         )
 
         assert LLMSelector.get_job_processor('test') == Processors.OCI
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         LLMSelector.select.assert_called_once()
 
@@ -189,11 +183,10 @@ class TestProcess:
             ),
             metadata=DocumentMetadata(customer_id='test'),
             type=JobType.SUMMARY,
-            id='job_id',
         )
 
         assert LLMSelector.get_job_processor('test') == Processors.LOCAL
 
-        await process(job.payload, job.type, job.metadata.customer_id)
+        await process(job)
 
         LLMSelector.select.assert_called_once()
