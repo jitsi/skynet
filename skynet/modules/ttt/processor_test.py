@@ -97,7 +97,7 @@ class TestProcess:
             type=JobType.SUMMARY,
         )
 
-        assert LLMSelector.get_job_processor('test') == Processors.OPENAI
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.OPENAI
 
         await process(job)
 
@@ -131,7 +131,7 @@ class TestProcess:
             type=JobType.SUMMARY,
         )
 
-        assert LLMSelector.get_job_processor('test') == Processors.AZURE
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.AZURE
 
         await process(job)
 
@@ -158,7 +158,7 @@ class TestProcess:
             type=JobType.SUMMARY,
         )
 
-        assert LLMSelector.get_job_processor('test') == Processors.OCI
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.OCI
 
         await process(job)
 
@@ -166,7 +166,7 @@ class TestProcess:
 
     @pytest.mark.asyncio
     async def test_process_with_oci_fallback(self, process_fixture):
-        '''Test that a job is sent for inference to oci if there is a customer id configured for it.'''
+        '''Test that a job is sent for inference to local if there is a customer id configured for oci but oci is not available.'''
 
         from skynet.modules.ttt.llm_selector import LLMSelector
         from skynet.modules.ttt.processor import process
@@ -185,8 +185,40 @@ class TestProcess:
             type=JobType.SUMMARY,
         )
 
-        assert LLMSelector.get_job_processor('test') == Processors.LOCAL
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.LOCAL
 
         await process(job)
 
         LLMSelector.select.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_with_oci_error_fallback(self, process_fixture):
+        '''Test that a job is sent for inference to oci and retries on local if an error occurs.'''
+
+        from skynet.modules.ttt.llm_selector import LLMSelector
+        from skynet.modules.ttt.processor import process
+
+        process_fixture.patch(
+            'skynet.modules.ttt.llm_selector.get_credentials',
+            return_value={'type': 'OCI'},
+        )
+        process_fixture.patch(
+            'skynet.modules.ttt.processor.use_oci', False
+        )  # allow fallback to local (when GPU is available)
+        process_fixture.patch('skynet.modules.ttt.llm_selector.oci_available', True)
+        process_fixture.patch('skynet.modules.ttt.processor.summarize', side_effect=[Exception('error'), None])
+
+        job = Job(
+            payload=DocumentPayload(
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+            ),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.OCI
+
+        await process(job)
+
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.LOCAL
+        assert LLMSelector.select.call_count == 2

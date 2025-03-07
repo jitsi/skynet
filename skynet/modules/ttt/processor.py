@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
 
-from skynet.env import llama_n_ctx
+from skynet.env import llama_n_ctx, use_oci
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
@@ -29,7 +29,7 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_meeting,
     summary_text,
 )
-from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType
+from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType, Processors
 
 log = get_logger(__name__)
 
@@ -174,15 +174,26 @@ async def process(job: Job) -> str:
     job_type = job.type
     customer_id = job.metadata.customer_id
 
-    llm = LLMSelector.select(customer_id, max_completion_tokens=payload.max_completion_tokens)
+    llm = LLMSelector.select(customer_id, payload.max_completion_tokens, job.id)
 
-    if job_type == JobType.ASSIST:
-        result = await assist(llm, payload, customer_id)
-    elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS]:
-        result = await summarize(llm, payload, job_type)
-    elif job_type == JobType.PROCESS_TEXT:
-        result = await process_text(llm, payload)
-    else:
-        raise ValueError(f'Invalid job type {job_type}')
+    try:
+        if job_type == JobType.ASSIST:
+            result = await assist(llm, payload, customer_id)
+        elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS]:
+            result = await summarize(llm, payload, job_type)
+        elif job_type == JobType.PROCESS_TEXT:
+            result = await process_text(llm, payload)
+        else:
+            raise ValueError(f'Invalid job type {job_type}')
+    except Exception as e:
+        log.warning(f"Job {job.id} failed: {e}")
+
+        processor = LLMSelector.get_job_processor(customer_id, job.id)
+
+        if processor == Processors.OCI and not use_oci:
+            LLMSelector.override_job_processor(job.id, Processors.LOCAL)
+            return await process(job)
+
+        raise e
 
     return result
