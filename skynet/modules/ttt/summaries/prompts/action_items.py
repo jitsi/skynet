@@ -1,4 +1,4 @@
-from .common import response_prefix
+from skynet.constants import response_prefix
 
 action_items_emails = f"""
     You are an AI assistant that will be provided with a transcript of a series of emails. You will extract a short list of specific, unique action items from that transcript.
