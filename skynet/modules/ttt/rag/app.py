@@ -1,4 +1,4 @@
-from skynet.env import use_s3, vector_store_type
+from skynet.env import vector_store_type
 from skynet.logs import get_logger
 from skynet.modules.ttt.rag.vector_store import SkynetVectorStore
 

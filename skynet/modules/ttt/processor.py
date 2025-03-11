@@ -17,7 +17,6 @@ from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 from skynet.modules.ttt.llm_selector import LLMSelector
-from skynet.modules.ttt.rag.app import get_vector_store
 from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_conversation,
     action_items_emails,
@@ -65,6 +64,8 @@ compressor = FlashrankRerank()
 
 
 async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Optional[str] = None) -> str:
+    from skynet.modules.ttt.rag.app import get_vector_store
+
     store = await get_vector_store()
     customer_store = await store.get(customer_id)
     retriever = None
