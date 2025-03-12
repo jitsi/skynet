@@ -45,10 +45,10 @@ async def close_session():
         await session.close()
 
 
-async def post(path, data):
+async def post(path, **kwargs):
     url = f'{base_url}/{path}'
 
-    return await get_session().post(url, json=data)
+    return await get_session().post(url, **kwargs)
 
 
 async def get(path):
@@ -63,9 +63,4 @@ async def delete(path):
     return await get_session().delete(url)
 
 
-async def sleep_progress(seconds, description):
-    for _ in tqdm(range(seconds), desc=description):
-        await asyncio.sleep(1)
-
-
-__all__ = ['close_session', 'delete', 'get', 'post', 'sleep_progress']
+__all__ = ['close_session', 'delete', 'get', 'post']
