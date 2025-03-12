@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -10,6 +11,9 @@ from skynet.env import embeddings_model_path
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.v1.models import RagConfig, RagPayload, RagStatus
 from skynet.modules.ttt.rag.constants import ERROR_RAG_KEY, RUNNING_RAG_KEY, STORED_RAG_KEY
+
+from skynet.modules.ttt.rag.text_extractor.main import extract
+from skynet.modules.ttt.rag.utils import save_files
 from skynet.modules.ttt.rag.web_crawler.main import crawl
 
 from ..persistence import db
@@ -17,16 +21,20 @@ from ..persistence import db
 log = get_logger(__name__)
 
 
-def bypass_ingestion(existing_payload: RagPayload, new_payload: RagPayload):
-    existing_urls = existing_payload.urls
-    new_urls = new_payload.urls
+def bypass_files_ingestion(config: RagConfig, new_config: RagConfig):
+    return set(config.files) == set(new_config.files)
 
-    existing_urls.sort()
-    new_urls.sort()
 
+def bypass_urls_ingestion(config: RagConfig, new_config: RagConfig):
+    return set(config.urls) == set(new_config.urls) and config.max_depth == new_config.max_depth
+
+
+def bypass_ingestion(config: RagConfig, new_config: RagConfig):
     return (
-        list(dict.fromkeys(existing_urls)) == list(dict.fromkeys(new_urls))
-        and existing_payload.max_depth == new_payload.max_depth
+        config
+        and config.status == RagStatus.SUCCESS
+        and bypass_files_ingestion(config, new_config)
+        and bypass_urls_ingestion(config, new_config)
     )
 
 
@@ -82,6 +90,13 @@ class SkynetVectorStore(ABC):
         await db.lrem(ERROR_RAG_KEY, 0, store_id)
         await db.lrem(RUNNING_RAG_KEY, 0, store_id)
 
+    def get_temp_folder(self, store_id: str) -> str:
+        """
+        Get the path to the temp folder for the vector store with the given id.
+        """
+
+        return f'{self.get_vector_store_path(store_id)}/temp'
+
     async def update_config(self, store_id: str, **kwargs) -> RagConfig:
         """Update a config in the db."""
         config_json = await db.get(store_id)
@@ -105,26 +120,36 @@ class SkynetVectorStore(ABC):
 
         return None
 
-    async def workflow(self, payload: RagPayload, store_id: str):
+    async def workflow(self, store_id: str, files: list[str], urls: list[str], max_depth: int):
         """
-        Crawl the given URL and create a vector store with the generated embeddings.
+        Extract text from the payload and create a vector store with the generated embeddings.
         """
 
+        documents = []
+        error = None
+
         try:
-            documents = await crawl(payload)
+            documents.extend(await extract(files))
+            documents.extend(await crawl(urls, max_depth))
 
             await self.create(store_id, documents)
             await db.lrem(STORED_RAG_KEY, 0, store_id)  # ensure no duplicates
             await db.rpush(STORED_RAG_KEY, store_id)
             await self.update_config(store_id, status=RagStatus.SUCCESS)
+        except ExceptionGroup as eg:
+            error = str([str(e) for e in eg.exceptions])
         except Exception as e:
+            error = str(e)
+
+        if error:
+            await self.update_config(store_id, status=RagStatus.ERROR, error=error)
             await db.rpush(ERROR_RAG_KEY, store_id)
-            await self.update_config(store_id, status=RagStatus.ERROR, error=str(e))
-            log.error(e)
+            log.error(error)
 
         await db.lrem(RUNNING_RAG_KEY, 0, store_id)
+        shutil.rmtree(self.get_temp_folder(store_id), ignore_errors=True)
 
-    async def update_from_urls(self, payload: RagPayload, store_id: str) -> Optional[RagConfig]:
+    async def ingest(self, store_id: str, payload: RagPayload) -> Optional[RagConfig]:
         """
         Create a vector store with the given id, using the documents crawled from the given URL.
         """
@@ -134,15 +159,20 @@ class SkynetVectorStore(ABC):
         if store_id in await db.lrange(RUNNING_RAG_KEY, 0, -1):
             return config
 
-        if config and config.status == RagStatus.SUCCESS and bypass_ingestion(config, payload):
+        updated_config = RagConfig(**payload.model_dump())
+
+        if bypass_ingestion(config, updated_config):
             return await self.update_config(store_id, system_message=payload.system_message)
 
         await db.rpush(RUNNING_RAG_KEY, store_id)
-        config = RagConfig(**payload.model_dump())
-        await db.set(store_id, RagConfig.model_dump_json(config))
+        await db.set(store_id, RagConfig.model_dump_json(updated_config))
 
-        task = asyncio.create_task(self.workflow(payload, store_id))
+        temp_file_paths = await save_files(self.get_temp_folder(store_id), payload.files)
+
+        task = asyncio.create_task(
+            self.workflow(store_id, urls=payload.urls, max_depth=payload.max_depth, files=temp_file_paths)
+        )
         self.tasks.add(task)
         task.add_done_callback(self.tasks.remove)
 
-        return config
+        return updated_config

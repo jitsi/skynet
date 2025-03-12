@@ -1,8 +1,6 @@
-import asyncio
 from argparse import ArgumentParser, BooleanOptionalAction
 
 import aiohttp
-from tqdm import tqdm
 
 
 session = None

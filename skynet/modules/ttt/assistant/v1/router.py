@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, Request
+from typing import Annotated, Optional
+
+from fastapi import Depends, Form, HTTPException, Request, UploadFile
 from fastapi_versionizer.versionizer import api_version
 
 from skynet.auth.customer_id import CustomerId
@@ -31,13 +33,14 @@ async def get_rag_db(customer_id=Depends(CustomerId())) -> RagConfig:
 
 @api_version(1)
 @router.post('/rag')
-async def create_rag_db(payload: RagPayload, customer_id=Depends(CustomerId())) -> RagConfig:
+async def create_rag_db(payload: Annotated[RagPayload, Form()], customer_id=Depends(CustomerId())) -> RagConfig:
     """
     Create / update a RAG database.
     """
 
     store = await get_vector_store()
-    return await store.update_from_urls(payload, customer_id)
+
+    return await store.ingest(customer_id, payload)
 
 
 @api_version(1)

@@ -70,5 +70,3 @@ async def run():
     job_id = job.get('id')
     log.info(f'GET summaries/v1/job/{job_id} - get the result of the process text job')
     await get_job_result(job_id)
-
-    return True
