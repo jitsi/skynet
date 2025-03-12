@@ -10,8 +10,6 @@ from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
 
-from skynet.constants import response_prefix
-
 from skynet.env import llama_n_ctx, use_oci
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
@@ -24,7 +22,7 @@ from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_meeting,
     action_items_text,
 )
-from skynet.modules.ttt.summaries.prompts.common import set_response_language
+from skynet.modules.ttt.summaries.prompts.common import response_prefix, set_response_language
 from skynet.modules.ttt.summaries.prompts.summary import (
     summary_conversation,
     summary_emails,
@@ -81,7 +79,6 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
     if retriever and payload.text:
         question_payload = DocumentPayload(**(payload.model_dump() | {'prompt': assistant_rag_question_extractor}))
         question = await process_text(model, question_payload)
-        question = question.replace(response_prefix, '').strip()
         is_generated_question = True
 
     log.info(

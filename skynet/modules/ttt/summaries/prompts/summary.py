@@ -1,4 +1,4 @@
-from skynet.constants import response_prefix
+from .common import response_prefix
 
 summary_emails = f"""
     You are an AI assistant that will be provided a transcript of a series of emails. You will extract a summary of that transcript.
