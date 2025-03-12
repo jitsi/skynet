@@ -10,6 +10,7 @@ from skynet import http_client
 from skynet.auth.bearer import JWTBearer
 from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, openai_api_port, use_oci, use_vllm
 from skynet.logs import get_logger
+from skynet.modules.ttt.openai_api.slim_router import router as slim_router
 from skynet.utils import create_app, dependencies, responses
 
 log = get_logger(__name__)
@@ -20,6 +21,7 @@ whitelisted_routes = []
 
 def initialize():
     if not use_vllm:
+        app.include_router(slim_router)
         return
 
     from vllm.entrypoints.openai.api_server import router as vllm_router
@@ -72,29 +74,32 @@ async def is_ready():
 
 bearer = JWTBearer()
 
+if use_vllm:
 
-@app.middleware('http')
-async def proxy_middleware(request: Request, call_next):
-    if request.url.path in whitelisted_routes:
-        return await call_next(request)
+    @app.middleware('http')
+    async def proxy_middleware(request: Request, call_next):
+        if request.url.path in whitelisted_routes:
+            return await call_next(request)
 
-    if not bypass_auth:
+        if not bypass_auth:
+            try:
+                await bearer.__call__(request)
+            except HTTPException as e:
+                return JSONResponse(content=responses.get(e.status_code), status_code=e.status_code)
+
         try:
-            await bearer.__call__(request)
+            url = f'{openai_api_base_url}{request.url.path.replace("/openai", "")}'
+            response = await http_client.request(
+                request.method, url, headers=request.headers, data=await request.body()
+            )
+
+            return StreamingResponse(response.content, status_code=response.status, headers=response.headers)
+        except ClientConnectorError as e:
+            return JSONResponse(content=str(e), status_code=500)
         except HTTPException as e:
-            return JSONResponse(content=responses.get(e.status_code), status_code=e.status_code)
-
-    try:
-        url = f'{openai_api_base_url}{request.url.path.replace("/openai", "")}'
-        response = await http_client.request(request.method, url, headers=request.headers, data=await request.body())
-
-        return StreamingResponse(response.content, status_code=response.status, headers=response.headers)
-    except ClientConnectorError as e:
-        return JSONResponse(content=str(e), status_code=500)
-    except HTTPException as e:
-        return JSONResponse(content=e.detail, status_code=e.status_code)
-    except Exception as e:
-        return JSONResponse(content=str(e), status_code=500)
+            return JSONResponse(content=e.detail, status_code=e.status_code)
+        except Exception as e:
+            return JSONResponse(content=str(e), status_code=500)
 
 
 __all__ = ['app', 'initialize', 'is_ready']
