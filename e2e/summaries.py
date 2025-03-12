@@ -12,7 +12,7 @@ moby_dick_text = 'Call me Ishmael. Some years ago—never mind how long precisel
 async def create_summary():
     summary_job = {'hint': 'text', 'text': moby_dick_text}
 
-    resp = await post('summaries/v1/summary', summary_job)
+    resp = await post('summaries/v1/summary', json=summary_job)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
     return await resp.json()
@@ -21,7 +21,7 @@ async def create_summary():
 async def create_action_items():
     action_items_job = {'hint': 'text', 'text': moby_dick_text}
 
-    resp = await post('summaries/v1/action-items', action_items_job)
+    resp = await post('summaries/v1/action-items', json=action_items_job)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
     return await resp.json()
@@ -30,7 +30,7 @@ async def create_action_items():
 async def create_process_text():
     action_items_job = {'prompt': 'Who is the main character in the story?', 'text': moby_dick_text}
 
-    resp = await post('summaries/v1/action-items', action_items_job)
+    resp = await post('summaries/v1/action-items', json=action_items_job)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
     return await resp.json()

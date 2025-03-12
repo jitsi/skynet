@@ -1,8 +1,9 @@
 import asyncio
 
 from skynet.logs import get_logger
+from skynet.modules.ttt.assistant.v1.models import RagStatus
 
-from .common import delete, get, post, skip_smart_tests, sleep_progress
+from .common import delete, get, post, skip_smart_tests
 
 log = get_logger(__name__)
 
@@ -10,11 +11,17 @@ log = get_logger(__name__)
 async def get_rag():
     resp = await get('assistant/v1/rag?customerId=e2e')
 
-    if resp.status == 404:
+    assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
+
+    result = await resp.json()
+    status = result.get('status')
+
+    if status == RagStatus.RUNNING.value:
         await asyncio.sleep(1)
         return await get_rag()
 
-    assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
+    assert status == RagStatus.SUCCESS.value, log.error(f'Unexpected status: {status}')
+    log.info(f'RAG Config: {result}')
 
 
 async def create_rag():
@@ -22,7 +29,7 @@ async def create_rag():
         'max_depth': 1,
         'urls': ['https://jitsi.github.io/handbook/docs/user-guide/user-guide-share-a-jitsi-meeting/'],
     }
-    resp = await post('assistant/v1/rag?customerId=e2e', data)
+    resp = await post('assistant/v1/rag?customerId=e2e', json=data)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
 
@@ -38,7 +45,7 @@ async def assist():
         'use_only_rag_data': True,
     }
 
-    resp = await post('assistant/v1/assist?customerId=e2e', data)
+    resp = await post('assistant/v1/assist?customerId=e2e', json=data)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
     resp_json = await resp.json()
@@ -53,7 +60,7 @@ async def assist():
         'text': '',
     }
 
-    resp = await post('assistant/v1/assist', verification)
+    resp = await post('assistant/v1/assist?customerId=e2e', json=verification)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
     resp_json = await resp.json()
