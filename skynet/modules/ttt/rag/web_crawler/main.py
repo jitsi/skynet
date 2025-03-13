@@ -1,16 +1,13 @@
 import asyncio
 import re
 import time
-from typing import List
 
 from bs4 import BeautifulSoup as bs4
 from fake_useragent import UserAgent
-
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from skynet.logs import get_logger
-from skynet.modules.ttt.assistant.v1.models import RagPayload
+from skynet.modules.ttt.rag.utils import split_documents
 from skynet.modules.ttt.rag.web_crawler.recursive_url_loader import SkynetRecursiveUrlLoader
 
 ua = UserAgent()
@@ -26,7 +23,7 @@ def extractor(raw_html: str) -> str:
     return output
 
 
-async def crawl_url(url: str, max_depth) -> List[Document]:
+async def crawl_url(url: str, max_depth: int) -> list[Document]:
     """
     Crawl the given URL and return the list of documents.
     """
@@ -44,9 +41,8 @@ async def crawl_url(url: str, max_depth) -> List[Document]:
         documents.append(doc)
         log.info(f"Loaded document: {doc.metadata['source']}")
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=100)
+    splits = split_documents(documents)
 
-    splits = splitter.split_documents(documents)
     end = time.perf_counter_ns()
     duration = round((end - start) / 1e9)
 
@@ -57,13 +53,13 @@ async def crawl_url(url: str, max_depth) -> List[Document]:
     return splits
 
 
-async def crawl(payload: RagPayload) -> List[Document]:
+async def crawl(urls: list[str], max_depth: int) -> list[Document]:
     """
     Crawl the given URLs and return the concatanated list of documents.
     """
 
     documents = []
-    tasks = [crawl_url(url, payload.max_depth) for url in payload.urls]
+    tasks = [crawl_url(url, max_depth) for url in urls]
     results = await asyncio.gather(*tasks)
 
     for docs in results:

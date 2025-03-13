@@ -16,6 +16,7 @@ RUN \
     apt-dpkg-wrap apt-get update && \
     apt-dpkg-wrap apt-get install -y build-essential python3.11 python3.11-venv
 
+
 COPY requirements*.txt /app/
 COPY pyproject.toml /app/
 COPY skynet /app/skynet
@@ -92,7 +93,7 @@ COPY docker/rootfs/ /
 
 RUN \
     apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 libopus0 zlib1g strace gdb && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 libopus0 zlib1g strace gdb pandoc tesseract-ocr && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application

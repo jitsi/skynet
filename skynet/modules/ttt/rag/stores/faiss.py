@@ -54,6 +54,10 @@ class FAISSVectorStore(SkynetVectorStore):
             return None
 
     async def create(self, store_id, documents):
+        if not documents:
+            log.info('No documents to create vector store')
+            return None
+
         start = time.perf_counter_ns()
         index = faiss.IndexFlatL2(len(self.embedding.embed_query(store_id)))
         vector_store = FAISS(

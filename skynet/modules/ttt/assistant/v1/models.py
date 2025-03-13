@@ -1,11 +1,12 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel
+from fastapi import UploadFile
+from pydantic import BaseModel, field_validator
 
 from skynet.modules.ttt.assistant.constants import assistant_default_system_message
 
-from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType
+from skynet.modules.ttt.summaries.v1.models import DocumentPayload
 
 default_max_depth = 5
 
@@ -17,14 +18,20 @@ class RagStatus(Enum):
 
 
 class RagPayload(BaseModel):
-    system_message: Optional[str] = None
+    files: Optional[list[UploadFile]] = []
     max_depth: Optional[int] = default_max_depth
-    urls: list[str]
+    system_message: Optional[str] = None
+    urls: Optional[list[str]] = []
+
+    @field_validator('files', mode='before')
+    def validate_files(value):
+        return [f for f in value if f.filename]
 
     model_config = {
         'json_schema_extra': {
             'examples': [
                 {
+                    'files': [],
                     'urls': ['https://jitsi.github.io/handbook'],
                     'max_depth': default_max_depth,
                     'system_message': assistant_default_system_message,
@@ -37,12 +44,18 @@ class RagPayload(BaseModel):
 class RagConfig(RagPayload):
     error: Optional[str] = None
     status: RagStatus = RagStatus.RUNNING
+    files: Optional[list[str]] = []
+
+    @field_validator('files', mode='before')
+    def validate_files(value):
+        return [f if isinstance(f, str) else f.filename for f in value]
 
     model_config = {
         'json_schema_extra': {
             'examples': [
                 {
                     'error': None,
+                    'files': [],
                     'max_depth': default_max_depth,
                     'status': 'running',
                     'system_message': assistant_default_system_message,

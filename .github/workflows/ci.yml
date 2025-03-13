@@ -41,6 +41,6 @@ jobs:
       - name: Run unit tests
         run: BYPASS_AUTHORIZATION=1 poetry run pytest
       - name: Run skynet
-        run: BYPASS_AUTHORIZATION=1 LLAMA_PATH=llama3.2:1b ./run.sh & sleep 10
+        run: BYPASS_AUTHORIZATION=1 LLAMA_PATH=llama3.2:1b ./run.sh & sleep 15
       - name: Run e2e tests
         run: BYPASS_AUTHORIZATION=1 poetry run python -m e2e.main -modules 'assistant,summaries' -skip-smart-tests
