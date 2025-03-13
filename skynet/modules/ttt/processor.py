@@ -57,7 +57,7 @@ def format_docs(docs: list[Document]) -> str:
 
     log.info(f'Using {len(docs)} documents for RAG')
 
-    return '\n\n'.join(doc.page_content for doc in docs)
+    return '\n\n'.join(f"### Document {i}\n{doc.page_content}" for i, doc in enumerate(docs))
 
 
 compressor = FlashrankRerank()

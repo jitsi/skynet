@@ -11,10 +11,10 @@ def get_assistant_chat_messages(
     messages = [('system', system_message or assistant_default_system_message)]
 
     if use_rag:
+        messages.append(('system', '{context}'))
+
         if use_only_rag_data:
             messages.append(('system', assistant_limit_data_to_rag))
-
-        messages.append(('system', '{context}'))
 
     if text:
         messages.append(('human', text))
