@@ -76,11 +76,11 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
     if customer_store:
         config = await store.get_config(customer_id)
         system_message = config.system_message
-        base_retriever = customer_store.as_retriever(search_kwargs={'k': 3})
+        base_retriever = customer_store.as_retriever(search_kwargs={'k': 2})
         retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
 
     if retriever and payload.text:
-        question_payload = DocumentPayload(**(payload.model_dump() | {'prompt': assistant_rag_question_extractor}))
+        question_payload = DocumentPayload(prompt='\n'.join([payload.text, assistant_rag_question_extractor]), text='')
         question = await process_text(model, question_payload)
         question = question.replace(response_prefix, '').strip()
         is_generated_question = True
@@ -157,14 +157,14 @@ async def process_text(model: BaseChatModel, payload: DocumentPayload) -> str:
     prompt = payload.prompt.strip()
     text = payload.text.strip()
 
-    prompt = ChatPromptTemplate(
+    prompt_template = ChatPromptTemplate(
         [
             ('system', prompt),
             ('human', '{text}'),
         ]
     )
 
-    chain = prompt | model | StrOutputParser()
+    chain = prompt_template | model | StrOutputParser()
     result = await chain.ainvoke(input={'text': text})
 
     log.info(f'input length: {len(prompt) + len(text)}')
