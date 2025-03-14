@@ -49,35 +49,30 @@ class SkynetVectorStore(ABC):
         """
         Initialize the vector store.
         """
-        pass
 
     @abstractmethod
     async def cleanup(self):
         """
         Clean up the vector store.
         """
-        pass
 
     @abstractmethod
     def get_vector_store_path(self, store_id: str):
         """
         Get the path where the vector store with the given id is saved.
         """
-        pass
 
     @abstractmethod
     async def get(self, store_id: str) -> VectorStore:
         """
         Get a vector store with the given id.
         """
-        pass
 
     @abstractmethod
     async def create(self, store_id: str, documents: List[Document]):
         """
         Create a vector store with the given id.
         """
-        pass
 
     @abstractmethod
     async def delete(self, store_id: str):

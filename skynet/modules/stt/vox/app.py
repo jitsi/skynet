@@ -27,19 +27,12 @@ async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None
 
     data_map = dict()
     resampler = None
-    sampling_rate = 8000
 
     while True:
         try:
             ws_data = await websocket.receive_json()
 
             event = ws_data.get('event')
-
-            if event == 'start':
-                try:
-                    sampling_rate = ws_data['start']['mediaFormat']['sampleRate']
-                except KeyError:
-                    pass
 
             if event == 'media':
                 media = ws_data['media']

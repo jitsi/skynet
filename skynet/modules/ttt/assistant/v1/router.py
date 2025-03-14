@@ -1,6 +1,6 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
-from fastapi import Depends, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, Form, HTTPException, Request
 from fastapi_versionizer.versionizer import api_version
 
 from skynet.auth.customer_id import CustomerId
