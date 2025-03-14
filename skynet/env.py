@@ -1,3 +1,5 @@
+# autoflake: skip_file
+
 import os
 import sys
 import uuid

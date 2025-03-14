@@ -7,11 +7,12 @@ authors = ["Jitsi Team <team@jitsi.org>"]
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
+argparse = "^1.4.0"
+autoflake = "^2.3.1"
 black = "23.12.1"
+llmcompressor = "^0.3.0"
 poetry-githooks = "^3.0.0"
 usort = "^1.0.7"
-argparse = "^1.4.0"
-llmcompressor = "^0.3.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "7.4.4"
