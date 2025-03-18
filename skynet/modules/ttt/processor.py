@@ -79,7 +79,7 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
         base_retriever = customer_store.as_retriever(search_kwargs={'k': 2})
         retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
 
-    if retriever and payload.text:
+    if retriever and not question and payload.text:
         question_payload = DocumentPayload(prompt='\n'.join([payload.text, assistant_rag_question_extractor]), text='')
         question = await process_text(model, question_payload)
         question = question.replace(response_prefix, '').strip()
