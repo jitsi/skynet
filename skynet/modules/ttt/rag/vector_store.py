@@ -10,11 +10,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from skynet.env import embeddings_model_path
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.v1.models import RagConfig, RagPayload, RagStatus
-from skynet.modules.ttt.rag.constants import ERROR_RAG_KEY, RUNNING_RAG_KEY, STORED_RAG_KEY
+from skynet.modules.ttt.rag.constants import ERROR_RAG_KEY, RUNNING_RAG_KEY, STORED_RAG_KEY, supported_files
 
-from skynet.modules.ttt.rag.text_extractor.main import extract
+from skynet.modules.ttt.rag.text_extractor.main import extract as extract_text
 from skynet.modules.ttt.rag.utils import save_files
 from skynet.modules.ttt.rag.web_crawler.main import crawl
+from skynet.modules.ttt.rag.zip_extractor.main import extract_files
 
 from ..persistence import db
 
@@ -124,7 +125,14 @@ class SkynetVectorStore(ABC):
         error = None
 
         try:
-            documents.extend(await extract(files))
+            zip_files = [f for f in files if f.endswith('.zip')]
+            if zip_files:
+                files = [f for f in files if f not in zip_files]
+                files.extend(extract_files(zip_files, self.get_temp_folder(store_id)))
+
+            files = [f for f in files if any(f.endswith(ext) for ext in supported_files)]
+
+            documents.extend(await extract_text(files))
             documents.extend(await crawl(urls, max_depth))
 
             await self.create(store_id, documents)

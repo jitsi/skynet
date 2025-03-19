@@ -17,8 +17,9 @@ async def extract(files: list[str]) -> list[Document]:
     results = await batch_extract_file(files)
 
     for file, result in zip(files, results):
-        log.info(f'Extracted text from {file}')
         documents.append(Document(result.content, metadata={'source': file}))
+
+    log.info(f'Extracted text from {len(documents)} files.')
 
     splits = split_documents(documents)
 
