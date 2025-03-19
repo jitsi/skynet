@@ -140,6 +140,7 @@ vector_store_path = os.environ.get('VECTOR_STORE_PATH', '_vector_store_')
 supported_vector_store_types = {'faiss'}
 vector_store_type = supported_vector_store_types.intersection({os.environ.get('VECTOR_STORE_TYPE', 'faiss').lower()})
 vector_store_type = vector_store_type.pop() if vector_store_type else None
+vector_store_top_k = int(os.environ.get('VECTOR_STORE_TOP_K', 5))
 
 # s3
 skynet_s3_access_key = os.environ.get('SKYNET_S3_ACCESS_KEY')
