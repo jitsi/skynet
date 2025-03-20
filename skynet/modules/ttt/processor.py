@@ -12,7 +12,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from skynet.constants import response_prefix
 
-from skynet.env import llama_n_ctx, use_oci
+from skynet.env import llama_n_ctx, use_oci, vector_store_top_k
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
@@ -76,7 +76,7 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
     if customer_store:
         config = await store.get_config(customer_id)
         system_message = config.system_message
-        base_retriever = customer_store.as_retriever(search_kwargs={'k': 2})
+        base_retriever = customer_store.as_retriever(search_kwargs={'k': vector_store_top_k})
         retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
 
     if retriever and not question and payload.text:
