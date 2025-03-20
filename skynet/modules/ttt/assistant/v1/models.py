@@ -17,6 +17,11 @@ class RagStatus(Enum):
     SUCCESS = 'success'
 
 
+class AssistantType(Enum):
+    SEARCH = 'search'
+    STATISTICS = 'statistics'
+
+
 class RagPayload(BaseModel):
     files: Optional[list[UploadFile]] = []
     max_depth: Optional[int] = default_max_depth
@@ -68,11 +73,13 @@ class RagConfig(RagPayload):
 
 class AssistantDocumentPayload(DocumentPayload):
     use_only_rag_data: bool = False
+    assistant_type: AssistantType = AssistantType.SEARCH
 
     model_config = {
         'json_schema_extra': {
             'examples': [
                 {
+                    'assistant_type': 'search',
                     'text': 'User provided context here (will be appended to the RAG one)',
                     'prompt': 'User prompt here',
                     'max_completion_tokens': None,

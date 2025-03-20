@@ -13,7 +13,8 @@ def split_documents(initial_documents: list[Document]) -> list[Document]:
     Split the documents into smaller chunks.
     """
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=100)
+    # todo: use a better splitter
+    splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=100)
 
     splits = splitter.split_documents(initial_documents)
 

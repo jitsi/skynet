@@ -4,6 +4,7 @@
 
 import asyncio
 import json
+import os
 
 from argparse import ArgumentParser
 
@@ -13,6 +14,8 @@ from tqdm import tqdm
 
 parser = ArgumentParser()
 parser.add_argument('-f', '--file', dest='filename', help='skynet jobs dump file ', metavar='FILE')
+parser.add_argument('-F', '--folder', dest='folder', help='skynet jobs dump folder')
+parser.add_argument('-o', '--output', dest='output', help='output folder')
 parser.add_argument('-m', '--max', dest='max_requests', help='max requests to make', default=10)
 parser.add_argument(
     '-s',
@@ -27,26 +30,33 @@ parser.add_argument('-t', '--type', dest='type', help='job type', default='any')
 
 args = parser.parse_args()
 
-jobs = open(args.filename, 'r').readlines()
-
-if args.type != 'any':
-    jobs = [job for job in jobs if json.loads(job)['type'] == args.type]
-
 max_requests = int(args.max_requests)
 base_url = args.url
 jwt = args.jwt
 sleep_time = int(args.sleep)
+jobs = []
+
+if args.filename:
+    jobs = open(args.filename, 'r').readlines()
+
+    if args.type != 'any':
+        jobs = [json.loads(job) for job in jobs if json.loads(job)['type'] == args.type]
+elif args.folder:
+    for file in os.listdir(args.folder)[:max_requests]:
+        with open(f'{args.folder}/{file}', 'r') as f:
+            text = f.read()
+            jobs.append({'type': 'summary', 'payload': {'text': text}, 'filename': file})
 
 
 async def main():
     session = aiohttp.ClientSession(headers={'Authorization': f'Bearer {jwt}'} if jwt else {})
 
-    async def post(job_type, data):
+    async def post(job_type, data, filename):
         path = 'summaries/v1/summary' if job_type == 'summary' else 'summaries/v1/action-items'
         url = f'{base_url}/{path}'
 
         async with session.post(url, json=data) as response:
-            return await response.json()
+            return await response.json(), filename
 
     async def get(job_id):
         url = f'{base_url}/summaries/v1/job/{job_id}'
@@ -56,22 +66,24 @@ async def main():
 
     tasks = []
     ids = []
+    id_filename_map = {}
 
     # extract top max_requests from the dump file
     for i in range(min(max_requests, len(jobs))):
-        job = json.loads(jobs[i])
+        job = jobs[i]
         payload = {
             'text': job['payload']['text'],
         }
 
-        tasks.append(post(job['type'], payload))
+        tasks.append(post(job['type'], payload, job['filename']))
 
     # execute the requests and store the job ids
     try:
         responses = await asyncio.gather(*tasks)
-        for response in responses:
+        for response, filename in responses:
             job_id = response['id']
             ids.append(job_id)
+            id_filename_map[job_id] = filename
             print(f'Job ID: {job_id}')
     except Exception as e:
         print(e)
@@ -81,21 +93,33 @@ async def main():
         await asyncio.sleep(1)
 
     success = True
-    total_duration = 0
 
-    # get the results of the jobs
-    for job_id in ids:
-        response = await get(job_id)
-        status = response['status']
-        duration = response['duration']
-        total_duration += duration
+    if args.filename:
+        total_duration = 0
 
-        print(f'Job {job_id} status: {status} duration: {duration} \n {response["result"]} \n')
+        for job_id in ids:
+            response = await get(job_id)
+            status = response['status']
+            duration = response['duration']
+            total_duration += duration
 
-        if status != 'success':
-            success = False
+            print(f'Job {job_id} status: {status} duration: {duration} \n {response["result"]} \n')
 
-    print(f'Total duration: {total_duration}')
+            if status != 'success':
+                success = False
+
+        print(f'Total duration: {total_duration}')
+
+    if args.output:
+        os.makedirs(args.output, exist_ok=True)
+
+        for job_id, filename in id_filename_map.items():
+            response = await get(job_id)
+            result = response['result']
+            status = response['status']
+
+            with open(f'{args.output}/{filename}', 'w') as f:
+                f.write(result)
 
     await session.close()
 

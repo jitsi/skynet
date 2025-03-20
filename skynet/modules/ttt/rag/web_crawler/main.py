@@ -47,7 +47,7 @@ async def crawl_url(url: str, max_depth: int) -> list[Document]:
     duration = round((end - start) / 1e9)
 
     log.info(f'Initial document count for {url}: {len(documents)}')
-    log.info(f'Split document count for {url}: {len(splits)}')
+    log.info(f'Split count for {url}: {len(splits)}')
     log.info(f'Crawling took {duration} seconds')
 
     return splits

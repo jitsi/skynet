@@ -19,9 +19,10 @@ async def extract(files: list[str]) -> list[Document]:
     for file, result in zip(files, results):
         documents.append(Document(result.content, metadata={'source': file}))
 
-    log.info(f'Extracted text from {len(documents)} files.')
-
     splits = split_documents(documents)
+
+    log.info(f'Extracted text from {len(documents)} files.')
+    log.info(f'Split count: {len(splits)}')
 
     return splits
 
