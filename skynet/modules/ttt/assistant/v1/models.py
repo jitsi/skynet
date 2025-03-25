@@ -43,8 +43,9 @@ class RagPayload(BaseModel):
 
 class RagConfig(RagPayload):
     error: Optional[str] = None
-    status: RagStatus = RagStatus.RUNNING
     files: Optional[list[str]] = []
+    refresh_interval: int = 30
+    status: RagStatus = RagStatus.RUNNING
 
     @field_validator('files', mode='before')
     def validate_files(value):
