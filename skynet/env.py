@@ -43,7 +43,7 @@ llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 
 embeddings_chunk_size = int(os.environ.get('EMBEDDINGS_CHUNK_SIZE', 5000))
-embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-ai/nomic-embed-text-v1.5')
+embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'BAAI/bge-m3')
 
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
