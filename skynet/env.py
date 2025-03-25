@@ -42,6 +42,7 @@ file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))
 llama_path = os.environ.get('LLAMA_PATH', 'llama3.1')
 llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 
+embeddings_chunk_size = int(os.environ.get('EMBEDDINGS_CHUNK_SIZE', 5000))
 embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'nomic-ai/nomic-embed-text-v1.5')
 
 # azure openai api
@@ -125,9 +126,10 @@ echo_requests_percent = int(os.environ.get('ECHO_REQUESTS_PERCENT', 100))
 echo_requests_token = os.environ.get('ECHO_REQUESTS_TOKEN')
 
 # oci
+oci_max_tokens = int(os.environ.get('OCI_MAX_TOKENS', 4000))
 oci_model_id = os.environ.get('OCI_MODEL_ID')
 oci_service_endpoint = os.environ.get(
-    'OCI_SERVICE_ENDPOINT', 'https://inference.generativeai.us-chicago-1.oci.oraclecloud.com'
+    'OCI_SERVICE_ENDPOINT', 'https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com'
 )
 oci_compartment_id = os.environ.get('OCI_COMPARTMENT_ID')
 oci_auth_type = os.environ.get('OCI_AUTH_TYPE', 'API_KEY')
@@ -140,7 +142,6 @@ vector_store_path = os.environ.get('VECTOR_STORE_PATH', '_vector_store_')
 supported_vector_store_types = {'faiss'}
 vector_store_type = supported_vector_store_types.intersection({os.environ.get('VECTOR_STORE_TYPE', 'faiss').lower()})
 vector_store_type = vector_store_type.pop() if vector_store_type else None
-vector_store_top_k = int(os.environ.get('VECTOR_STORE_TOP_K', 5))
 
 # s3
 skynet_s3_access_key = os.environ.get('SKYNET_S3_ACCESS_KEY')

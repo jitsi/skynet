@@ -12,10 +12,11 @@ from langchain_core.output_parsers import StrOutputParser
 
 from skynet.constants import response_prefix
 
-from skynet.env import llama_n_ctx, use_oci, vector_store_top_k
+from skynet.env import llama_n_ctx, use_oci
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
+from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload
 from skynet.modules.ttt.llm_selector import LLMSelector
 from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_conversation,
@@ -57,13 +58,15 @@ def format_docs(docs: list[Document]) -> str:
 
     log.info(f'Using {len(docs)} documents for RAG')
 
-    return '\n\n'.join(f"### Document {i}\n{doc.page_content}" for i, doc in enumerate(docs))
+    return '\n\n'.join(
+        f"### Document source: {doc.metadata.get('source')}\n{doc.page_content}" for i, doc in enumerate(docs)
+    )
 
 
 compressor = FlashrankRerank()
 
 
-async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Optional[str] = None) -> str:
+async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, customer_id: Optional[str] = None) -> str:
     from skynet.modules.ttt.rag.app import get_vector_store
 
     store = await get_vector_store()
@@ -76,7 +79,9 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
     if customer_store:
         config = await store.get_config(customer_id)
         system_message = config.system_message
-        base_retriever = customer_store.as_retriever(search_kwargs={'k': vector_store_top_k})
+        base_retriever = customer_store.as_retriever(
+            search_type='similarity_score_threshold', search_kwargs={'k': payload.top_k, 'score_threshold': 0.1}
+        )
         retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
 
     if retriever and not question and payload.text:
@@ -98,6 +103,8 @@ async def assist(model: BaseChatModel, payload: DocumentPayload, customer_id: Op
             system_message=system_message,
         )
     )
+
+    log.debug(f'Using template: {template}')
 
     rag_chain = (
         {'context': (itemgetter('question') | retriever | format_docs) if retriever else lambda _: ''}

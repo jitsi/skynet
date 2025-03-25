@@ -14,6 +14,7 @@ from skynet.env import (
     oci_available,
     oci_compartment_id,
     oci_config_profile,
+    oci_max_tokens,
     oci_model_id,
     oci_service_endpoint,
     openai_api_base_url,
@@ -90,7 +91,7 @@ class LLMSelector:
             model_kwargs = {
                 'temperature': 0,
                 'frequency_penalty': 1,
-                'max_tokens': max_completion_tokens,
+                'max_tokens': max(max_completion_tokens, oci_max_tokens),
             }
 
             return ChatOCIGenAI(
