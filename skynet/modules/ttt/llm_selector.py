@@ -91,7 +91,7 @@ class LLMSelector:
             model_kwargs = {
                 'temperature': 0,
                 'frequency_penalty': 1,
-                'max_tokens': max(max_completion_tokens, oci_max_tokens),
+                'max_tokens': max(max_completion_tokens or 0, oci_max_tokens),
             }
 
             return ChatOCIGenAI(
