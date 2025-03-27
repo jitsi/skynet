@@ -8,6 +8,7 @@ import faiss
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+from langchain_core.documents import Document
 
 from skynet.env import use_s3, vector_store_path
 from skynet.logs import get_logger
@@ -53,7 +54,7 @@ class FAISSVectorStore(SkynetVectorStore):
             log.info(f'Vector store with id {store_id} not found')
             return None
 
-    async def create(self, store_id, documents):
+    async def create(self, store_id, documents: list[Document]):
         if not documents:
             log.info('No documents to create vector store')
             return None
@@ -62,14 +63,20 @@ class FAISSVectorStore(SkynetVectorStore):
         index = faiss.IndexFlatL2(len(self.embedding.embed_query(store_id)))
         vector_store = FAISS(
             embedding_function=self.embedding,
-            distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE,
+            distance_strategy=DistanceStrategy.COSINE,  # better for full-text search
             index=index,
             docstore=InMemoryDocstore(),
             index_to_docstore_id={},
+            normalize_L2=True,
         )
 
         uuids = [str(uuid4()) for _ in range(len(documents))]
-        await vector_store.aadd_documents(documents=documents, ids=uuids)
+
+        batch_size = 10  # this is purely for logging the progress
+        for i in range(0, len(documents), batch_size):
+            await vector_store.aadd_documents(documents=documents[i : i + batch_size], ids=uuids[i : i + batch_size])
+            log.info(f'Embeddings for {store_id} progress: {i + batch_size} / {len(documents)} documents')
+
         vector_store.save_local(self.get_vector_store_path(store_id))
         end = time.perf_counter_ns()
         duration = round((end - start) / 1e9)

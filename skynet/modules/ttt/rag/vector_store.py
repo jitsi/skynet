@@ -40,9 +40,7 @@ def bypass_ingestion(config: RagConfig, new_config: RagConfig):
 
 
 class SkynetVectorStore(ABC):
-    embedding = HuggingFaceEmbeddings(
-        model_name=embeddings_model_path, model_kwargs={'device': 'cpu', 'trust_remote_code': True}
-    )
+    embedding = HuggingFaceEmbeddings(model_name=embeddings_model_path, model_kwargs={'device': 'cpu'})
     tasks = set()
 
     @abstractmethod
@@ -128,7 +126,7 @@ class SkynetVectorStore(ABC):
             zip_files = [f for f in files if f.endswith('.zip')]
             if zip_files:
                 files = [f for f in files if f not in zip_files]
-                files.extend(extract_files(zip_files, self.get_temp_folder(store_id)))
+                files.extend(extract_files(zip_files, self.get_temp_folder(store_id), min_size_kb=1))
 
             files = [f for f in files if any(f.endswith(ext) for ext in supported_files)]
 

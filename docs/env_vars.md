@@ -19,8 +19,9 @@ Skynet is configurable via environment variables. Some are shared by all modules
 ## Assistant Module Environment Variables
 
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
-|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
-| `EMBEDDINGS_MODEL_PATH`          | The path where the embeddings model is located.                                                                                                    | `nomic-ai/nomic-embed-text-v1.5`    | N/A                  |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|   
+| `EMBEDDINGS_CHUNK_SIZE`          | Max size (in characters) of documents for which embeddings will be computed. Should be less than the max tokens of the embedding model             | 5000                                | N/A                  |
+| `EMBEDDINGS_MODEL_PATH`          | The path where the embeddings model is located.                                                                                                    | `BAAI/bge-m3`    | N/A                  |
 | `VECTOR_STORE_PATH`              | The default path where the vector store is saved locally                                                                                           | `_vector_store_`                    | N/A                  |
 
 
@@ -55,6 +56,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 ## OCI vars
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |
 |----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------|
+| `OCI_MAX_TOKENS`                 | OCI Maximum output tokens (check https://docs.oracle.com/en-us/iaas/Content/generative-ai/pretrained-models.htm)                                   | 4000                                | N/A                  |
 | `OCI_MODEL_ID`                   | OCI Model id                                                                                                                                       | NULL                                | N/A                  |
 | `OCI_SERVICE_ENDPOINT`           | OCI Service endpoint                                                                                                                               | `https://inference.generativeai.us-chicago-1.oci.oraclecloud.com`                                | N/A                  |
 | `OCI_COMPARTMENT_ID`             | OCI Compartment ID                                                                                                                                 | NULL                                | N/A                  |

@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from fastapi import UploadFile
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, computed_field, field_validator
 
 from skynet.modules.ttt.assistant.constants import assistant_default_system_message
 
@@ -15,6 +15,11 @@ class RagStatus(Enum):
     ERROR = 'error'
     RUNNING = 'running'
     SUCCESS = 'success'
+
+
+class AssistantType(Enum):
+    SEARCH = 'search'
+    STATISTICS = 'statistics'
 
 
 class RagPayload(BaseModel):
@@ -68,12 +73,26 @@ class RagConfig(RagPayload):
 
 
 class AssistantDocumentPayload(DocumentPayload):
+    assistant_search_top_k: int = 3
+    assistant_stats_top_k: int = 90
+    assistant_type: AssistantType = AssistantType.SEARCH
     use_only_rag_data: bool = False
+
+    @computed_field
+    @property
+    def top_k(self) -> int:
+        if self.assistant_type == AssistantType.SEARCH:
+            return self.assistant_search_top_k
+
+        return self.assistant_stats_top_k
 
     model_config = {
         'json_schema_extra': {
             'examples': [
                 {
+                    'assistant_search_top_k': 3,
+                    'assistant_stats_top_k': 90,
+                    'assistant_type': 'search',
                     'text': 'User provided context here (will be appended to the RAG one)',
                     'prompt': 'User prompt here',
                     'max_completion_tokens': None,
