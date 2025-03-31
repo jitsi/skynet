@@ -79,9 +79,7 @@ async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, custom
     if customer_store:
         config = await store.get_config(customer_id)
         system_message = config.system_message
-        base_retriever = customer_store.as_retriever(
-            search_type='similarity_score_threshold', search_kwargs={'k': payload.top_k, 'score_threshold': 0.1}
-        )
+        base_retriever = customer_store.as_retriever(search_kwargs={'k': payload.top_k})
         retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=base_retriever)
 
     if retriever and not question and payload.text:
