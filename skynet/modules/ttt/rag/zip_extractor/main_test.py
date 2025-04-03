@@ -2,11 +2,14 @@ import os
 import shutil
 from pathlib import Path
 
+import pytest
+
 from skynet.modules.ttt.rag.zip_extractor.main import extract_files
 
 
 class TestExtractFiles:
-    def test_extract_files(self):
+    @pytest.mark.asyncio
+    async def test_extract_files(self):
         """
         Test extract_files function retrieves all files in all folders.
         """
@@ -33,7 +36,7 @@ class TestExtractFiles:
         for folder, zip_file in zip(folders, zip_files):
             shutil.make_archive(zip_file, 'zip', folder)
 
-        extracted_files = extract_files([f'{file}.zip' for file in zip_files], 'temp')
+        extracted_files = await extract_files([f'{file}.zip' for file in zip_files], 'temp')
         expected_files = [
             'temp/archives/test1/subfolder_0/file_0.txt',
             'temp/archives/test1/subfolder_0/file_1.txt',

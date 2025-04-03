@@ -9,7 +9,7 @@ from skynet.env import log_level
 
 # Suppress some logs from uvicorn
 class AccessLogSuppressor(Filter):
-    exclude_paths = ('/favicon.ico', '/healthz', '/metrics')
+    exclude_paths = ('/favicon.ico', '/metrics')
 
     def filter(self, record: LogRecord) -> bool:
         log_msg = record.getMessage()
