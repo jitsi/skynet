@@ -126,7 +126,7 @@ class SkynetVectorStore(ABC):
             zip_files = [f for f in files if f.endswith('.zip')]
             if zip_files:
                 files = [f for f in files if f not in zip_files]
-                files.extend(extract_files(zip_files, self.get_temp_folder(store_id), min_size_kb=1))
+                files.extend(await extract_files(zip_files, self.get_temp_folder(store_id), min_size_kb=1))
 
             files = [f for f in files if any(f.endswith(ext) for ext in supported_files)]
 

@@ -60,7 +60,7 @@ class FAISSVectorStore(SkynetVectorStore):
             return None
 
         start = time.perf_counter_ns()
-        index = faiss.IndexFlatL2(len(self.embedding.embed_query(store_id)))
+        index = faiss.IndexFlatL2(len(await self.embedding.aembed_query(store_id)))
         vector_store = FAISS(
             embedding_function=self.embedding,
             distance_strategy=DistanceStrategy.COSINE,  # better for full-text search
@@ -72,7 +72,7 @@ class FAISSVectorStore(SkynetVectorStore):
 
         uuids = [str(uuid4()) for _ in range(len(documents))]
 
-        batch_size = 10  # this is purely for logging the progress
+        batch_size = 100  # this is purely for logging the progress
         for i in range(0, len(documents), batch_size):
             await vector_store.aadd_documents(documents=documents[i : i + batch_size], ids=uuids[i : i + batch_size])
             log.info(f'Embeddings for {store_id} progress: {i + batch_size} / {len(documents)} documents')

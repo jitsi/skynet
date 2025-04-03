@@ -1742,14 +1742,14 @@ files = [
 
 [[package]]
 name = "html-to-markdown"
-version = "1.2.0"
+version = "1.3.0"
 description = "Convert HTML to markdown"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "html_to_markdown-1.2.0-py3-none-any.whl", hash = "sha256:76f9bce8ddc291bdb8e20dcb926cbbc638c8aa5c42f49d419bd13900790ccaa3"},
-    {file = "html_to_markdown-1.2.0.tar.gz", hash = "sha256:a74dc8265b5a0ae0f07b736d96f0fd8f97147395fc0570ea7b24fadf7c460e54"},
+    {file = "html_to_markdown-1.3.0-py3-none-any.whl", hash = "sha256:f4d74f457e26ab808e8f1cc1a7cb393c665f089c7257ab7a75cfe5ebdce0ca2c"},
+    {file = "html_to_markdown-1.3.0.tar.gz", hash = "sha256:5a0dee60cd76c1dc010b07bfb6c2d885632efe69c9cd78e830511c7b2ee5af9f"},
 ]
 
 [package.dependencies]
@@ -2177,23 +2177,32 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "kreuzberg"
-version = "2.1.2"
+version = "3.1.1"
 description = "A text extraction library supporting PDFs, images, office documents and more"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "kreuzberg-2.1.2-py3-none-any.whl", hash = "sha256:57c06a2338b04ea7d1a463da030f568d85143f8083d36e6b7251c4692d744b9a"},
-    {file = "kreuzberg-2.1.2.tar.gz", hash = "sha256:4cee25446307aa5db191259c3ec02cde659a3a26f3f6b5d5f36be2fff7e0b552"},
+    {file = "kreuzberg-3.1.1-py3-none-any.whl", hash = "sha256:440588cbe526f688dd8f310f5e9c2ac75eb2d343f08eaa86b73095c6a4341876"},
+    {file = "kreuzberg-3.1.1.tar.gz", hash = "sha256:c266da3f48a16f49b1249f80f240b20a133f90b8eeb619eba7b0603272173c33"},
 ]
 
 [package.dependencies]
-anyio = ">=4.8.0"
+anyio = ">=4.9.0"
 charset-normalizer = ">=3.4.1"
-html-to-markdown = ">=1.2.0"
+html-to-markdown = ">=1.2.1"
+playa-pdf = ">=0.4.1"
 pypdfium2 = "4.30.0"
 python-calamine = ">=0.3.1"
 python-pptx = ">=1.0.2"
+typing-extensions = {version = ">=4.12.2", markers = "python_version < \"3.12\""}
+
+[package.extras]
+all = ["easyocr (>=1.7.2)", "gmft (>=0.4.1)", "paddleocr (>=2.10.0)", "paddlepaddle (>=3.0.0)", "semantic-text-splitter (>=0.25.1)", "setuptools (>=76.0.0)"]
+chunking = ["semantic-text-splitter (>=0.25.1)"]
+easyocr = ["easyocr (>=1.7.2)"]
+gmft = ["gmft (>=0.4.1)"]
+paddleocr = ["paddleocr (>=2.10.0)", "paddlepaddle (>=3.0.0)", "setuptools (>=76.0.0)"]
 
 [[package]]
 name = "langchain"
@@ -3886,6 +3895,21 @@ files = [
 docs = ["furo (>=2024.8.6)", "proselint (>=0.14)", "sphinx (>=8.1.3)", "sphinx-autodoc-typehints (>=3)"]
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=8.3.4)", "pytest-cov (>=6)", "pytest-mock (>=3.14)"]
 type = ["mypy (>=1.14.1)"]
+
+[[package]]
+name = "playa-pdf"
+version = "0.4.1"
+description = "Parallel and LazY Analyzer for PDFs"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "playa_pdf-0.4.1-py3-none-any.whl", hash = "sha256:7cfc74438e285689fa624caaa298ecc10b831f13b3999f72b3c8a315ee695a27"},
+    {file = "playa_pdf-0.4.1.tar.gz", hash = "sha256:e768304b378e3686cce5fb2baff1d2abe228ac7e6f186aa98c1b1b21ba1eb502"},
+]
+
+[package.extras]
+crypto = ["cryptography (>=36.0.0)"]
 
 [[package]]
 name = "pluggy"
@@ -7327,4 +7351,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.11"
-content-hash = "5c22b61581d6d1975587a14a9dff9b724cc2dc2bbb1ed4cb6853df81b1b83d1f"
+content-hash = "b14997beae176cbd500a203bf11f024b04fa8df1cf5d767b8c2ca42470101131"
