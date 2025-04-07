@@ -32,7 +32,6 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_text,
 )
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType, Processors
-from skynet.env import modules
 
 log = get_logger(__name__)
 
@@ -64,7 +63,7 @@ def format_docs(docs: list[Document]) -> str:
     )
 
 
-compressor = FlashrankRerank() if 'assistant' in modules else None
+compressor = FlashrankRerank()
 
 
 async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, customer_id: Optional[str] = None) -> str:
