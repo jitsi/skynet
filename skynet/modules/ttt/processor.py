@@ -12,7 +12,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from skynet.constants import response_prefix
 
-from skynet.env import llama_n_ctx, use_oci
+from skynet.env import llama_n_ctx, modules, use_oci
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
@@ -32,7 +32,6 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_text,
 )
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType, Processors
-from skynet.env import modules
 
 log = get_logger(__name__)
 
