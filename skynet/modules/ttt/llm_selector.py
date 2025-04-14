@@ -18,7 +18,6 @@ from skynet.env import (
     oci_model_id,
     oci_service_endpoint,
     openai_api_base_url,
-    use_oci,
 )
 from skynet.logs import get_logger
 from skynet.modules.ttt.summaries.v1.models import Processors
@@ -48,11 +47,10 @@ class LLMSelector:
             elif api_type == CredentialsType.AZURE_OPENAI.value:
                 return Processors.AZURE
 
-        # OCI doesn't have a secret since it's provisioned for the instance as a whole.
-        if use_oci or api_type == CredentialsType.OCI.value:
-            if oci_available:
-                return Processors.OCI
-            log.warning(f'OCI is not available, falling back to local processing for customer {customer_id}')
+        if oci_available:
+            return Processors.OCI
+
+        log.warning(f'OCI is not available, falling back to local processing for customer {customer_id}')
 
         return Processors.LOCAL
 
