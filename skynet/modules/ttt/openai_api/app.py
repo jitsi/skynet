@@ -1,31 +1,21 @@
 import subprocess
 import sys
 
-from aiohttp.client_exceptions import ClientConnectorError
-
-from fastapi import HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
-
 from skynet import http_client
-from skynet.auth.bearer import JWTBearer
-from skynet.env import bypass_auth, llama_n_ctx, llama_path, openai_api_base_url, openai_api_port, use_oci, use_vllm
+from skynet.env import llama_n_ctx, llama_path, openai_api_base_url, openai_api_port, use_oci, use_vllm
 from skynet.logs import get_logger
-from skynet.utils import create_app, dependencies, responses
+from skynet.modules.ttt.openai_api.slim_router import router as slim_router
+from skynet.utils import create_app
 
 log = get_logger(__name__)
 
 app = create_app()
-whitelisted_routes = []
+app.include_router(slim_router)
 
 
 def initialize():
     if not use_vllm:
         return
-
-    from vllm.entrypoints.openai.api_server import router as vllm_router
-
-    app.include_router(vllm_router, dependencies=dependencies, responses=responses)
-    whitelisted_routes.extend(['/openai/docs', '/openai/openapi.json'])
 
     log.info(f'Starting vLLM server on port {openai_api_port} using model {llama_path}')
 
@@ -68,33 +58,6 @@ async def is_ready():
             return response == 'Ollama is running'
     except Exception:
         return False
-
-
-bearer = JWTBearer()
-
-
-@app.middleware('http')
-async def proxy_middleware(request: Request, call_next):
-    if request.url.path in whitelisted_routes:
-        return await call_next(request)
-
-    if not bypass_auth:
-        try:
-            await bearer.__call__(request)
-        except HTTPException as e:
-            return JSONResponse(content=responses.get(e.status_code), status_code=e.status_code)
-
-    try:
-        url = f'{openai_api_base_url}{request.url.path.replace("/openai", "")}'
-        response = await http_client.request(request.method, url, headers=request.headers, data=await request.body())
-
-        return StreamingResponse(response.content, status_code=response.status, headers=response.headers)
-    except ClientConnectorError as e:
-        return JSONResponse(content=str(e), status_code=500)
-    except HTTPException as e:
-        return JSONResponse(content=e.detail, status_code=e.status_code)
-    except Exception as e:
-        return JSONResponse(content=str(e), status_code=500)
 
 
 __all__ = ['app', 'initialize', 'is_ready']
