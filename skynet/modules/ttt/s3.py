@@ -1,3 +1,5 @@
+from botocore.config import Config
+
 from skynet.env import (
     skynet_s3_access_key,
     skynet_s3_bucket,
@@ -33,7 +35,14 @@ class S3:
 
     async def upload_file(self, filename):
         try:
-            async with self.session.resource('s3', endpoint_url=skynet_s3_endpoint) as s3:
+            async with self.session.resource(
+                's3',
+                endpoint_url=skynet_s3_endpoint,
+                # https://github.com/boto/boto3/issues/4398
+                config=Config(
+                    request_checksum_calculation='WHEN_REQUIRED', response_checksum_validation='WHEN_REQUIRED'
+                ),
+            ) as s3:
                 bucket = await s3.Bucket(skynet_s3_bucket)
 
                 with open(filename, 'rb') as data:
