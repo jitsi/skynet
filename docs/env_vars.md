@@ -14,6 +14,7 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `ASAP_PUB_KEYS_AUDS`           | Allowed JWT audiences, separated by commas                  | `NULL`                                    | N/A                                                                             |
 | `ASAP_PUB_KEYS_MAX_CACHE_SIZE` | Public key maximum cache size in bytes                      | `512`                                     | N/A                                                                             |
 | `LOG_LEVEL`                    | Log level                                                   | `DEBUG`                                   | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`                                 |
+| `DISABLE_LLM_HEALTH_CHECK`     | Disables LLM health check if only OpenAI/Azure will be used | `false`                                   | `true`, `false`                                                                 |
 
 
 ## Assistant Module Environment Variables

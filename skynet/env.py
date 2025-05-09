@@ -58,6 +58,9 @@ openai_api_base_url = os.environ.get(
 # openai
 openai_credentials_file = os.environ.get('SKYNET_CREDENTIALS_PATH')
 
+# health checking
+disable_llm_health_check = tobool(os.environ.get('DISABLE_LLM_HEALTH_CHECK', 'false'))
+
 # auth
 bypass_auth = tobool(os.environ.get('BYPASS_AUTHORIZATION'))
 asap_pub_keys_url = os.environ.get('ASAP_PUB_KEYS_REPO_URL')
