@@ -28,7 +28,7 @@ def initialize():
             '--model',
             llama_path,
             '--gpu_memory_utilization',
-            str(0.95),
+            str(0.90),
             '--max-model-len',
             str(llama_n_ctx),
             '--port',
