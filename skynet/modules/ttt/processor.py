@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Optional
+from typing import List, Optional
 
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
@@ -9,10 +9,11 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
+from openai.types.chat import ChatCompletionMessageParam
 
 from skynet.constants import response_prefix
 
-from skynet.env import llama_n_ctx, use_oci
+from skynet.env import llama_n_ctx, modules, use_oci
 from skynet.logs import get_logger
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
@@ -63,7 +64,7 @@ def format_docs(docs: list[Document]) -> str:
     )
 
 
-compressor = FlashrankRerank()
+compressor = FlashrankRerank() if 'assistant' in modules else None
 
 
 async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, customer_id: Optional[str] = None) -> str:
@@ -183,7 +184,7 @@ async def process(job: Job) -> str:
     job_type = job.type
     customer_id = job.metadata.customer_id
 
-    llm = LLMSelector.select(customer_id, payload.max_completion_tokens, job.id)
+    llm = LLMSelector.select(customer_id, job_id=job.id, **{'max_completion_tokens': payload.max_completion_tokens})
 
     try:
         if job_type == JobType.ASSIST:
@@ -204,5 +205,16 @@ async def process(job: Job) -> str:
             return await process(job)
 
         raise e
+
+    return result
+
+
+async def process_chat_completion(
+    messages: List[ChatCompletionMessageParam], customer_id: Optional[str] = None, **model_kwargs
+) -> str:
+    llm = LLMSelector.select(customer_id, **model_kwargs)
+
+    chain = llm | StrOutputParser()
+    result = await chain.ainvoke(messages)
 
     return result
