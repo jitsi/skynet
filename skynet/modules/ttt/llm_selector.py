@@ -56,7 +56,10 @@ class LLMSelector:
 
     @staticmethod
     def select(
-        customer_id: str, max_completion_tokens: Optional[int] = None, job_id: Optional[str] = None
+        customer_id: str,
+        job_id: Optional[str] = None,
+        max_completion_tokens: Optional[int] = None,
+        temperature: Optional[float] = 0,
     ) -> BaseChatModel:
         processor = LLMSelector.get_job_processor(customer_id, job_id)
         options = get_credentials(customer_id)
@@ -68,7 +71,7 @@ class LLMSelector:
                 api_key=options.get('secret'),
                 max_completion_tokens=max_completion_tokens,
                 model_name=options.get('metadata').get('model'),
-                temperature=0,
+                temperature=temperature,
             )
         elif processor == Processors.AZURE:
             log.info(f'Forwarding inference to Azure-OpenAI for customer {customer_id}')
@@ -81,13 +84,13 @@ class LLMSelector:
                 azure_endpoint=metadata.get('endpoint'),
                 azure_deployment=metadata.get('deploymentName'),
                 max_completion_tokens=max_completion_tokens,
-                temperature=0,
+                temperature=temperature,
             )
         elif processor == Processors.OCI:
             log.info(f'Forwarding inference to OCI for customer {customer_id}')
 
             model_kwargs = {
-                'temperature': 0,
+                'temperature': temperature,
                 'frequency_penalty': 1,
                 'max_tokens': max(max_completion_tokens or 0, oci_max_tokens),
             }
@@ -112,7 +115,7 @@ class LLMSelector:
                 default_headers={'X-Skynet-UUID': app_uuid},
                 frequency_penalty=1,
                 max_retries=0,
-                temperature=0,
+                temperature=temperature,
                 max_completion_tokens=max_completion_tokens,
             )
 
