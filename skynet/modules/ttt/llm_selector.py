@@ -60,6 +60,7 @@ class LLMSelector:
         job_id: Optional[str] = None,
         max_completion_tokens: Optional[int] = None,
         temperature: Optional[float] = 0,
+        stream: Optional[bool] = False,
     ) -> BaseChatModel:
         processor = LLMSelector.get_job_processor(customer_id, job_id)
         options = get_credentials(customer_id)
@@ -71,6 +72,7 @@ class LLMSelector:
                 api_key=options.get('secret'),
                 max_completion_tokens=max_completion_tokens,
                 model_name=options.get('metadata').get('model'),
+                streaming=stream,
                 temperature=temperature,
             )
         elif processor == Processors.AZURE:
@@ -81,9 +83,10 @@ class LLMSelector:
             return AzureChatOpenAI(
                 api_key=options.get('secret'),
                 api_version=azure_openai_api_version,
-                azure_endpoint=metadata.get('endpoint'),
                 azure_deployment=metadata.get('deploymentName'),
+                azure_endpoint=metadata.get('endpoint'),
                 max_completion_tokens=max_completion_tokens,
+                streaming=stream,
                 temperature=temperature,
             )
         elif processor == Processors.OCI:
@@ -96,27 +99,29 @@ class LLMSelector:
             }
 
             return ChatOCIGenAI(
-                model_id=oci_model_id,
-                service_endpoint=oci_service_endpoint,
-                compartment_id=oci_compartment_id,
-                provider='meta',
-                model_kwargs=model_kwargs,
-                auth_type=oci_auth_type,
                 auth_profile=oci_config_profile,
+                auth_type=oci_auth_type,
+                compartment_id=oci_compartment_id,
+                is_stream=stream,
+                model_id=oci_model_id,
+                model_kwargs=model_kwargs,
+                provider='meta',
+                service_endpoint=oci_service_endpoint,
             )
         else:
             if customer_id:
                 log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
 
             return ChatOpenAI(
-                model=llama_path,
                 api_key='placeholder',  # use a placeholder value to bypass validation
                 base_url=f'{openai_api_base_url}/v1',
                 default_headers={'X-Skynet-UUID': app_uuid},
                 frequency_penalty=1,
-                max_retries=0,
-                temperature=temperature,
                 max_completion_tokens=max_completion_tokens,
+                max_retries=0,
+                model=llama_path,
+                streaming=stream,
+                temperature=temperature,
             )
 
 
