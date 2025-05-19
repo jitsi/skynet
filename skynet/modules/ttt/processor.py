@@ -1,3 +1,4 @@
+import json
 from operator import itemgetter
 from typing import List, Optional
 
@@ -218,3 +219,18 @@ async def process_chat_completion(
     result = await chain.ainvoke(messages)
 
     return result
+
+
+async def process_chat_completion_stream(
+    messages: List[ChatCompletionMessageParam], customer_id: Optional[str] = None, **model_kwargs
+):
+    llm = LLMSelector.select(customer_id, **model_kwargs)
+    chain = llm | StrOutputParser()
+
+    try:
+        async for message in chain.astream(messages):
+            yield message
+    except Exception as e:
+        yield json.dumps(
+            {'error': e.body if hasattr(e, 'body') else str(e), 'code': e.code if hasattr(e, 'code') else None}
+        ) + '\n'
