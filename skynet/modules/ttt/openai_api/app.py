@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 from skynet import http_client
-from skynet.env import llama_n_ctx, llama_path, openai_api_base_url, openai_api_port, use_oci, use_vllm
+from skynet.env import llama_n_ctx, llama_path, openai_api_base_url, openai_api_port, use_oci, use_vllm, disable_llm_health_check
 from skynet.logs import get_logger
 from skynet.modules.ttt.openai_api.slim_router import router as slim_router
 from skynet.utils import create_app
@@ -44,7 +44,7 @@ def initialize():
 
 
 async def is_ready():
-    if use_oci:
+    if use_oci or disable_llm_health_check:
         return True
 
     url = f'{openai_api_base_url}/health' if use_vllm else openai_api_base_url
