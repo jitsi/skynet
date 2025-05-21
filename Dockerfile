@@ -93,7 +93,7 @@ COPY docker/rootfs/ /
 
 RUN \
     apt-get update && \
-    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 libopus0 zlib1g strace gdb pandoc tesseract-ocr && \
+    apt-dpkg-wrap apt-get install -y python3.11 python3.11-venv tini libgomp1 libopus0 zlib1g strace gdb pandoc tesseract-ocr build-essential && \
     apt-cleanup
 
 # Principle of least privilege: create a new user for running the application
@@ -107,7 +107,11 @@ ENV \
     # https://docs.python.org/3/using/cmdline.html#envvar-PYTHONDONTWRITEBYTECODE
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
+    # used by gcc
+    TMPDIR=/app/tmp \
+    # used by vllm
     OUTLINES_CACHE_DIR=/app/vllm/outlines \
+    VLLM_CACHE_ROOT=/app/vllm/cache \
     VLLM_CONFIG_ROOT=/app/vllm/config \
     HF_HOME=/app/hf
 
