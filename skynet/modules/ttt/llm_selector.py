@@ -47,10 +47,11 @@ class LLMSelector:
             elif api_type == CredentialsType.AZURE_OPENAI.value:
                 return Processors.AZURE
 
+        if api_type == CredentialsType.LOCAL.value:
+            return Processors.LOCAL
+
         if oci_available:
             return Processors.OCI
-
-        log.warning(f'OCI is not available, falling back to local processing for customer {customer_id}')
 
         return Processors.LOCAL
 
@@ -109,8 +110,7 @@ class LLMSelector:
                 service_endpoint=oci_service_endpoint,
             )
         else:
-            if customer_id:
-                log.info(f'Customer {customer_id} has no API key configured, falling back to local processing')
+            log.info(f'Forwarding inference to local LLM for customer {customer_id}')
 
             return ChatOpenAI(
                 api_key='placeholder',  # use a placeholder value to bypass validation

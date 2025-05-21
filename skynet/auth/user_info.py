@@ -13,9 +13,10 @@ credentials = dict()
 
 
 class CredentialsType(Enum):
-    OPENAI = 'OPENAI'
     AZURE_OPENAI = 'AZURE_OPENAI'
+    LOCAL = 'LOCAL'
     OCI = 'OCI'
+    OPENAI = 'OPENAI'
 
 
 async def open_yaml(file_path):
