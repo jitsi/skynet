@@ -4,7 +4,16 @@ services:
         environment:
             - BYPASS_AUTHORIZATION=true
             - REDIS_HOST=redis
+            - LLAMA_PATH=/models/Llama-3.1-8B-Instruct-W8A8-Dynamic-Per-Token
+            - LLAMA_N_CTX=80000
         platform: linux/amd64
+        deploy:
+          resources:
+            reservations:
+              devices:
+                - driver: nvidia
+                  device_ids: ['0']
+                  capabilities: [gpu]
         ports:
             - "8000:8000"
             - "8001:8001"
