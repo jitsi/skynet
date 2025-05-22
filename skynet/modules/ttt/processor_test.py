@@ -138,6 +138,33 @@ class TestProcess:
         LLMSelector.select.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_process_with_local(self, process_fixture):
+        '''Test that a job is sent for local inference if there is a customer id configured for it.'''
+
+        from skynet.modules.ttt.llm_selector import LLMSelector
+        from skynet.modules.ttt.processor import process
+
+        process_fixture.patch(
+            'skynet.modules.ttt.llm_selector.get_credentials',
+            return_value={'type': 'LOCAL'},
+        )
+        process_fixture.patch('skynet.modules.ttt.llm_selector.oci_available', True)
+
+        job = Job(
+            payload=DocumentPayload(
+                text="Andrew: Hello. Beatrix: Honey? It’s me . . . Andrew: Where are you? Beatrix: At the station. I missed my train."
+            ),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+
+        assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.LOCAL
+
+        await process(job)
+
+        LLMSelector.select.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_process_with_oci(self, process_fixture):
         '''Test that a job is sent for inference to oci if there is a customer id configured for it.'''
 

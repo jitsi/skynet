@@ -3,7 +3,7 @@ import os
 import time
 
 from skynet.constants import ERROR_JOBS_KEY, PENDING_JOBS_KEY, RUNNING_JOBS_KEY
-from skynet.env import enable_batching, job_timeout, max_concurrency, modules, redis_exp_seconds
+from skynet.env import enable_batching, job_timeout, max_concurrency, modules, redis_exp_seconds, use_vllm
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
@@ -82,6 +82,10 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
     """Create a job and add it to the db queue if it can't be started immediately."""
 
     job = Job(payload=payload, type=job_type, metadata=metadata)
+    processor = LLMSelector.get_job_processor(metadata.customer_id)
+
+    # encode the processor in the job id to avoid having to retrieve the whole job object
+    job.id += f':{processor.value}'
     job_id = job.id
 
     await db.set(job_id, Job.model_dump_json(job))
@@ -198,7 +202,20 @@ async def maybe_run_next_job() -> None:
     if not can_run_next_job():
         return
 
-    next_job_id = await db.lpop(PENDING_JOBS_KEY)
+    next_job_id = None
+
+    if use_vllm:
+        pending_jobs_keys = await db.lrange(PENDING_JOBS_KEY, 0, -1)
+
+        for job_id in pending_jobs_keys:
+            if job_id.endswith(Processors.LOCAL.value):
+                next_job_id = job_id
+                await db.lrem(PENDING_JOBS_KEY, 0, job_id)
+
+                break
+
+    if not next_job_id:
+        next_job_id = await db.lpop(PENDING_JOBS_KEY)
 
     await update_summary_queue_metric()
 
