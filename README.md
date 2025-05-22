@@ -89,6 +89,17 @@ If you want to contribute, make sure to install the pre-commit hook for linting.
 poetry run githooks setup
 ```
 
+## Running Tests
+
+Some tests rely on network resources that may be unavailable. Disable optional
+modules and bypass authorization when running locally:
+
+```bash
+export BYPASS_AUTHORIZATION=1
+export ENABLED_MODULES="summaries:dispatcher,summaries:executor"
+poetry run pytest -q
+```
+
 ## License
 
 Skynet is distributed under the Apache 2.0 License.
