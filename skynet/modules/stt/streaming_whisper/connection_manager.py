@@ -72,15 +72,20 @@ class ConnectionManager:
         to the next utterance when the participant resumes speaking.
         """
         while True:
-            for meeting_id in self.connections:
-                for participant in self.connections[meeting_id].participants:
-                    state = self.connections[meeting_id].participants[participant]
+            for meeting_id in list(self.connections):
+                meeting = self.connections.get(meeting_id)
+                if meeting is None:
+                    continue
+                for participant in list(meeting.participants):
+                    state = meeting.participants.get(participant)
+                    if state is None:
+                        continue
                     diff = utils.now() - state.last_received_chunk
                     log.debug(
                         f'Participant {participant} in meeting {meeting_id} has been silent for {diff} ms and has {len(state.working_audio)} bytes of audio'
                     )
                     if diff > whisper_flush_interval and len(state.working_audio) > 0 and not state.is_transcribing:
                         log.info(f'Forcing a transcription in meeting {meeting_id} for {participant}')
-                        results = await self.connections[meeting_id].force_transcription(participant)
+                        results = await meeting.force_transcription(participant)
                         await self.send(meeting_id, results)
             await asyncio.sleep(1)
