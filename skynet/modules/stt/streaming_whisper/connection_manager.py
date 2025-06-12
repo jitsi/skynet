@@ -4,9 +4,9 @@ from asyncio import Task
 from fastapi import WebSocket, WebSocketDisconnect
 
 from skynet.auth.jwt import authorize
-from skynet.env import bypass_auth, whisper_flush_interval, whisper_max_connections
+from skynet.env import bypass_auth, whisper_flush_interval
 from skynet.logs import get_logger
-from skynet.modules.monitoring import CONNECTIONS_METRIC, TRANSCRIBE_CONNECTIONS_COUNTER, TRANSCRIBE_STRESS_LEVEL_METRIC
+from skynet.modules.monitoring import dec_ws_conn_count, inc_ws_conn_count
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
 
@@ -33,9 +33,7 @@ class ConnectionManager:
         if self.flush_audio_task is None:
             loop = asyncio.get_running_loop()
             self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
-        CONNECTIONS_METRIC.set(len(self.connections))
-        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections) / whisper_max_connections)
-        TRANSCRIBE_CONNECTIONS_COUNTER.inc()
+        inc_ws_conn_count()
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
     async def process(self, meeting_id: str, chunk: bytes, chunk_timestamp: int):
@@ -62,8 +60,7 @@ class ConnectionManager:
             del self.connections[meeting_id]
         except KeyError:
             log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
-        CONNECTIONS_METRIC.set(len(self.connections))
-        TRANSCRIBE_STRESS_LEVEL_METRIC.set(len(self.connections) / whisper_max_connections)
+        dec_ws_conn_count()
 
     async def flush_working_audio_worker(self):
         """
