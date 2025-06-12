@@ -23,7 +23,7 @@ class ConnectionManager(BaseConnectionManager):
                         'language': 'en',
                     }
                 )
-                log.info(f'Participant {result.participant_id} result: {result.text}')
+                log.debug(f'Participant {result.participant_id} result: {result.text}')
             except WebSocketDisconnect as e:
                 log.warning(f'Session {session_id}: the connection was closed before sending all results: {e}')
                 self.disconnect(session_id)
