@@ -28,8 +28,9 @@ class FasterWhisperLogSuppressor(Filter):
         return not is_excluded
 
 
-logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
-logging.getLogger('faster_whisper').addFilter(FasterWhisperLogSuppressor())
+if log_level != 'DEBUG':
+    logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
+    logging.getLogger('faster_whisper').addFilter(FasterWhisperLogSuppressor())
 
 
 sh = logging.StreamHandler(sys.stdout)
