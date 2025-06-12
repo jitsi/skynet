@@ -139,7 +139,6 @@ class ConnectionManager:
                             if diff >= transcribe_after_s:
                                 audio = state.working_audio
                                 start_timestamp = state.working_audio_starts_at
-                                state.reset()
                                 participant_id = participant
                                 if not await aiofiles.os.path.exists(f'{recording_audio_folder}'):
                                     try:
@@ -158,6 +157,7 @@ class ConnectionManager:
                                     )
                                     await asyncio.sleep(sleep_for)
                                     continue
+                                state.reset()
                                 metadata = {
                                     'meeting_id': meeting_id,
                                     'participant_id': participant_id,
