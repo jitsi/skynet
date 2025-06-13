@@ -18,7 +18,19 @@ class AccessLogSuppressor(Filter):
         return not is_excluded
 
 
-logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
+# Suppress logs from faster_whisper
+class FasterWhisperLogSuppressor(Filter):
+    exclude_messages = ('Processing audio with duration',)
+
+    def filter(self, record: LogRecord) -> bool:
+        log_msg = record.getMessage()
+        is_excluded = any(excluded in log_msg for excluded in self.exclude_messages)
+        return not is_excluded
+
+
+if log_level != 'DEBUG':
+    logging.getLogger('uvicorn.access').addFilter(AccessLogSuppressor())
+    logging.getLogger('faster_whisper').addFilter(FasterWhisperLogSuppressor())
 
 
 sh = logging.StreamHandler(sys.stdout)
