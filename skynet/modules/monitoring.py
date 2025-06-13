@@ -1,6 +1,8 @@
 from prometheus_client import Counter, Gauge, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
+from skynet.env import whisper_max_connections
+
 PROMETHEUS_NAMESPACE = 'Skynet'
 PROMETHEUS_SUMMARIES_SUBSYSTEM = 'Summaries'
 PROMETHEUS_STREAMING_WHISPER_SUBSYSTEM = 'Streaming_Whisper'
@@ -111,3 +113,29 @@ instrumentator.add(
     metrics.latency(buckets=[n for n in range(1, 6)]),
     metrics.requests(metric_namespace=PROMETHEUS_NAMESPACE, metric_subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM),
 )
+
+ws_connection_count = 0
+
+
+def inc_ws_conn_count():
+    global ws_connection_count
+    ws_connection_count += 1
+    CONNECTIONS_METRIC.set(ws_connection_count)
+    TRANSCRIBE_CONNECTIONS_COUNTER.inc()
+    set_ts_stress_level()
+
+
+def dec_ws_conn_count():
+    global ws_connection_count
+    if ws_connection_count > 0:
+        ws_connection_count -= 1
+    CONNECTIONS_METRIC.set(ws_connection_count)
+    set_ts_stress_level()
+
+
+def set_ts_stress_level():
+    global ws_connection_count
+    if ws_connection_count > 0:
+        TRANSCRIBE_STRESS_LEVEL_METRIC.set(ws_connection_count / whisper_max_connections)
+    else:
+        TRANSCRIBE_STRESS_LEVEL_METRIC.set(0.0)
