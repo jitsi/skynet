@@ -39,6 +39,8 @@ model = WhisperModel(
 
 one_byte_s = 0.00003125  # the equivalent of one byte in seconds for 16kHz audio, 2 bytes per sample, mono
 
+ws_connection_count = 0
+
 log.info('====== WHISPER MODEL INFO ======')
 log.info(f'Model: {path_or_model_name}')
 log.info(f'Multilingual: {model.model.is_multilingual}')
