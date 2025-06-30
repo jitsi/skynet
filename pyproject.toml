@@ -26,7 +26,7 @@ optional = true
 vllm = "0.7.3"
 
 [tool.poetry.dependencies]
-aioboto3 = "14.3.0"
+aioboto3 = "15.0.0"
 aiofiles = "24.1.0"
 aiohttp = "3.11.18"
 async-lru = "2.0.5"
