@@ -8,6 +8,7 @@ from pydantic import BaseModel, computed_field, Field
 from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.action_items import action_items_meeting
 from skynet.modules.ttt.summaries.prompts.summary import summary_meeting
+from skynet.modules.ttt.summaries.prompts.table_of_contents import table_of_contents_meeting
 
 
 class HintType(Enum):
@@ -41,6 +42,22 @@ class ActionItemsDocumentPayload(DocumentPayload):
                     'priority': 'normal',
                     'prompt': action_items_meeting,
                     'max_completion_tokens': None,
+                }
+            ]
+        }
+    }
+
+
+class TableOfContentsDocumentPayload(DocumentPayload):
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {
+                    'text': 'Your text here',
+                    'hint': 'meeting',
+                    'max_completion_tokens': None,
+                    'priority': 'normal',
+                    'prompt': table_of_contents_meeting,
                 }
             ]
         }
@@ -89,7 +106,8 @@ class JobType(Enum):
     ASSIST = 'assist'
     ACTION_ITEMS = 'action_items'
     SUMMARY = 'summary'
-    PROCESS_TEXT = 'process-text'
+    PROCESS_TEXT = 'process_text'
+    TABLE_OF_CONTENTS = 'table_of_contents'
 
 
 class Processors(Enum):

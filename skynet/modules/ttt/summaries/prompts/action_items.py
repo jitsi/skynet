@@ -1,41 +1,55 @@
 from skynet.constants import response_prefix
 
-action_items_emails = f"""
-    You are an AI assistant that will be provided with a transcript of a series of emails. You will extract a short list of specific, unique action items from that transcript.
-    An action item can be defined when someone commits to doing something in the future, or when someone charges someone one else to do something in the future.
+body = f"""
+    Instructions:
 
-    Example 1: If Andrew says "I will send you the report by tomorrow", then the action item would be "- Andrew will send the report by tomorrow".
-    Example 2: If George says "As an action item for Michael, don't forget to send the report by tomorrow", then the action item would be "- Michael will send the report by tomorrow".
+    You are an AI assistant. From the following meeting transcript, extract only the action items.
+
+    Instructions:
+
+    1. Return a list of action items that are either explicitly assigned or clearly implied.
+    2. Each item should be one line, formatted as:
+    <Task Description> [Owner]
+    3. If the owner is not explicitly mentioned, omit it — do not guess.
+    4. Do not repeat or rephrase items multiple times.
+    5. Format the result as plain text with one action item per line. Do not include explanations, revisions, bullets, or headings.
+
+    Example output:
+
+    Fix closed captions bug before next release  
+    Review file sharing permissions [Mihaela Dumitru]  
+    Create drag-and-drop upload demo [Cãlin]  
+    Discuss storage limits with backend team [damencho]
 
     If there are no action items, respond just with "No action items", else start your response with "{response_prefix}", followed by the list of action items.
+    Now extract all action items from this transcript:
+"""
+
+
+def get_header(transcript_type: str) -> str:
+    return f"You are an AI assistant. Your task is to extract all action items from the following {transcript_type} transcript."
+
+
+action_items_emails = f"""
+    {get_header("emails")}
+
+    {body}
 """
 
 action_items_conversation = f"""
-    You are an AI assistant that will be provided with a conversation transcript. You will extract a short list of specific, unique action items from that transcript.
-    An action item can be defined when someone commits to doing something in the future, or when someone charges someone one else to do something in the future.
+    {get_header("conversation")}
 
-    Example 1: If Andrew says "I will send you the report by tomorrow", then the action item would be "- Andrew will send the report by tomorrow".
-    Example 2: If George says "As an action item for Michael, don't forget to send the report by tomorrow", then the action item would be "- Michael will send the report by tomorrow".
-
-    If there are no action items, respond just with "No action items", else start your response with "{response_prefix}", followed by the list of action items.
+    {body}
 """
 
 action_items_meeting = f"""
-    You are an AI assistant that will be provided with a text transcript of a meeting. You will extract a short list of specific, unique action items from that transcript.
-    An action item can be defined when someone commits to doing something in the future, or when someone charges someone one else to do something in the future.
+    {get_header("meeting")}
 
-    Example 1: If Andrew says "I will send you the report by tomorrow", then the action item would be "- Andrew will send the report by tomorrow".
-    Example 2: If George says "As an action item for Michael, don't forget to send the report by tomorrow", then the action item would be "- Michael will send the report by tomorrow".
-
-    If there are no action items, respond just with "No action items", else start your response with "{response_prefix}", followed by the list of action items.
+    {body}
 """
 
 action_items_text = f"""
-    You are an AI assistant that will be provided with a text or a document. You will extract a short list of specific, unique action items from that text.
-    An action item can be defined when someone commits to doing something in the future, or when someone charges someone one else to do something in the future.
+    {get_header("text or document")}
 
-    Example 1: If Andrew says "I will send you the report by tomorrow", then the action item would be "- Andrew will send the report by tomorrow".
-    Example 2: If George says "As an action item for Michael, don't forget to send the report by tomorrow", then the action item would be "- Michael will send the report by tomorrow".
-
-    If there are no action items, respond just with "No action items", else start your response with "{response_prefix}", followed by the list of action items.
+    {body}
 """

@@ -33,6 +33,12 @@ from skynet.modules.ttt.summaries.prompts.summary import (
     summary_meeting,
     summary_text,
 )
+from skynet.modules.ttt.summaries.prompts.table_of_contents import (
+    table_of_contents_conversation,
+    table_of_contents_emails,
+    table_of_contents_meeting,
+    table_of_contents_text,
+)
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType, Processors
 
 log = get_logger(__name__)
@@ -50,6 +56,12 @@ hint_type_to_prompt = {
         HintType.EMAILS: action_items_emails,
         HintType.MEETING: action_items_meeting,
         HintType.TEXT: action_items_text,
+    },
+    JobType.TABLE_OF_CONTENTS: {
+        HintType.CONVERSATION: table_of_contents_conversation,
+        HintType.EMAILS: table_of_contents_emails,
+        HintType.MEETING: table_of_contents_meeting,
+        HintType.TEXT: table_of_contents_text,
     },
 }
 
@@ -190,7 +202,7 @@ async def process(job: Job) -> str:
     try:
         if job_type == JobType.ASSIST:
             result = await assist(llm, payload, customer_id)
-        elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS]:
+        elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS, JobType.TABLE_OF_CONTENTS]:
             result = await summarize(llm, payload, job_type)
         elif job_type == JobType.PROCESS_TEXT:
             result = await process_text(llm, payload)
