@@ -105,6 +105,14 @@ OPENAI_API_RESTART_COUNTER = Counter(
     subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
 
+MAP_REDUCE_CHUNKING_COUNTER = Counter(
+    'map_reduce_chunking_total',
+    documentation='Number of times map-reduce chunking was used for long inputs',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['job_type'],
+)
+
 instrumentator = Instrumentator(
     excluded_handlers=["/healthz", "/metrics"],
 )
