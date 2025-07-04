@@ -15,6 +15,7 @@ from .models import (
     JobType,
     ProcessTextDocumentPayload,
     SummaryDocumentPayload,
+    TableOfContentsDocumentPayload,
 )
 
 router = get_router()
@@ -42,6 +43,16 @@ async def action_items(payload: ActionItemsDocumentPayload, request: Request) ->
     """
 
     return await create_job(job_type=JobType.ACTION_ITEMS, payload=payload, metadata=get_metadata(request))
+
+
+@api_version(1)
+@router.post("/table-of-contents", dependencies=[Depends(validate_summaries_payload)])
+async def table_of_contents(payload: TableOfContentsDocumentPayload, request: Request) -> JobId:
+    """
+    Starts a job to extract action items from the given payload.
+    """
+
+    return await create_job(job_type=JobType.TABLE_OF_CONTENTS, payload=payload, metadata=get_metadata(request))
 
 
 @api_version(1)
