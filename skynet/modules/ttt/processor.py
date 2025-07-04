@@ -16,6 +16,7 @@ from skynet.constants import response_prefix
 
 from skynet.env import llama_n_ctx, modules, use_oci
 from skynet.logs import get_logger
+from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload
@@ -158,6 +159,9 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
         chunk_size = num_tokens // num_chunks
 
         log.info(f'Splitting text into {num_chunks} chunks of {chunk_size} tokens')
+
+        # Record map-reduce chunking metric
+        MAP_REDUCE_CHUNKING_COUNTER.labels(job_type=job_type.value).inc()
 
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=100)
         docs = text_splitter.create_documents([text])
