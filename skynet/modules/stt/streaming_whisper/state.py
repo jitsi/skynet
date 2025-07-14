@@ -70,29 +70,35 @@ class State:
                 log.debug(f'Participant {self.participant_id}: cut mark set at {cut_mark_bytes} bytes')
                 final_start_timestamp = self.working_audio_starts_at + int(final_starts_at * 1000)
                 final_audio = None
+
+                # Store the current timeline position before trimming
+                timeline_before_trim = self.working_audio_starts_at
                 final_raw_audio = self.trim_working_audio(cut_mark_bytes)
+
                 if return_audio:
                     final_audio_length = utils.convert_bytes_to_seconds(final_raw_audio)
                     final_audio = utils.get_wav_header([final_raw_audio], final_audio_length) + final_raw_audio
                 results.append(
                     self.get_response_payload(
-                        final, final_start_timestamp, final_audio, True, probability=last_pause.probability
+                        final.strip(), final_start_timestamp, final_audio, True, probability=last_pause.probability
                     )
                 )
-                # advance the start timestamp of the working audio to the start of the interim
-                if self.working_audio_starts_at:
-                    self.working_audio_starts_at += int(last_pause.end * 1000)
+
+                # Only advance timeline if there's interim speech remaining
+                # If no interim, let next chunk start fresh when participant speaks again
+                if interim.strip():
+                    self.working_audio_starts_at = timeline_before_trim + int(last_pause.end * 1000)
             else:
                 # return everything as interim if failed to slice and acquire cut mark
                 results.append(
                     self.get_response_payload(
-                        final + interim, self.working_audio_starts_at + int(ts_result.words[0].start * 1000)
+                        (final + interim).strip(), self.working_audio_starts_at + int(ts_result.words[0].start * 1000)
                     )
                 )
                 return results
         if interim.strip() != '':
             results.append(
-                self.get_response_payload(interim, self.working_audio_starts_at + int(interim_starts_at * 1000))
+                self.get_response_payload(interim.strip(), self.working_audio_starts_at + int(interim_starts_at * 1000))
             )
         return results
 
@@ -110,7 +116,7 @@ class State:
                 final_audio = utils.get_wav_header([self.working_audio], final_audio_length) + self.working_audio
             results.append(
                 self.get_response_payload(
-                    ts_result.text,
+                    ts_result.text.strip(),
                     start_timestamp,
                     final_audio,
                     True,
