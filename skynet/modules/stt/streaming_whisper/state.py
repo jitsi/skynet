@@ -84,9 +84,9 @@ class State:
                     )
                 )
 
-                # Always advance the timeline, regardless of whether buffer became empty
-                # Use the timeline position from before trimming to ensure continuity
-                if timeline_before_trim > 0:
+                # Only advance timeline if there's interim speech remaining
+                # If no interim, let next chunk start fresh when participant speaks again
+                if interim.strip():
                     self.working_audio_starts_at = timeline_before_trim + int(last_pause.end * 1000)
             else:
                 # return everything as interim if failed to slice and acquire cut mark
