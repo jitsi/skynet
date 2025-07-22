@@ -31,7 +31,17 @@ async def save_files(folder: str, files: list[UploadFile]) -> list[str]:
     os.makedirs(folder, exist_ok=True)
 
     for file in files:
-        file_path = f'{folder}/{file.filename}'
+        if not file.filename:
+            raise ValueError("File must have a filename")
+
+        # Construct the file path and validate it stays within the intended folder
+        file_path = os.path.join(folder, file.filename)
+        resolved_path = os.path.abspath(os.path.realpath(file_path))
+        resolved_folder = os.path.abspath(os.path.realpath(folder))
+
+        if not resolved_path.startswith(resolved_folder + os.sep):
+            raise ValueError(f"Invalid file path: {file.filename}")
+
         async with aiofiles.open(file_path, 'wb') as f:
             await f.write(await file.read())
         file_paths.append(file_path)
