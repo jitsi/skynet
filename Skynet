@@ -1,0 +1,15 @@
+# Enable authorization
+export BYPASS_AUTHORIZATION=1
+
+# start Redis
+docker run -d --rm -p 6379:6379 redis
+
+# If using vLLM (running on NVIDIA GPU)
+export LLAMA_PATH="$HOME/models/Llama-3.1-8B-Instruct"
+poetry install --with vllm
+
+# If using Ollama
+export LLAMA_PATH="llama.3.1"
+poetry install
+
+./run.sh
