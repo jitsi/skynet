@@ -5,7 +5,8 @@ from typing import List
 
 from skynet.env import (
     whisper_return_transcribed_audio as return_audio,
-    vad_min_silence_duration
+    vad_min_silence_duration,
+    vad_min_speech_duration
 )
 
 from skynet.logs import get_logger
