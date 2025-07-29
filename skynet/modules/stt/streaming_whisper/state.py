@@ -3,7 +3,10 @@ import base64
 import time
 from typing import List
 
-from skynet.env import whisper_return_transcribed_audio as return_audio
+from skynet.env import (
+    whisper_return_transcribed_audio as return_audio,
+    vad_min_silence_duration
+)
 
 from skynet.logs import get_logger
 from skynet.modules.monitoring import TRANSCRIBE_DURATION_METRIC
@@ -147,10 +150,15 @@ class State:
         _, speech_timestamps = utils.is_silent(tmp_working_audio)
         log.debug(f'## Participant {self.participant_id}: speech timestamps {speech_timestamps}')
         log.debug(f'## Participant {self.participant_id}: last speech timestamp {self.last_speech_timestamp}')
+        
+        # Enhanced VAD validation - check if speech segment is valid
+        is_valid_speech = utils.is_speech_segment_valid(speech_timestamps, vad_min_speech_duration)
+        log.debug(f'## Participant {self.participant_id}: valid speech segment: {is_valid_speech}')
+        
         # if, after adding the chunk, Silero VAD detects that
-        # the last speech timestamp has changed
+        # the last speech timestamp has changed and speech is valid
         # update the buffer and the last received chunk timestamp
-        if speech_timestamps and speech_timestamps[-1]['end'] != self.last_speech_timestamp:
+        if speech_timestamps and speech_timestamps[-1]['end'] != self.last_speech_timestamp and is_valid_speech:
             self.last_speech_timestamp = speech_timestamps[-1]['end']
             self.last_received_chunk = now_millis
             self.working_audio = tmp_working_audio
@@ -161,11 +169,11 @@ class State:
             # if the last word timestamp is the same as the previous one
             # the chunk is silent
             self.silent_chunks += 1
-            # if the chunk is silent and the last word timestamp is older than 1s
+            # if the chunk is silent and the last word timestamp is older than minimum silence duration
             # set the long silence flag
             audio_length_seconds = utils.convert_bytes_to_seconds(tmp_working_audio)
-            if speech_timestamps and audio_length_seconds - speech_timestamps[-1]['end'] >= 1:
-                log.debug(f'## Participant {self.participant_id}: long silence detected')
+            if speech_timestamps and audio_length_seconds - speech_timestamps[-1]['end'] >= vad_min_silence_duration:
+                log.debug(f'## Participant {self.participant_id}: long silence detected (>{vad_min_silence_duration}s)')
                 self.long_silence = True
 
         log.debug(

@@ -10,7 +10,14 @@ from silero_vad import get_speech_timestamps, read_audio
 from uuid6 import UUID
 
 import skynet.modules.stt.streaming_whisper.cfg as cfg
-from skynet.env import whisper_beam_size, whisper_min_probability
+from skynet.env import (
+    whisper_beam_size, 
+    whisper_min_probability,
+    vad_threshold,
+    vad_min_speech_duration,
+    vad_min_silence_duration,
+    vad_speech_pad
+)
 from skynet.logs import get_logger
 
 log = get_logger(__name__)
@@ -201,10 +208,37 @@ def is_silent(audio: bytes) -> Tuple[bool, iter]:
     wav_header = get_wav_header([audio], chunk_duration_s=chunk_duration)
     stream = wav_header + b'' + audio
     audio = read_audio(stream)
-    st = get_speech_timestamps(audio, model=cfg.vad_model, return_seconds=True)
-    log.debug(f'Detected speech timestamps: {st}')
+    
+    # Enhanced VAD with configurable parameters
+    st = get_speech_timestamps(
+        audio, 
+        model=cfg.vad_model, 
+        return_seconds=True,
+        threshold=vad_threshold,
+        min_speech_duration_ms=int(vad_min_speech_duration * 1000),
+        min_silence_duration_ms=int(vad_min_silence_duration * 1000),
+        speech_pad_ms=int(vad_speech_pad * 1000)
+    )
+    
+    log.debug(f'Enhanced VAD - Detected speech timestamps: {st}')
+    log.debug(f'VAD Settings - Threshold: {vad_threshold}, Min Speech: {vad_min_speech_duration}s, Min Silence: {vad_min_silence_duration}s')
+    
     silent = True if len(st) == 0 else False
     return silent, st
+
+
+def is_speech_segment_valid(speech_timestamps: list, min_duration: float = 0.1) -> bool:
+    """
+    Check if speech segment meets minimum duration requirements
+    """
+    if not speech_timestamps:
+        return False
+    
+    total_speech_duration = sum(
+        segment['end'] - segment['start'] for segment in speech_timestamps
+    )
+    
+    return total_speech_duration >= min_duration
 
 
 def get_phrase_prob(last_word_idx: int, words: list[WhisperWord]) -> float:

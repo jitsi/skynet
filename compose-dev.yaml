@@ -1,23 +1,28 @@
+root@ip-172-31-24-217:/opt/skynet# cat compose-dev.yaml
 services:
     web:
         build:  .
         environment:
             - BYPASS_AUTHORIZATION=true
             - REDIS_HOST=redis
-            - LLAMA_PATH=/models/Llama-3.1-8B-Instruct-W8A8-Dynamic-Per-Token
-            - LLAMA_N_CTX=80000
+            - ENABLED_MODULES=streaming_whisper
+            - WHISPER_MODEL_NAME=tiny
+            - WHISPER_MODEL_PATH=/models/streaming-whisper
+            
+            # VAD (Voice Activity Detection) Ayarları
+            - VAD_THRESHOLD=0.5
+            - VAD_MIN_SPEECH_DURATION=0.1
+            - VAD_MIN_SILENCE_DURATION=0.5
+            - VAD_SPEECH_PAD=0.1
+            
+            # Whisper Buffer Ayarları
+            - WHISPER_FLUSH_BUFFER_INTERVAL=2000
         platform: linux/amd64
-        deploy:
-          resources:
-            reservations:
-              devices:
-                - driver: nvidia
-                  device_ids: ['0']
-                  capabilities: [gpu]
         ports:
             - "8000:8000"
             - "8001:8001"
-            - "8003:8003"
+        volumes:
+            - ./models/streaming-whisper:/models/streaming-whisper
     redis:
         image: "redis:alpine"
         platform: linux/amd64
