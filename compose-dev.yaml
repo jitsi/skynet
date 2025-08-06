@@ -16,22 +16,23 @@ services:
       - BYPASS_AUTHORIZATION=1
       - ENABLED_MODULES=streaming_whisper
       - WHISPER_DEVICE=cpu
-      - WHISPER_MODEL_NAME=medium
+      - WHISPER_MODEL_NAME=large-v3                   # Kalite artışı: medium -> large-v3
       - WHISPER_MODEL_PATH=/models/streaming-whisper
       - WHISPER_TASK=transcribe
-      - BEAM_SIZE=5
-      - WHISPER_CHUNK_MS=1500
-      - WHISPER_STRIDE_MS=200
+      - BEAM_SIZE=10                                   # Kalite artışı: 5 -> 10
+      - WHISPER_CHUNK_MS=2000                          # Daha uzun context: 1500 -> 2000
+      - WHISPER_STRIDE_MS=300                          # Daha iyi overlap: 200 -> 300
       - WHISPER_STREAM_PARTIAL=true
       - STREAMING_WHISPER_VAD_BACKEND=webrtc
-      - STREAMING_WHISPER_VAD_MODE=3
+      - STREAMING_WHISPER_VAD_MODE=2                   # Daha hassas: 3 -> 2
       - STREAMING_WHISPER_WINDOW_SIZE_SAMPLES=320
-      - STREAMING_WHISPER_MIN_SILENCE_DURATION_MS=600
-      - STREAMING_WHISPER_SPEECH_PAD_MS=200
+      - STREAMING_WHISPER_MIN_SILENCE_DURATION_MS=400  # Daha kısa sessizlik: 600 -> 400
+      - STREAMING_WHISPER_SPEECH_PAD_MS=300            # Daha fazla padding: 200 -> 300
       - STREAMING_WHISPER_SAVE_TRANSCRIPTS=true
       - STREAMING_WHISPER_OUTPUT_DIR=/opt/transcripts
       - STREAMING_WHISPER_OUTPUT_FORMATS=jsonl,srt
       - STREAMING_WHISPER_FLUSH_INTERVAL_MS=10000
+      - WHISPER_MIN_PROBABILITY=0.8                    # Yeni: Düşük güvenilirlikli sonuçları filtrele
 
   redis:
     image: redis:alpine
