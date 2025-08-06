@@ -1,27 +1,37 @@
 services:
-    web:
-        build:  .
-        environment:
-            - BYPASS_AUTHORIZATION=true
-            - REDIS_HOST=redis
-            - ENABLED_MODULES=streaming_whisper
-            - WHISPER_MODEL_NAME=tiny
-            - WHISPER_MODEL_PATH=/models/streaming-whisper
-            
-            # VAD (Voice Activity Detection) Ayarları
-            - VAD_THRESHOLD=0.5
-            - VAD_MIN_SPEECH_DURATION=0.1
-            - VAD_MIN_SILENCE_DURATION=0.5
-            - VAD_SPEECH_PAD=0.1
-            
-            # Whisper Buffer Ayarları
-            - WHISPER_FLUSH_BUFFER_INTERVAL=2000
-        platform: linux/amd64
-        ports:
-            - "8000:8000"
-            - "8001:8001"
-        volumes:
-            - ./models/streaming-whisper:/models/streaming-whisper
-    redis:
-        image: "redis:alpine"
-        platform: linux/amd64
+  web:
+    build: .
+    platform: linux/amd64
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./models/streaming-whisper:/models/streaming-whisper
+      - ./transcripts:/opt/transcripts
+    environment:
+      - REDIS_HOST=redis
+      - HTTP_PORT=8000
+      - METRICS_PORT=8001
+      - BYPASS_AUTHORIZATION=1
+      - ENABLED_MODULES=streaming_whisper
+      - WHISPER_DEVICE=cpu
+      - WHISPER_MODEL_NAME=medium
+      - WHISPER_MODEL_PATH=/models/streaming-whisper
+      - WHISPER_TASK=transcribe
+      - BEAM_SIZE=5
+      - WHISPER_CHUNK_MS=1500
+      - WHISPER_STRIDE_MS=200
+      - WHISPER_STREAM_PARTIAL=true
+      - STREAMING_WHISPER_VAD_BACKEND=webrtc
+      - STREAMING_WHISPER_VAD_MODE=3
+      - STREAMING_WHISPER_WINDOW_SIZE_SAMPLES=320
+      - STREAMING_WHISPER_MIN_SILENCE_DURATION_MS=600
+      - STREAMING_WHISPER_SPEECH_PAD_MS=200
+      - STREAMING_WHISPER_SAVE_TRANSCRIPTS=true
+      - STREAMING_WHISPER_OUTPUT_DIR=/opt/transcripts
+      - STREAMING_WHISPER_OUTPUT_FORMATS=jsonl,srt,txt
+      - STREAMING_WHISPER_FLUSH_INTERVAL_MS=10000
+
+  redis:
+    image: redis:alpine
+    platform: linux/amd64

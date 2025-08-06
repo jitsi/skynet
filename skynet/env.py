@@ -115,6 +115,12 @@ vad_min_speech_duration = float(os.environ.get('VAD_MIN_SPEECH_DURATION', 0.1)) 
 vad_min_silence_duration = float(os.environ.get('VAD_MIN_SILENCE_DURATION', 0.5))  # Minimum silence duration in seconds
 vad_speech_pad = float(os.environ.get('VAD_SPEECH_PAD', 0.1))  # Padding around speech segments
 
+# Streaming Whisper transcript saving settings
+streaming_whisper_save_transcripts = tobool(os.environ.get('STREAMING_WHISPER_SAVE_TRANSCRIPTS', 'false'))
+streaming_whisper_output_dir = os.environ.get('STREAMING_WHISPER_OUTPUT_DIR', '/opt/transcripts')
+streaming_whisper_output_formats = os.environ.get('STREAMING_WHISPER_OUTPUT_FORMATS', 'jsonl,srt').split(',')
+streaming_whisper_flush_interval_ms = int(os.environ.get('STREAMING_WHISPER_FLUSH_INTERVAL_MS', 10000))
+
 # jobs
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 max_concurrency = int(os.environ.get('MAX_CONCURRENCY', 30))

@@ -29,7 +29,7 @@ class ConnectionManager:
                 await websocket.close(401, 'Bad JWT token')
                 return
         await websocket.accept()
-        self.connections[meeting_id] = MeetingConnection(websocket)
+        self.connections[meeting_id] = MeetingConnection(websocket, meeting_id)
         if self.flush_audio_task is None:
             loop = asyncio.get_running_loop()
             self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
@@ -51,12 +51,15 @@ class ConnectionManager:
                     await self.connections[meeting_id].ws.send_json(result.model_dump())
                 except WebSocketDisconnect as e:
                     log.warning(f'Meeting {meeting_id}: the connection was closed before sending all results: {e}')
-                    self.disconnect(meeting_id)
+                    await self.disconnect(meeting_id)
                 except Exception as ex:
                     log.error(f'Meeting {meeting_id}: exception while sending transcription results {ex}')
 
-    def disconnect(self, meeting_id: str):
+    async def disconnect(self, meeting_id: str):
         try:
+            # Meeting sonlandığında transcript kaydetme işlemini tamamla
+            if meeting_id in self.connections:
+                await self.connections[meeting_id].finalize()
             del self.connections[meeting_id]
         except KeyError:
             log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')

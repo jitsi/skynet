@@ -19,13 +19,13 @@ async def websocket_endpoint(websocket: WebSocket, meeting_id: str, auth_token: 
                 chunk = await websocket.receive_bytes()
             except Exception as err:
                 log.warning(f'Expected bytes, received something else, disconnecting {meeting_id}. Error: \n{err}')
-                ws_connection_manager.disconnect(meeting_id)
+                await ws_connection_manager.disconnect(meeting_id)
                 break
             if len(chunk) == 1 and ord(b'' + chunk) == 0:
                 log.info(f'Received disconnect message for {meeting_id}')
-                ws_connection_manager.disconnect(meeting_id)
+                await ws_connection_manager.disconnect(meeting_id)
                 break
             await ws_connection_manager.process(meeting_id, chunk, utils.now())
     except WebSocketDisconnect:
-        ws_connection_manager.disconnect(meeting_id)
+        await ws_connection_manager.disconnect(meeting_id)
         log.info(f'Meeting {meeting_id} has ended')
