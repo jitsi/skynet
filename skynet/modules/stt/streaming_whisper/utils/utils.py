@@ -396,7 +396,10 @@ def save_transcript_to_file(meeting_id: str, transcript_response: 'Transcription
     Saves transcript to file based on meeting_id and configured formats.
     Creates folders by meeting name (room name).
     """
+    log.info(f'save_transcript_to_file called for meeting {meeting_id}, save_enabled: {streaming_whisper_save_transcripts}')
+    
     if not streaming_whisper_save_transcripts:
+        log.debug(f'Transcript saving disabled, skipping save for meeting {meeting_id}')
         return
     
     try:

@@ -2,12 +2,13 @@ services:
   web:
     build: .
     platform: linux/amd64
+    user: "0:0"  # Root user to avoid permission issues
     ports:
       - "8000:8000"
       - "8001:8001"
     volumes:
       - ./models/streaming-whisper:/models/streaming-whisper
-      - ./transcripts:/opt/transcripts
+      - ./transcripts:/opt/transcripts:rw
     environment:
       - REDIS_HOST=redis
       - HTTP_PORT=8000

@@ -120,6 +120,9 @@ VOLUME [ "/models" ]
 WORKDIR ${PYTHONPATH}
 RUN chown jitsi:jitsi ${PYTHONPATH}
 
+# Create transcripts directory and set permissions
+RUN mkdir -p /opt/transcripts && chown -R jitsi:jitsi /opt/transcripts
+
 # Document the exposed port
 EXPOSE 8000
 
