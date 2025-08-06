@@ -102,24 +102,31 @@ ws_max_size_bytes = int(os.environ.get('WS_MAX_SIZE_BYTES', 1000000))
 ws_max_queue_size = int(os.environ.get('WS_MAX_QUEUE_SIZE', 3000))
 ws_max_ping_interval = int(os.environ.get('WS_MAX_PING_INTERVAL', 30))
 ws_max_ping_timeout = int(os.environ.get('WS_MAX_PING_TIMEOUT', 30))
-# The maximum number of final transcriptions to include in the initial prompt.
+
 # This is used to provide some context to the model
 # The larger the initial prompt (max 224 tokens), the slower the inference.
 whisper_max_finals_in_initial_prompt = int(os.environ.get('WHISPER_MAX_FINALS_IN_INITIAL_PROMPT', 2))
 # The period in milliseconds to flush the buffer after no new spoken audio is detected
 whisper_flush_interval = int(os.environ.get('WHISPER_FLUSH_BUFFER_INTERVAL', 2000))
 
-# VAD (Voice Activity Detection) settings
+# Transcript saving settings
+streaming_whisper_save_transcripts = tobool(os.environ.get('STREAMING_WHISPER_SAVE_TRANSCRIPTS', 'false'))
+streaming_whisper_output_dir = os.environ.get('STREAMING_WHISPER_OUTPUT_DIR', '/tmp/transcripts')
+streaming_whisper_output_formats = os.environ.get('STREAMING_WHISPER_OUTPUT_FORMATS', 'jsonl').split(',')
+streaming_whisper_flush_interval_ms = int(os.environ.get('STREAMING_WHISPER_FLUSH_INTERVAL_MS', 10000))
+
+# VAD (Voice Activity Detection) settings - legacy
 vad_threshold = float(os.environ.get('VAD_THRESHOLD', 0.5))  # VAD sensitivity (0.0-1.0)
 vad_min_speech_duration = float(os.environ.get('VAD_MIN_SPEECH_DURATION', 0.1))  # Minimum speech duration in seconds
 vad_min_silence_duration = float(os.environ.get('VAD_MIN_SILENCE_DURATION', 0.5))  # Minimum silence duration in seconds
 vad_speech_pad = float(os.environ.get('VAD_SPEECH_PAD', 0.1))  # Padding around speech segments
 
-# Streaming Whisper transcript saving settings
-streaming_whisper_save_transcripts = tobool(os.environ.get('STREAMING_WHISPER_SAVE_TRANSCRIPTS', 'false'))
-streaming_whisper_output_dir = os.environ.get('STREAMING_WHISPER_OUTPUT_DIR', '/opt/transcripts')
-streaming_whisper_output_formats = os.environ.get('STREAMING_WHISPER_OUTPUT_FORMATS', 'jsonl,srt').split(',')
-streaming_whisper_flush_interval_ms = int(os.environ.get('STREAMING_WHISPER_FLUSH_INTERVAL_MS', 10000))
+# VAD (Voice Activity Detection) settings - streaming whisper specific
+streaming_whisper_vad_backend = os.environ.get('STREAMING_WHISPER_VAD_BACKEND', 'webrtc')
+streaming_whisper_vad_mode = int(os.environ.get('STREAMING_WHISPER_VAD_MODE', 3))
+streaming_whisper_window_size_samples = int(os.environ.get('STREAMING_WHISPER_WINDOW_SIZE_SAMPLES', 320))
+streaming_whisper_min_silence_duration_ms = int(os.environ.get('STREAMING_WHISPER_MIN_SILENCE_DURATION_MS', 600))
+streaming_whisper_speech_pad_ms = int(os.environ.get('STREAMING_WHISPER_SPEECH_PAD_MS', 200))
 
 # jobs
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default

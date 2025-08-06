@@ -1,9 +1,19 @@
+import json
+import math
+import os
+import re
 import secrets
+import tempfile
 import time
+import uuid
 from datetime import datetime, timezone
-from typing import List, Tuple
+from io import BytesIO
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 import numpy as np
+import torch
+import torchaudio
 from numpy import ndarray
 from pydantic import BaseModel
 from silero_vad import get_speech_timestamps, read_audio
@@ -16,7 +26,10 @@ from skynet.env import (
     vad_threshold,
     vad_min_speech_duration,
     vad_min_silence_duration,
-    vad_speech_pad
+    vad_speech_pad,
+    streaming_whisper_save_transcripts,
+    streaming_whisper_output_dir,
+    streaming_whisper_output_formats,
 )
 from skynet.logs import get_logger
 
@@ -376,3 +389,97 @@ def get_jwt(ws_headers, ws_url_param=None) -> str:
     if auth_header is not None:
         return auth_header.split(' ')[-1]
     return ws_url_param if ws_url_param is not None else ''
+
+
+def save_transcript_to_file(meeting_id: str, transcript_response: 'TranscriptionResponse'):
+    """
+    Saves transcript to file based on meeting_id and configured formats.
+    Creates folders by meeting name (room name).
+    """
+    if not streaming_whisper_save_transcripts:
+        return
+    
+    try:
+        # Create meeting-specific directory
+        meeting_dir = Path(streaming_whisper_output_dir) / meeting_id
+        meeting_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.fromtimestamp(transcript_response.ts / 1000.0, tz=timezone.utc)
+        
+        for format_type in streaming_whisper_output_formats:
+            format_type = format_type.strip().lower()
+            
+            if format_type == 'jsonl':
+                save_transcript_jsonl(meeting_dir, transcript_response, timestamp)
+            elif format_type == 'srt':
+                save_transcript_srt(meeting_dir, transcript_response, timestamp)
+            else:
+                log.warning(f'Unsupported transcript format: {format_type}')
+                
+    except Exception as e:
+        log.error(f'Failed to save transcript for meeting {meeting_id}: {e}')
+
+
+def save_transcript_jsonl(meeting_dir: Path, transcript_response: 'TranscriptionResponse', timestamp: datetime):
+    """Save transcript in JSONL format"""
+    jsonl_file = meeting_dir / f'{meeting_dir.name}.jsonl'
+    
+    transcript_data = {
+        'id': transcript_response.id,
+        'participant_id': transcript_response.participant_id,
+        'timestamp': transcript_response.ts,
+        'timestamp_iso': timestamp.isoformat(),
+        'text': transcript_response.text,
+        'type': transcript_response.type,
+        'variance': transcript_response.variance
+    }
+    
+    with open(jsonl_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(transcript_data, ensure_ascii=False) + '\n')
+    
+    log.debug(f'Saved transcript to JSONL: {jsonl_file}')
+
+
+def save_transcript_srt(meeting_dir: Path, transcript_response: 'TranscriptionResponse', timestamp: datetime):
+    """Save transcript in SRT format (only final transcriptions)"""
+    if transcript_response.type != 'final':
+        return
+        
+    srt_file = meeting_dir / f'{meeting_dir.name}.srt'
+    
+    # Read existing SRT to get the next subtitle number
+    subtitle_number = 1
+    if srt_file.exists():
+        try:
+            with open(srt_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Count existing subtitles by counting subtitle numbers
+                subtitle_numbers = re.findall(r'^(\d+)$', content, re.MULTILINE)
+                if subtitle_numbers:
+                    subtitle_number = max(int(num) for num in subtitle_numbers) + 1
+        except Exception as e:
+            log.warning(f'Failed to read existing SRT file: {e}')
+    
+    # Estimate duration (you may want to adjust this based on your needs)
+    estimated_duration_ms = len(transcript_response.text.split()) * 500  # ~500ms per word
+    start_time_ms = transcript_response.ts
+    end_time_ms = start_time_ms + estimated_duration_ms
+    
+    def format_srt_timestamp(timestamp_ms):
+        """Convert milliseconds to SRT timestamp format (HH:MM:SS,mmm)"""
+        total_seconds = timestamp_ms / 1000.0
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        seconds = int(total_seconds % 60)
+        milliseconds = int((total_seconds % 1) * 1000)
+        return f'{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}'
+    
+    start_timestamp = format_srt_timestamp(start_time_ms)
+    end_timestamp = format_srt_timestamp(end_time_ms)
+    
+    subtitle_entry = f'\n{subtitle_number}\n{start_timestamp} --> {end_timestamp}\n{transcript_response.text}\n'
+    
+    with open(srt_file, 'a', encoding='utf-8') as f:
+        f.write(subtitle_entry)
+    
+    log.debug(f'Saved transcript to SRT: {srt_file}')

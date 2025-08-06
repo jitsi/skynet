@@ -12,7 +12,6 @@ from skynet.modules.stt.streaming_whisper.cfg import model
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
-from skynet.modules.stt.streaming_whisper.utils.transcript_saver import TranscriptSaver
 
 log = get_logger(__name__)
 
@@ -23,17 +22,14 @@ class MeetingConnection:
     previous_transcription_store: List[List[int]]
     tokenizer: Tokenizer | None
     meeting_language: str | None
-    transcript_saver: TranscriptSaver | None
 
-    def __init__(self, ws: WebSocket, meeting_id: str):
+    def __init__(self, ws: WebSocket):
         self.participants = {}
         self.ws = ws
-        self.meeting_id = meeting_id
         self.previous_transcription_tokens = []
         self.previous_transcription_store = []
         self.meeting_language = None
         self.tokenizer = None
-        self.transcript_saver = TranscriptSaver(meeting_id)
 
     async def update_initial_prompt(self, previous_payloads: list[utils.TranscriptionResponse]):
         for payload in previous_payloads:
@@ -43,10 +39,6 @@ class MeetingConnection:
                     self.previous_transcription_store.pop(0)
                 # flatten the list of lists
                 self.previous_transcription_tokens = list(chain.from_iterable(self.previous_transcription_store))
-            
-            # Transcript kaydetme
-            if self.transcript_saver:
-                self.transcript_saver.add_transcript(payload)
 
     async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
         a_chunk = Chunk(chunk, chunk_timestamp)
@@ -76,8 +68,3 @@ class MeetingConnection:
                 await self.update_initial_prompt(payloads)
             return payloads
         return None
-    
-    async def finalize(self):
-        """Meeting sonlandığında transcript kaydetme işlemini tamamlar"""
-        if self.transcript_saver:
-            await self.transcript_saver.finalize()
