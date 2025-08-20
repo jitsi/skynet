@@ -137,8 +137,8 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
 
     prompt = ChatPromptTemplate(
         [
-            ('system', set_response_language(payload.preferred_locale)),
             ('system', system_message),
+            ('system', set_response_language(payload.preferred_locale)),
             ('human', '{text}'),
         ]
     )
