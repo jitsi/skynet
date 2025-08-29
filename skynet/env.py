@@ -111,7 +111,7 @@ whisper_flush_interval = int(os.environ.get('WHISPER_FLUSH_BUFFER_INTERVAL', 200
 
 # jobs
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
-max_concurrency = int(os.environ.get('MAX_CONCURRENCY', 30))
+max_concurrency = int(os.environ.get('MAX_CONCURRENCY', 10))
 
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
