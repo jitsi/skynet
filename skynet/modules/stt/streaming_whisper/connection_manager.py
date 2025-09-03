@@ -37,21 +37,17 @@ class ConnectionManager:
         inc_ws_conn_count()
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
 
-    async def process(self, meeting_id: str, chunk: bytes, chunk_timestamp: int):
-        log.debug(f'Processing chunk for meeting {meeting_id}')
-        connections = [conn for conn in self.connections if conn.meeting_id == meeting_id]
-        if not connections:
-            log.warning(f'No such meeting id {meeting_id}, the connection was probably closed.')
-            return
+        return connection
+
+    async def process(self, connection: MeetingConnection, chunk: bytes, chunk_timestamp: int):
+        log.debug(f'Processing chunk for meeting {connection.meeting_id}')
         
-        # Process chunk for all connections with this meeting_id
-        for connection in connections:
-            try:
-                results = await connection.process(chunk, chunk_timestamp)
-                await self.send_to_connection(connection, results)
-            except Exception as e:
-                log.error(f'Error processing chunk for meeting {meeting_id}: {e}')
-                self.disconnect_connection(connection)
+        try:
+            results = await connection.process(chunk, chunk_timestamp)
+            await self.send_to_connection(connection, results)
+        except Exception as e:
+            log.error(f'Error processing chunk for meeting {connection.meeting_id}: {e}')
+            self.disconnect_connection(connection)
 
     async def send_to_connection(self, connection: MeetingConnection, results: list[utils.TranscriptionResponse] | None):
         if results is not None:
@@ -70,18 +66,20 @@ class ConnectionManager:
         for connection in connections:
             await self.send_to_connection(connection, results)
 
-    def disconnect_connection(self, connection: MeetingConnection):
+    async def disconnect_connection(self, connection: MeetingConnection, already_closed = False):
         try:
             self.connections.remove(connection)
         except ValueError:
             log.warning(f'The connection for meeting {connection.meeting_id} doesn\'t exist in the list anymore.')
+        if not already_closed:
+            await connection.close()
         dec_ws_conn_count()
 
-    def disconnect(self, meeting_id: str):
+    async def disconnect(self, meeting_id: str):
         """Disconnect all connections for a meeting_id"""
         connections_to_remove = [conn for conn in self.connections if conn.meeting_id == meeting_id]
         for connection in connections_to_remove:
-            self.disconnect_connection(connection)
+            await self.disconnect_connection(connection)
         if not connections_to_remove:
             log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
 

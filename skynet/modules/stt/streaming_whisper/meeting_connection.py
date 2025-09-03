@@ -23,6 +23,7 @@ class MeetingConnection:
     tokenizer: Tokenizer | None
     meeting_language: str | None
     meeting_id: str
+    ws: WebSocket
 
     def __init__(self, ws: WebSocket, meeting_id: str):
         self.participants = {}
@@ -70,3 +71,11 @@ class MeetingConnection:
                 await self.update_initial_prompt(payloads)
             return payloads
         return None
+
+    async def close(self):
+        try:
+            await self.ws.close()
+        except Exception as e:
+            log.debug(f'Websocket already closed.')
+            pass
+
