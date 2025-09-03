@@ -23,7 +23,7 @@ async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None
     decoder = PcmaDecoder()
     resampler = PcmResampler()
     session_id = utils.Uuid7().get()
-    await ws_connection_manager.connect(websocket, session_id, auth_token)
+    connection = await ws_connection_manager.connect(websocket, session_id, auth_token)
 
     data_map = dict()
     resampler = None
@@ -64,7 +64,7 @@ async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None
 
                     task = asyncio.create_task(
                         ws_connection_manager.process(
-                            session_id, participant['header'] + decoded_raw, media['timestamp']
+                            connection, participant['header'] + decoded_raw, media['timestamp']
                         )
                     )
 
@@ -75,7 +75,7 @@ async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None
                     participant['raw'] = b''
 
         except WebSocketDisconnect:
-            ws_connection_manager.disconnect(session_id)
+            ws_connection_manager.disconnect_connection(connection)
             data_map.clear()
             log.info(f'Session {session_id} has ended')
             break
