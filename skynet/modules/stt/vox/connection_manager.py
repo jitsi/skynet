@@ -13,19 +13,22 @@ class ConnectionManager(BaseConnectionManager):
             return
 
         final_results = [r for r in results if r.type == 'final']
-        for result in final_results:
-            try:
-                await self.connections[session_id].ws.send_json(
-                    {
-                        'timestamp': result.ts,
-                        'tag': result.participant_id,
-                        'final': result.text,
-                        'language': 'en',
-                    }
-                )
-                log.debug(f'Participant {result.participant_id} result: {result.text}')
-            except WebSocketDisconnect as e:
-                log.warning(f'Session {session_id}: the connection was closed before sending all results: {e}')
-                self.disconnect(session_id)
-            except Exception as ex:
-                log.error(f'Session {session_id}: exception while sending transcription results {ex}')
+        connections = [conn for conn in self.connections if conn.meeting_id == session_id]
+        
+        for connection in connections:
+            for result in final_results:
+                try:
+                    await connection.ws.send_json(
+                        {
+                            'timestamp': result.ts,
+                            'tag': result.participant_id,
+                            'final': result.text,
+                            'language': 'en',
+                        }
+                    )
+                    log.debug(f'Participant {result.participant_id} result: {result.text}')
+                except WebSocketDisconnect as e:
+                    log.warning(f'Session {session_id}: the connection was closed before sending all results: {e}')
+                    self.disconnect_connection(connection)
+                except Exception as ex:
+                    log.error(f'Session {session_id}: exception while sending transcription results {ex}')

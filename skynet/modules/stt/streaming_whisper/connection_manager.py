@@ -14,11 +14,11 @@ log = get_logger(__name__)
 
 
 class ConnectionManager:
-    connections: dict[str, MeetingConnection]
+    connections: list[MeetingConnection]
     flush_audio_task: Task | None
 
     def __init__(self):
-        self.connections: dict[str, MeetingConnection] = {}
+        self.connections: list[MeetingConnection] = []
         self.flush_audio_task = None
 
     async def connect(self, websocket: WebSocket, meeting_id: str, auth_token: str | None):
@@ -29,7 +29,8 @@ class ConnectionManager:
                 await websocket.close(401, 'Bad JWT token')
                 return
         await websocket.accept()
-        self.connections[meeting_id] = MeetingConnection(websocket)
+        connection = MeetingConnection(websocket, meeting_id)
+        self.connections.append(connection)
         if self.flush_audio_task is None:
             loop = asyncio.get_running_loop()
             self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
@@ -38,29 +39,51 @@ class ConnectionManager:
 
     async def process(self, meeting_id: str, chunk: bytes, chunk_timestamp: int):
         log.debug(f'Processing chunk for meeting {meeting_id}')
-        if meeting_id not in self.connections:
+        connections = [conn for conn in self.connections if conn.meeting_id == meeting_id]
+        if not connections:
             log.warning(f'No such meeting id {meeting_id}, the connection was probably closed.')
             return
-        results = await self.connections[meeting_id].process(chunk, chunk_timestamp)
-        await self.send(meeting_id, results)
+        
+        # Process chunk for all connections with this meeting_id
+        for connection in connections:
+            try:
+                results = await connection.process(chunk, chunk_timestamp)
+                await self.send_to_connection(connection, results)
+            except Exception as e:
+                log.error(f'Error processing chunk for meeting {meeting_id}: {e}')
+                self.disconnect_connection(connection)
 
-    async def send(self, meeting_id: str, results: list[utils.TranscriptionResponse] | None):
+    async def send_to_connection(self, connection: MeetingConnection, results: list[utils.TranscriptionResponse] | None):
         if results is not None:
             for result in results:
                 try:
-                    await self.connections[meeting_id].ws.send_json(result.model_dump())
+                    await connection.ws.send_json(result.model_dump())
                 except WebSocketDisconnect as e:
-                    log.warning(f'Meeting {meeting_id}: the connection was closed before sending all results: {e}')
-                    self.disconnect(meeting_id)
+                    log.warning(f'Meeting {connection.meeting_id}: the connection was closed before sending all results: {e}')
+                    self.disconnect_connection(connection)
                 except Exception as ex:
-                    log.error(f'Meeting {meeting_id}: exception while sending transcription results {ex}')
+                    log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
+
+    async def send(self, meeting_id: str, results: list[utils.TranscriptionResponse] | None):
+        """Legacy method for backward compatibility - sends to all connections with meeting_id"""
+        connections = [conn for conn in self.connections if conn.meeting_id == meeting_id]
+        for connection in connections:
+            await self.send_to_connection(connection, results)
+
+    def disconnect_connection(self, connection: MeetingConnection):
+        try:
+            self.connections.remove(connection)
+        except ValueError:
+            log.warning(f'The connection for meeting {connection.meeting_id} doesn\'t exist in the list anymore.')
+        dec_ws_conn_count()
 
     def disconnect(self, meeting_id: str):
-        try:
-            del self.connections[meeting_id]
-        except KeyError:
+        """Disconnect all connections for a meeting_id"""
+        connections_to_remove = [conn for conn in self.connections if conn.meeting_id == meeting_id]
+        for connection in connections_to_remove:
+            self.disconnect_connection(connection)
+        if not connections_to_remove:
             log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
-        dec_ws_conn_count()
 
     async def flush_working_audio_worker(self):
         """
@@ -69,15 +92,15 @@ class ConnectionManager:
         to the next utterance when the participant resumes speaking.
         """
         while True:
-            for meeting_id in self.connections:
-                for participant in self.connections[meeting_id].participants:
-                    state = self.connections[meeting_id].participants[participant]
+            for connection in self.connections:
+                for participant in connection.participants:
+                    state = connection.participants[participant]
                     diff = utils.now() - state.last_received_chunk
                     log.debug(
-                        f'Participant {participant} in meeting {meeting_id} has been silent for {diff} ms and has {len(state.working_audio)} bytes of audio'
+                        f'Participant {participant} in meeting {connection.meeting_id} has been silent for {diff} ms and has {len(state.working_audio)} bytes of audio'
                     )
                     if diff > whisper_flush_interval and len(state.working_audio) > 0 and not state.is_transcribing:
-                        log.info(f'Forcing a transcription in meeting {meeting_id} for {participant}')
-                        results = await self.connections[meeting_id].force_transcription(participant)
-                        await self.send(meeting_id, results)
+                        log.info(f'Forcing a transcription in meeting {connection.meeting_id} for {participant}')
+                        results = await connection.force_transcription(participant)
+                        await self.send_to_connection(connection, results)
             await asyncio.sleep(1)

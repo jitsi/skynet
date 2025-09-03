@@ -22,10 +22,12 @@ class MeetingConnection:
     previous_transcription_store: List[List[int]]
     tokenizer: Tokenizer | None
     meeting_language: str | None
+    meeting_id: str
 
-    def __init__(self, ws: WebSocket):
+    def __init__(self, ws: WebSocket, meeting_id: str):
         self.participants = {}
         self.ws = ws
+        self.meeting_id = meeting_id
         self.previous_transcription_tokens = []
         self.previous_transcription_store = []
         self.meeting_language = None
