@@ -73,9 +73,4 @@ class MeetingConnection:
         return None
 
     async def close(self):
-        try:
-            await self.ws.close()
-        except Exception as e:
-            log.debug(f'Websocket already closed.')
-            pass
-
+        await self.ws.close()

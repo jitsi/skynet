@@ -44,12 +44,12 @@ class ConnectionManager:
         
         try:
             results = await connection.process(chunk, chunk_timestamp)
-            await self.send_to_connection(connection, results)
+            await self.send(connection, results)
         except Exception as e:
             log.error(f'Error processing chunk for meeting {connection.meeting_id}: {e}')
             self.disconnect(connection)
 
-    async def send_to_connection(self, connection: MeetingConnection, results: list[utils.TranscriptionResponse] | None):
+    async def send(self, connection: MeetingConnection, results: list[utils.TranscriptionResponse] | None):
         if results is not None:
             for result in results:
                 try:
@@ -86,5 +86,5 @@ class ConnectionManager:
                     if diff > whisper_flush_interval and len(state.working_audio) > 0 and not state.is_transcribing:
                         log.info(f'Forcing a transcription in meeting {connection.meeting_id} for {participant}')
                         results = await connection.force_transcription(participant)
-                        await self.send_to_connection(connection, results)
+                        await self.send(connection, results)
             await asyncio.sleep(1)

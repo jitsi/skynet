@@ -8,7 +8,7 @@ log = get_logger(__name__)
 
 
 class ConnectionManager(BaseConnectionManager):
-    async def send_to_connection(self, connection: MeetingConnection, results: list[TranscriptionResponse] | None):
+    async def send(self, connection: MeetingConnection, results: list[TranscriptionResponse] | None):
         if results is None:
             return
 
