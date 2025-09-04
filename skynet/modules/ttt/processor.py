@@ -1,4 +1,6 @@
 import json
+import re
+from datetime import datetime, timedelta, timezone
 from operator import itemgetter
 from typing import List, Optional
 
@@ -10,11 +12,13 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
+
+from oci.exceptions import TransientServiceError
 from openai.types.chat import ChatCompletionMessageParam
 
 from skynet.constants import response_prefix
 
-from skynet.env import llama_n_ctx, modules, use_oci
+from skynet.env import llama_n_ctx, modules, oci_blackout_fallback_duration, use_oci
 from skynet.logs import get_logger
 from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
@@ -43,6 +47,40 @@ from skynet.modules.ttt.summaries.prompts.table_of_contents import (
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType, Processors
 
 log = get_logger(__name__)
+
+# Global OCI blackout state management
+_oci_blackout_until: Optional[datetime] = None
+
+
+def set_oci_blackout(duration_seconds: int) -> None:
+    """Set OCI blackout for the specified duration."""
+    global _oci_blackout_until
+    _oci_blackout_until = datetime.now(timezone.utc) + timedelta(seconds=duration_seconds)
+    log.warning(f"OCI blackout set until {_oci_blackout_until} ({duration_seconds} seconds)")
+
+
+def is_oci_blackout_active() -> bool:
+    """Check if OCI is currently in blackout period."""
+    global _oci_blackout_until
+    if _oci_blackout_until is None:
+        return False
+
+    now = datetime.now(timezone.utc)
+    if now >= _oci_blackout_until:
+        _oci_blackout_until = None  # Clear expired blackout
+        log.info("OCI blackout period expired, resuming normal processing")
+        return False
+
+    return True
+
+
+def extract_circuit_breaker_duration(error_msg: str) -> Optional[int]:
+    """Extract remaining seconds from OCI circuit breaker error message."""
+    # Parse: "(12 failures, 17 sec remaining)"
+    match = re.search(r'(\d+)\s+sec\s+remaining', error_msg)
+    if match:
+        return int(match.group(1))
+    return None
 
 
 hint_type_to_prompt = {
@@ -201,6 +239,13 @@ async def process(job: Job) -> str:
     job_type = job.type
     customer_id = job.metadata.customer_id
 
+    # Check if OCI is currently in blackout period
+    processor = LLMSelector.get_job_processor(customer_id, job.id)
+    if processor == Processors.OCI and is_oci_blackout_active():
+        log.info(f"Job {job.id} switching to LOCAL due to active OCI blackout")
+        LLMSelector.override_job_processor(job.id, Processors.LOCAL)
+        return await process(job)
+
     llm = LLMSelector.select(customer_id, job_id=job.id, **{'max_completion_tokens': payload.max_completion_tokens})
 
     try:
@@ -212,6 +257,30 @@ async def process(job: Job) -> str:
             result = await process_text(llm, payload)
         else:
             raise ValueError(f'Invalid job type {job_type}')
+    except TransientServiceError as e:
+        log.warning(f"Job {job.id} hit TransientServiceError: {e}")
+
+        # Extract circuit breaker duration and set blackout
+        error_msg = str(e)
+        circuit_breaker_duration = extract_circuit_breaker_duration(error_msg)
+
+        if circuit_breaker_duration is not None:
+            # Add 2-second buffer to OCI's circuit breaker duration
+            blackout_duration = circuit_breaker_duration + 2
+            log.info(
+                f"Extracted {circuit_breaker_duration}s from circuit breaker, setting {blackout_duration}s blackout"
+            )
+        else:
+            # Fallback duration for other TransientServiceErrors
+            blackout_duration = oci_blackout_fallback_duration
+            log.info(f"Could not extract circuit breaker duration, using {blackout_duration}s fallback")
+
+        set_oci_blackout(blackout_duration)
+
+        # Switch current job to local processing
+        LLMSelector.override_job_processor(job.id, Processors.LOCAL)
+        return await process(job)
+
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 

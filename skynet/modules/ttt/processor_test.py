@@ -1,5 +1,7 @@
 import pytest
 
+from oci.exceptions import TransientServiceError
+
 from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, Job, JobType, Processors
 
 
@@ -249,3 +251,44 @@ class TestProcess:
 
         assert LLMSelector.get_job_processor(job.metadata.customer_id, job.id) == Processors.LOCAL
         assert LLMSelector.select.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_process_with_transient_service_error_blackout(self, process_fixture):
+        '''Test that TransientServiceError triggers blackout and subsequent jobs use LOCAL processor.'''
+
+        from skynet.modules.ttt.llm_selector import LLMSelector
+        from skynet.modules.ttt.processor import process
+
+        # Create TransientServiceError with circuit breaker message
+        circuit_breaker_msg = (
+            'Circuit "test-id" OPEN until 2025-09-04 13:23:43.823175+00:00 (12 failures, 17 sec remaining)'
+        )
+        transient_error = TransientServiceError(status=429, code='429', headers={}, message=circuit_breaker_msg)
+
+        process_fixture.patch(
+            'skynet.modules.ttt.llm_selector.get_credentials',
+            return_value={'type': 'OCI'},
+        )
+        process_fixture.patch('skynet.modules.ttt.llm_selector.oci_available', True)
+        process_fixture.patch('skynet.modules.ttt.processor.use_oci', False)  # allow fallback
+        process_fixture.patch('skynet.modules.ttt.processor.summarize', side_effect=[transient_error, None, None])
+
+        job1 = Job(
+            payload=DocumentPayload(text="First job"),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+
+        job2 = Job(
+            payload=DocumentPayload(text="Second job"),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+
+        # First job should trigger TransientServiceError and set blackout
+        await process(job1)
+        assert LLMSelector.get_job_processor(job1.metadata.customer_id, job1.id) == Processors.LOCAL
+
+        # Second job should immediately go to LOCAL due to active blackout
+        await process(job2)
+        assert LLMSelector.get_job_processor(job2.metadata.customer_id, job2.id) == Processors.LOCAL
