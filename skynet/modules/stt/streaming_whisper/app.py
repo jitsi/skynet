@@ -31,5 +31,6 @@ async def websocket_endpoint(websocket: WebSocket, meeting_id: str, auth_token: 
             if len(chunk) == 1 and ord(b'' + chunk) == 0:
                 log.info(f'Received disconnect message for {connection.meeting_id}')
                 await ws_connection_manager.disconnect(connection)
+                connected = False
                 break
             await ws_connection_manager.process(connection, chunk, utils.now())

@@ -47,7 +47,7 @@ class ConnectionManager:
             await self.send(connection, results)
         except Exception as e:
             log.error(f'Error processing chunk for meeting {connection.meeting_id}: {e}')
-            self.disconnect(connection)
+            await self.disconnect(connection)
 
     async def send(self, connection: MeetingConnection, results: list[utils.TranscriptionResponse] | None):
         if results is not None:
@@ -56,7 +56,7 @@ class ConnectionManager:
                     await connection.ws.send_json(result.model_dump())
                 except WebSocketDisconnect as e:
                     log.warning(f'Meeting {connection.meeting_id}: the connection was closed before sending all results: {e}')
-                    self.disconnect(connection)
+                    await self.disconnect(connection, True)
                 except Exception as ex:
                     log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
 
