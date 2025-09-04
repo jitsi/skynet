@@ -1,5 +1,4 @@
 import json
-import re
 from datetime import datetime, timedelta, timezone
 from operator import itemgetter
 from typing import List, Optional
@@ -72,15 +71,6 @@ def is_oci_blackout_active() -> bool:
         return False
 
     return True
-
-
-def extract_circuit_breaker_duration(error_msg: str) -> Optional[int]:
-    """Extract remaining seconds from OCI circuit breaker error message."""
-    # Parse: "(12 failures, 17 sec remaining)"
-    match = re.search(r'(\d+)\s+sec\s+remaining', error_msg)
-    if match:
-        return int(match.group(1))
-    return None
 
 
 hint_type_to_prompt = {
@@ -239,14 +229,12 @@ async def process(job: Job) -> str:
     job_type = job.type
     customer_id = job.metadata.customer_id
 
-    # Check if OCI is currently in blackout period
-    processor = LLMSelector.get_job_processor(customer_id, job.id)
-    if processor == Processors.OCI and is_oci_blackout_active():
-        log.info(f"Job {job.id} switching to LOCAL due to active OCI blackout")
-        LLMSelector.override_job_processor(job.id, Processors.LOCAL)
-        return await process(job)
-
-    llm = LLMSelector.select(customer_id, job_id=job.id, **{'max_completion_tokens': payload.max_completion_tokens})
+    llm = LLMSelector.select(
+        customer_id,
+        job_id=job.id,
+        oci_blackout=is_oci_blackout_active(),
+        **{'max_completion_tokens': payload.max_completion_tokens},
+    )
 
     try:
         if job_type == JobType.ASSIST:
@@ -260,21 +248,9 @@ async def process(job: Job) -> str:
     except TransientServiceError as e:
         log.warning(f"Job {job.id} hit TransientServiceError: {e}")
 
-        # Extract circuit breaker duration and set blackout
-        error_msg = str(e)
-        circuit_breaker_duration = extract_circuit_breaker_duration(error_msg)
-
-        if circuit_breaker_duration is not None:
-            # Add 2-second buffer to OCI's circuit breaker duration
-            blackout_duration = circuit_breaker_duration + 2
-            log.info(
-                f"Extracted {circuit_breaker_duration}s from circuit breaker, setting {blackout_duration}s blackout"
-            )
-        else:
-            # Fallback duration for other TransientServiceErrors
-            blackout_duration = oci_blackout_fallback_duration
-            log.info(f"Could not extract circuit breaker duration, using {blackout_duration}s fallback")
-
+        # Set blackout using fallback duration
+        blackout_duration = oci_blackout_fallback_duration
+        log.info(f"TransientServiceError detected, setting {blackout_duration}s blackout")
         set_oci_blackout(blackout_duration)
 
         # Switch current job to local processing

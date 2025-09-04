@@ -291,4 +291,12 @@ class TestProcess:
 
         # Second job should immediately go to LOCAL due to active blackout
         await process(job2)
-        assert LLMSelector.get_job_processor(job2.metadata.customer_id, job2.id) == Processors.LOCAL
+        # Check that blackout causes LOCAL processor selection
+        from skynet.modules.ttt.processor import is_oci_blackout_active
+
+        blackout_active = is_oci_blackout_active()
+        assert blackout_active == True, "Blackout should be active after TransientServiceError"
+        assert (
+            LLMSelector.get_job_processor(job2.metadata.customer_id, job2.id, oci_blackout=blackout_active)
+            == Processors.LOCAL
+        )
