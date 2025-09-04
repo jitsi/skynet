@@ -24,6 +24,7 @@ class MeetingConnection:
     meeting_language: str | None
     meeting_id: str
     ws: WebSocket
+    connected: True
 
     def __init__(self, ws: WebSocket, meeting_id: str):
         self.participants = {}
@@ -33,6 +34,7 @@ class MeetingConnection:
         self.previous_transcription_store = []
         self.meeting_language = None
         self.tokenizer = None
+        self.connected = True
 
     async def update_initial_prompt(self, previous_payloads: list[utils.TranscriptionResponse]):
         for payload in previous_payloads:
@@ -72,5 +74,9 @@ class MeetingConnection:
             return payloads
         return None
 
+    def disconnect(self):
+        self.connected = False
+
     async def close(self):
         await self.ws.close()
+        self.disconnect()

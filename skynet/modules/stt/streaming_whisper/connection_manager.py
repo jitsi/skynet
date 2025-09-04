@@ -57,6 +57,7 @@ class ConnectionManager:
                 except WebSocketDisconnect as e:
                     log.warning(f'Meeting {connection.meeting_id}: the connection was closed before sending all results: {e}')
                     await self.disconnect(connection, True)
+                    break
                 except Exception as ex:
                     log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
 
@@ -67,6 +68,9 @@ class ConnectionManager:
             log.warning(f'The connection for meeting {connection.meeting_id} doesn\'t exist in the list anymore.')
         if not already_closed:
             await connection.close()
+        else:
+            # mark connection as disconnected
+            connection.disconnect()
         dec_ws_conn_count()
 
     async def flush_working_audio_worker(self):
