@@ -75,7 +75,7 @@ async def websocket_endpoint(websocket: WebSocket, auth_token: str | None = None
                     participant['raw'] = b''
 
         except WebSocketDisconnect:
-            ws_connection_manager.disconnect_connection(connection)
+            ws_connection_manager.disconnect(connection)
             data_map.clear()
             log.info(f'Session {session_id} has ended')
             break

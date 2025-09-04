@@ -26,6 +26,6 @@ class ConnectionManager(BaseConnectionManager):
                 log.debug(f'Participant {result.participant_id} result: {result.text}')
             except WebSocketDisconnect as e:
                 log.warning(f'Session {connection.meeting_id}: the connection was closed before sending all results: {e}')
-                self.disconnect_connection(connection)
+                self.disconnect(connection)
             except Exception as ex:
                 log.error(f'Session {connection.meeting_id}: exception while sending transcription results {ex}')

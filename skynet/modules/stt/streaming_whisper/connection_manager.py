@@ -47,7 +47,7 @@ class ConnectionManager:
             await self.send_to_connection(connection, results)
         except Exception as e:
             log.error(f'Error processing chunk for meeting {connection.meeting_id}: {e}')
-            self.disconnect_connection(connection)
+            self.disconnect(connection)
 
     async def send_to_connection(self, connection: MeetingConnection, results: list[utils.TranscriptionResponse] | None):
         if results is not None:
@@ -56,17 +56,11 @@ class ConnectionManager:
                     await connection.ws.send_json(result.model_dump())
                 except WebSocketDisconnect as e:
                     log.warning(f'Meeting {connection.meeting_id}: the connection was closed before sending all results: {e}')
-                    self.disconnect_connection(connection)
+                    self.disconnect(connection)
                 except Exception as ex:
                     log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
 
-    async def send(self, meeting_id: str, results: list[utils.TranscriptionResponse] | None):
-        """Legacy method for backward compatibility - sends to all connections with meeting_id"""
-        connections = [conn for conn in self.connections if conn.meeting_id == meeting_id]
-        for connection in connections:
-            await self.send_to_connection(connection, results)
-
-    async def disconnect_connection(self, connection: MeetingConnection, already_closed = False):
+    async def disconnect(self, connection: MeetingConnection, already_closed = False):
         try:
             self.connections.remove(connection)
         except ValueError:
@@ -74,14 +68,6 @@ class ConnectionManager:
         if not already_closed:
             await connection.close()
         dec_ws_conn_count()
-
-    async def disconnect(self, meeting_id: str):
-        """Disconnect all connections for a meeting_id"""
-        connections_to_remove = [conn for conn in self.connections if conn.meeting_id == meeting_id]
-        for connection in connections_to_remove:
-            await self.disconnect_connection(connection)
-        if not connections_to_remove:
-            log.warning(f'The meeting {meeting_id} doesn\'t exist anymore.')
 
     async def flush_working_audio_worker(self):
         """
