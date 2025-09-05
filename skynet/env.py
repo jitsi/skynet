@@ -111,7 +111,7 @@ whisper_flush_interval = int(os.environ.get('WHISPER_FLUSH_BUFFER_INTERVAL', 200
 
 # jobs
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
-max_concurrency = int(os.environ.get('MAX_CONCURRENCY', 10))
+max_concurrency = int(os.environ.get('MAX_CONCURRENCY', 5))
 
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
@@ -137,6 +137,7 @@ oci_service_endpoint = os.environ.get(
 oci_compartment_id = os.environ.get('OCI_COMPARTMENT_ID')
 oci_auth_type = os.environ.get('OCI_AUTH_TYPE', 'API_KEY')
 oci_config_profile = os.environ.get('OCI_CONFIG_PROFILE', 'DEFAULT')
+oci_blackout_fallback_duration = int(os.environ.get('OCI_BLACKOUT_FALLBACK_DURATION', 30))
 oci_available = oci_model_id and oci_service_endpoint and oci_compartment_id and oci_auth_type and oci_config_profile
 use_oci = oci_available and llama_path.startswith('oci://')
 

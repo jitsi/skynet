@@ -33,7 +33,7 @@ class LLMSelector:
         overriden_processors[job_id] = processor
 
     @staticmethod
-    def get_job_processor(customer_id: str, job_id: Optional[str] = None) -> Processors:
+    def get_job_processor(customer_id: str, job_id: Optional[str] = None, oci_blackout: bool = False) -> Processors:
         if job_id and job_id in overriden_processors:
             return overriden_processors[job_id]
 
@@ -50,7 +50,7 @@ class LLMSelector:
         if api_type == CredentialsType.LOCAL.value:
             return Processors.LOCAL
 
-        if oci_available:
+        if oci_available and not oci_blackout:
             return Processors.OCI
 
         return Processors.LOCAL
@@ -62,8 +62,9 @@ class LLMSelector:
         max_completion_tokens: Optional[int] = None,
         temperature: Optional[float] = 0,
         stream: Optional[bool] = False,
+        oci_blackout: bool = False,
     ) -> BaseChatModel:
-        processor = LLMSelector.get_job_processor(customer_id, job_id)
+        processor = LLMSelector.get_job_processor(customer_id, job_id, oci_blackout)
         options = get_credentials(customer_id)
 
         if processor == Processors.OPENAI:

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 from operator import itemgetter
 from typing import List, Optional
 
@@ -10,11 +11,13 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
+
+from oci.exceptions import TransientServiceError
 from openai.types.chat import ChatCompletionMessageParam
 
 from skynet.constants import response_prefix
 
-from skynet.env import llama_n_ctx, modules, use_oci
+from skynet.env import llama_n_ctx, modules, oci_blackout_fallback_duration, use_oci
 from skynet.logs import get_logger
 from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
@@ -43,6 +46,31 @@ from skynet.modules.ttt.summaries.prompts.table_of_contents import (
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, Job, JobType, Processors
 
 log = get_logger(__name__)
+
+# Global OCI blackout state management
+_oci_blackout_until: Optional[datetime] = None
+
+
+def set_oci_blackout(duration_seconds: int) -> None:
+    """Set OCI blackout for the specified duration."""
+    global _oci_blackout_until
+    _oci_blackout_until = datetime.now(timezone.utc) + timedelta(seconds=duration_seconds)
+    log.warning(f"OCI blackout set until {_oci_blackout_until} ({duration_seconds} seconds)")
+
+
+def is_oci_blackout_active() -> bool:
+    """Check if OCI is currently in blackout period."""
+    global _oci_blackout_until
+    if _oci_blackout_until is None:
+        return False
+
+    now = datetime.now(timezone.utc)
+    if now >= _oci_blackout_until:
+        _oci_blackout_until = None  # Clear expired blackout
+        log.info("OCI blackout period expired, resuming normal processing")
+        return False
+
+    return True
 
 
 hint_type_to_prompt = {
@@ -201,7 +229,12 @@ async def process(job: Job) -> str:
     job_type = job.type
     customer_id = job.metadata.customer_id
 
-    llm = LLMSelector.select(customer_id, job_id=job.id, **{'max_completion_tokens': payload.max_completion_tokens})
+    llm = LLMSelector.select(
+        customer_id,
+        job_id=job.id,
+        oci_blackout=is_oci_blackout_active(),
+        **{'max_completion_tokens': payload.max_completion_tokens},
+    )
 
     try:
         if job_type == JobType.ASSIST:
@@ -212,6 +245,18 @@ async def process(job: Job) -> str:
             result = await process_text(llm, payload)
         else:
             raise ValueError(f'Invalid job type {job_type}')
+    except TransientServiceError as e:
+        log.warning(f"Job {job.id} hit TransientServiceError: {e}")
+
+        # Set blackout using fallback duration
+        blackout_duration = oci_blackout_fallback_duration
+        log.info(f"TransientServiceError detected, setting {blackout_duration}s blackout")
+        set_oci_blackout(blackout_duration)
+
+        # Switch current job to local processing
+        LLMSelector.override_job_processor(job.id, Processors.LOCAL)
+        return await process(job)
+
     except Exception as e:
         log.warning(f"Job {job.id} failed: {e}")
 

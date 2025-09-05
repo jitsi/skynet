@@ -17,16 +17,18 @@ async def websocket_endpoint(websocket: WebSocket, meeting_id: str, auth_token: 
         while connection.connected:
             try:
                 chunk = await websocket.receive_bytes()
-            except WebSocketDisconnect as dc:
+            except WebSocketDisconnect:
                 log.info(f'Meeting {connection.meeting_id} has ended')
                 await ws_connection_manager.disconnect(connection, already_closed=True)
-                break 
+                break
             except WebSocketException as wserr:
                 log.warning(f'Error on websocket {connection.meeting_id}. Error {wserr.__class__}: \n{wserr}')
                 await ws_connection_manager.disconnect(connection)
                 break
             except Exception as err:
-                log.warning(f'Expected bytes, received something else, disconnecting {connection.meeting_id}. Error {err.__class__}: \n{err}')
+                log.warning(
+                    f'Expected bytes, received something else, disconnecting {connection.meeting_id}. Error {err.__class__}: \n{err}'
+                )
                 await ws_connection_manager.disconnect(connection)
                 break
             if len(chunk) == 1 and ord(b'' + chunk) == 0:
