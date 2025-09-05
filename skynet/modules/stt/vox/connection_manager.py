@@ -31,6 +31,7 @@ class ConnectionManager(BaseConnectionManager):
                 log.warning(
                     f'Session {connection.meeting_id}: the connection was closed before sending all results: {e}'
                 )
-                self.disconnect(connection, True)
+                await self.disconnect(connection, True)
+                break # stop trying to send results if the websocket is disconnected
             except Exception as ex:
                 log.error(f'Session {connection.meeting_id}: exception while sending transcription results {ex}')
