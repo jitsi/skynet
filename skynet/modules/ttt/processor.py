@@ -157,11 +157,21 @@ async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, custom
     return await rag_chain.ainvoke(input={'question': question})
 
 
-async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: JobType) -> str:
+async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: JobType, customer_id: str) -> str:
     chain = None
     text = payload.text
 
-    system_message = payload.prompt or hint_type_to_prompt[job_type][payload.hint]
+    # Fallback priority: payload.prompt -> customer's summary_prompt -> hint_type_to_prompt[job_type][payload.hint]
+    system_message = payload.prompt
+
+    if not system_message:
+        from skynet.modules.ttt.customerconfigs.utils import get_existing_customer_config
+        config = await get_existing_customer_config(customer_id)
+        if config:
+            system_message = config.get('summary_prompt')
+
+    if not system_message:
+        system_message = hint_type_to_prompt[job_type][payload.hint]
 
     prompt = ChatPromptTemplate(
         [
@@ -240,7 +250,7 @@ async def process(job: Job) -> str:
         if job_type == JobType.ASSIST:
             result = await assist(llm, payload, customer_id)
         elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS, JobType.TABLE_OF_CONTENTS]:
-            result = await summarize(llm, payload, job_type)
+            result = await summarize(llm, payload, job_type, customer_id)
         elif job_type == JobType.PROCESS_TEXT:
             result = await process_text(llm, payload)
         else:
