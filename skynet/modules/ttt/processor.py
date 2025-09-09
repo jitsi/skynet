@@ -6,8 +6,8 @@ from typing import List, Optional
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import FlashrankRerank
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
