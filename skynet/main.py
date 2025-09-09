@@ -47,7 +47,10 @@ async def lifespan(main_app: FastAPI):
         await assistant_startup()
 
     if 'customerconfigs' in modules:
-        from skynet.modules.ttt.customerconfigs.app import app as customerconfigs_app, app_startup as customerconfigs_startup
+        from skynet.modules.ttt.customerconfigs.app import (
+            app as customerconfigs_app,
+            app_startup as customerconfigs_startup,
+        )
 
         main_app.mount('/customerconfigs', customerconfigs_app)
         await customerconfigs_startup()

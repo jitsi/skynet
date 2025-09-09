@@ -3,10 +3,10 @@ from fastapi_versionizer.versionizer import api_version
 
 from skynet.auth.customer_id import CustomerId
 from skynet.logs import get_logger
-from skynet.utils import get_router
-from skynet.modules.ttt.customerconfigs.v1.models import CustomerConfig, CustomerConfigPayload, CustomerConfigResponse
 from skynet.modules.ttt.customerconfigs.utils import get_customerconfig_key, get_existing_customer_config
+from skynet.modules.ttt.customerconfigs.v1.models import CustomerConfig, CustomerConfigPayload, CustomerConfigResponse
 from skynet.modules.ttt.persistence import db
+from skynet.utils import get_router
 
 router = get_router()
 log = get_logger(__name__)
@@ -29,26 +29,25 @@ async def get_customer_config(customer_id=Depends(CustomerId())) -> CustomerConf
     config = await get_existing_customer_config(customer_id)
 
     if config:
-        return CustomerConfig(
-            summary_prompt=config.get('summary_prompt')
-        )
+        return CustomerConfig(summary_prompt=config.get('summary_prompt'))
 
     raise HTTPException(status_code=404, detail='Customer configuration not found')
 
 
 @api_version(1)
 @router.post('/config', dependencies=[Depends(validate_customer_config_payload)])
-async def set_customer_config(payload: CustomerConfigPayload, customer_id=Depends(CustomerId())) -> CustomerConfigResponse:
+async def set_customer_config(
+    payload: CustomerConfigPayload, customer_id=Depends(CustomerId())
+) -> CustomerConfigResponse:
     """
     Set the customer config.
     """
     # Store in database
     key = get_customerconfig_key(customer_id)
-    config = {
-        'summary_prompt': payload.summary_prompt
-    }
+    config = {'summary_prompt': payload.summary_prompt}
 
     import json
+
     await db.set(key, json.dumps(config))
 
     log.info(f"Updated customer config for customer {customer_id}")
@@ -73,5 +72,3 @@ async def delete_customer_config(customer_id=Depends(CustomerId())) -> CustomerC
     log.info(f"Deleted customer config for customer {customer_id}")
 
     return CustomerConfigResponse()
-
-

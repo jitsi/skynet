@@ -59,7 +59,7 @@ class ConnectionManager:
                         f'Meeting {connection.meeting_id}: the connection was closed before sending all results: {e}'
                     )
                     await self.disconnect(connection, True)
-                    break # stop trying to send results if websocket is disconnected
+                    break  # stop trying to send results if websocket is disconnected
                 except Exception as ex:
                     log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
 
