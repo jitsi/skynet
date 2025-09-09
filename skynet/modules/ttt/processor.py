@@ -165,7 +165,7 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
     system_message = payload.prompt
 
     if not system_message:
-        from skynet.modules.ttt.customerconfigs.utils import get_existing_customer_config
+        from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
 
         config = await get_existing_customer_config(customer_id)
         if config:

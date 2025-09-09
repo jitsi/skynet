@@ -18,10 +18,10 @@ async def app_startup():
     """Startup function for Customer Configs module."""
     await db.initialize()
     log.info('Persistence initialized')
-    log.info('customerconfigs module initialized')
+    log.info('customer_configs module initialized')
 
 
 async def app_shutdown():
     """Shutdown function for Customer Configs module."""
     await db.close()
-    log.info('customerconfigs shut down')
+    log.info('customer_configs shut down')

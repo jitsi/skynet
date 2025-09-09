@@ -2,9 +2,10 @@ from fastapi import Depends, HTTPException
 from fastapi_versionizer.versionizer import api_version
 
 from skynet.auth.customer_id import CustomerId
+from skynet.env import summary_minimum_payload_length
 from skynet.logs import get_logger
-from skynet.modules.ttt.customerconfigs.utils import get_customerconfig_key, get_existing_customer_config
-from skynet.modules.ttt.customerconfigs.v1.models import CustomerConfig, CustomerConfigPayload, CustomerConfigResponse
+from skynet.modules.ttt.customer_configs.utils import get_customerconfig_key, get_existing_customer_config
+from skynet.modules.ttt.customer_configs.v1.models import CustomerConfig, CustomerConfigPayload, CustomerConfigResponse
 from skynet.modules.ttt.persistence import db
 from skynet.utils import get_router
 
@@ -16,8 +17,10 @@ def validate_customer_config_payload(payload: CustomerConfigPayload) -> None:
     if not payload.summary_prompt.strip():
         raise HTTPException(status_code=422, detail="summary_prompt cannot be empty")
 
-    if len(payload.summary_prompt.strip()) < 100:
-        raise HTTPException(status_code=422, detail="summary_prompt must be at least 100 characters")
+    if len(payload.summary_prompt.strip()) < summary_minimum_payload_length:
+        raise HTTPException(
+            status_code=422, detail=f"summary_prompt must be at least {summary_minimum_payload_length} characters"
+        )
 
 
 @api_version(1)

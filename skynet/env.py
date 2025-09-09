@@ -33,9 +33,9 @@ def tobool(val: str | None):
 app_port = int(os.environ.get('SKYNET_PORT', 8000))
 listen_ip = os.environ.get('SKYNET_LISTEN_IP', '0.0.0.0')
 log_level = os.environ.get('LOG_LEVEL', 'DEBUG').strip().upper()
-supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant', 'customerconfigs'}
+supported_modules = {'summaries:dispatcher', 'summaries:executor', 'streaming_whisper', 'assistant', 'customer_configs'}
 enabled_modules = set(
-    os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor,assistant,customerconfigs').split(',')
+    os.environ.get('ENABLED_MODULES', 'summaries:dispatcher,summaries:executor,assistant,customer_configs').split(',')
 )
 modules = supported_modules.intersection(enabled_modules)
 file_refresh_interval = int(os.environ.get('FILE_REFRESH_INTERVAL', 30))

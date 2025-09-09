@@ -6,7 +6,7 @@ from skynet.modules.ttt.persistence import db
 
 def get_customerconfig_key(customer_id: str) -> str:
     """Generate database key for customer configuration."""
-    return f"customerconfig:{customer_id}"
+    return f"customer-config:{customer_id}"
 
 
 async def get_existing_customer_config(customer_id: str) -> Optional[dict]:
