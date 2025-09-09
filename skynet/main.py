@@ -46,6 +46,15 @@ async def lifespan(main_app: FastAPI):
         main_app.mount('/assistant', rag_app)
         await assistant_startup()
 
+    if 'customer_configs' in modules:
+        from skynet.modules.ttt.customer_configs.app import (
+            app as customer_configs_app,
+            app_startup as customer_configs_startup,
+        )
+
+        main_app.mount('/customer-configs', customer_configs_app)
+        await customer_configs_startup()
+
     if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.openai_api.app import app as openai_api_app
         from skynet.modules.ttt.summaries.app import app as summaries_app, app_startup as summaries_startup
@@ -73,6 +82,11 @@ async def lifespan(main_app: FastAPI):
         from skynet.modules.ttt.assistant.app import app_shutdown as assistant_shutdown
 
         await assistant_shutdown()
+
+    if 'customer_configs' in modules:
+        from skynet.modules.ttt.customer_configs.app import app_shutdown as customer_configs_shutdown
+
+        await customer_configs_shutdown()
 
     await http_client.close()
 
