@@ -14,13 +14,6 @@ body = f"""
     4. Do not repeat or rephrase items multiple times.
     5. Format the result as plain text with one action item per line. Do not include explanations, revisions, bullets, or headings.
 
-    Example output:
-
-    Fix closed captions bug before next release  
-    Review file sharing permissions [Mihaela Dumitru]  
-    Create drag-and-drop upload demo [Cãlin]  
-    Discuss storage limits with backend team [damencho]
-
     If there are no action items, respond just with "No action items", else start your response with "{response_prefix}", followed by the list of action items.
     Now extract all action items from this transcript:
 """
