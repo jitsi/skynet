@@ -2,8 +2,30 @@ import asyncio
 import os
 import time
 
-from skynet.constants import ERROR_JOBS_KEY, PENDING_JOBS_KEY, RUNNING_JOBS_KEY
-from skynet.env import enable_batching, job_timeout, max_concurrency, modules, redis_exp_seconds, use_vllm
+from skynet.constants import (
+    ERROR_JOBS_AZURE_KEY,
+    ERROR_JOBS_LOCAL_KEY,
+    ERROR_JOBS_OCI_KEY,
+    ERROR_JOBS_OPENAI_KEY,
+    PENDING_JOBS_AZURE_KEY,
+    PENDING_JOBS_LOCAL_KEY,
+    PENDING_JOBS_OCI_KEY,
+    PENDING_JOBS_OPENAI_KEY,
+    RUNNING_JOBS_AZURE_KEY,
+    RUNNING_JOBS_LOCAL_KEY,
+    RUNNING_JOBS_OCI_KEY,
+    RUNNING_JOBS_OPENAI_KEY,
+)
+from skynet.env import (
+    job_timeout,
+    max_concurrency,
+    max_concurrency_azure,
+    max_concurrency_local,
+    max_concurrency_oci,
+    max_concurrency_openai,
+    modules,
+    redis_exp_seconds,
+)
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
@@ -27,7 +49,14 @@ TIME_BETWEEN_JOBS_CHECK = 1
 TIME_BETWEEN_JOBS_CHECK_ON_ERROR = 10
 
 background_task = None
-current_tasks = set[asyncio.Task]()
+
+# Per-processor task tracking
+current_tasks = {
+    Processors.OPENAI: set[asyncio.Task](),
+    Processors.AZURE: set[asyncio.Task](),
+    Processors.OCI: set[asyncio.Task](),
+    Processors.LOCAL: set[asyncio.Task](),
+}
 
 
 def restart():
@@ -40,46 +69,180 @@ def restart():
     os._exit(1)
 
 
-def can_run_next_job() -> bool:
+def get_all_processor_queue_keys() -> dict[Processors, tuple[str, str, str]]:
+    """Get queue keys for all processors: (pending_key, running_key, error_key)."""
+    return {
+        Processors.OPENAI: (PENDING_JOBS_OPENAI_KEY, RUNNING_JOBS_OPENAI_KEY, ERROR_JOBS_OPENAI_KEY),
+        Processors.AZURE: (PENDING_JOBS_AZURE_KEY, RUNNING_JOBS_AZURE_KEY, ERROR_JOBS_AZURE_KEY),
+        Processors.OCI: (PENDING_JOBS_OCI_KEY, RUNNING_JOBS_OCI_KEY, ERROR_JOBS_OCI_KEY),
+        Processors.LOCAL: (PENDING_JOBS_LOCAL_KEY, RUNNING_JOBS_LOCAL_KEY, ERROR_JOBS_LOCAL_KEY),
+    }
+
+
+def get_processor_queue_keys(processor: Processors) -> tuple[str, str, str]:
+    """Get the pending, running, and error queue keys for a specific processor."""
+    return get_all_processor_queue_keys()[processor]
+
+
+def get_processor_max_concurrency(processor: Processors) -> int:
+    """Get the maximum concurrency limit for a specific processor."""
+    concurrency_map = {
+        Processors.OPENAI: max_concurrency_openai,
+        Processors.AZURE: max_concurrency_azure,
+        Processors.OCI: max_concurrency_oci,
+        Processors.LOCAL: max_concurrency_local,
+    }
+    return concurrency_map.get(processor, max_concurrency)
+
+
+def can_run_next_job(processor: Processors) -> bool:
+    """Check if we can run a new job for the specified processor."""
     if 'summaries:executor' not in modules:
         return False
 
-    if enable_batching:
-        return len(current_tasks) < max_concurrency
+    current_processor_tasks = len(current_tasks[processor])
+    max_processor_concurrency = get_processor_max_concurrency(processor)
 
-    return len(current_tasks) == 0
+    return current_processor_tasks < max_processor_concurrency
 
 
 async def update_summary_queue_metric() -> None:
-    """Update the queue size metric."""
+    """Update the queue size metric with combined queue sizes from all processors."""
 
-    queue_size = await db.llen(PENDING_JOBS_KEY)
-    SUMMARY_QUEUE_SIZE_METRIC.set(queue_size)
+    total_queue_size = 0
+
+    # Sum up queue sizes from all processor-specific queues
+    for processor in get_all_processor_queue_keys():
+        pending_key = get_processor_queue_keys(processor)[0]
+        processor_queue_size = await db.llen(pending_key)
+        total_queue_size += processor_queue_size
+
+    SUMMARY_QUEUE_SIZE_METRIC.set(total_queue_size)
 
 
-async def restore_stale_jobs() -> list[Job]:
-    """Check if any jobs were running on disconnected workers and requeue them."""
+async def migrate_legacy_queues() -> None:
+    """Migrate jobs from legacy single queues to processor-specific queues."""
 
-    running_jobs_keys = await db.lrange(RUNNING_JOBS_KEY, 0, -1)
-    running_jobs = await db.mget(running_jobs_keys)
-    connected_clients = await db.client_list()
-    stale_jobs = []
+    # Legacy queue keys - these may still contain jobs from before the migration
+    legacy_pending_key = 'jobs:pending'
+    legacy_running_key = 'jobs:running'
+    legacy_error_key = 'jobs:error'
 
-    for job_json in running_jobs:
-        job = Job.model_validate_json(job_json)
+    migrated_count = 0
 
-        if str(job.worker_id) not in [client['id'] for client in connected_clients]:
-            stale_jobs.append(job)
+    # Migrate pending jobs
+    while True:
+        job_id = await db.lpop(legacy_pending_key)
+        if not job_id:
+            break
 
-    if stale_jobs:
-        ids = [job.id for job in stale_jobs]
-        log.info(f"Restoring stale job(s): {ids}")
-        await db.lpush(PENDING_JOBS_KEY, *[job.id for job in stale_jobs])
+        job_json = await db.get(job_id)
+        if not job_json:
+            continue
+
+        try:
+            job = Job.model_validate_json(job_json)
+            processor = LLMSelector.get_job_processor(job.metadata.customer_id, job_id)
+            pending_key = get_processor_queue_keys(processor)[0]
+
+            # Maintain job priority - high priority jobs go to front
+            if job.payload.priority == Priority.HIGH:
+                await db.lpush(pending_key, job_id)
+            else:
+                await db.rpush(pending_key, job_id)
+
+            migrated_count += 1
+            log.info(f"Migrated pending job {job_id} to {processor.value} queue")
+
+        except Exception as e:
+            log.error(f"Failed to migrate pending job {job_id}: {e}")
+
+    # Migrate running jobs
+    running_job_ids = await db.lrange(legacy_running_key, 0, -1)
+    for job_id in running_job_ids:
+        job_json = await db.get(job_id)
+        if not job_json:
+            continue
+
+        try:
+            job = Job.model_validate_json(job_json)
+            processor = LLMSelector.get_job_processor(job.metadata.customer_id, job_id)
+            _, running_key, _ = get_processor_queue_keys(processor)
+
+            await db.rpush(running_key, job_id)
+            await db.lrem(legacy_running_key, 0, job_id)
+            migrated_count += 1
+            log.info(f"Migrated running job {job_id} to {processor.value} running queue")
+
+        except Exception as e:
+            log.error(f"Failed to migrate running job {job_id}: {e}")
+
+    # Migrate error jobs
+    error_job_ids = await db.lrange(legacy_error_key, 0, -1)
+    for job_id in error_job_ids:
+        job_json = await db.get(job_id)
+        if not job_json:
+            continue
+
+        try:
+            job = Job.model_validate_json(job_json)
+            processor = LLMSelector.get_job_processor(job.metadata.customer_id, job_id)
+            _, _, error_key = get_processor_queue_keys(processor)
+
+            await db.rpush(error_key, job_id)
+            await db.lrem(legacy_error_key, 0, job_id)
+            migrated_count += 1
+            log.info(f"Migrated error job {job_id} to {processor.value} error queue")
+
+        except Exception as e:
+            log.error(f"Failed to migrate error job {job_id}: {e}")
+
+    if migrated_count > 0:
+        log.info(f"Migration completed: moved {migrated_count} jobs from legacy queues to processor-specific queues")
         await update_summary_queue_metric()
 
 
+async def restore_stale_jobs() -> list[Job]:
+    """Check if any jobs were running on disconnected workers and requeue them to processor-specific queues."""
+
+    connected_clients = await db.client_list()
+    all_stale_jobs = []
+
+    # Check all processor-specific running job lists
+    for processor in get_all_processor_queue_keys():
+        _, running_key, _ = get_processor_queue_keys(processor)
+
+        running_jobs_keys = await db.lrange(running_key, 0, -1)
+        if not running_jobs_keys:
+            continue
+
+        running_jobs = await db.mget(running_jobs_keys)
+
+        for job_json in running_jobs:
+            if not job_json:
+                continue
+
+            job = Job.model_validate_json(job_json)
+
+            if str(job.worker_id) not in [client['id'] for client in connected_clients]:
+                all_stale_jobs.append((job, processor))
+
+    if all_stale_jobs:
+        ids = [job.id for job, _ in all_stale_jobs]
+        log.info(f"Restoring stale job(s): {ids}")
+
+        # Restore each job to its appropriate processor queue
+        for job, processor in all_stale_jobs:
+            pending_key = get_processor_queue_keys(processor)[0]
+            await db.lpush(pending_key, job.id)
+
+        await update_summary_queue_metric()
+
+    return [job for job, _ in all_stale_jobs]
+
+
 async def create_job(job_type: JobType, payload: DocumentPayload, metadata: DocumentMetadata) -> JobId:
-    """Create a job and add it to the db queue if it can't be started immediately."""
+    """Create a job and add it to the processor-specific queue."""
 
     job = Job(payload=payload, type=job_type, metadata=metadata)
     processor = LLMSelector.get_job_processor(metadata.customer_id)
@@ -90,12 +253,15 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     await db.set(job_id, Job.model_dump_json(job))
 
-    log.info(f"Created job {job.id}.")
+    log.info(f"Created job {job.id} for processor {processor.value}.")
+
+    # Route to processor-specific queue
+    pending_key = get_processor_queue_keys(processor)[0]
 
     if payload.priority == Priority.HIGH:
-        await db.lpush(PENDING_JOBS_KEY, job_id)
+        await db.lpush(pending_key, job_id)
     else:
-        await db.rpush(PENDING_JOBS_KEY, job_id)
+        await db.rpush(pending_key, job_id)
 
     await update_summary_queue_metric()
 
@@ -144,11 +310,15 @@ async def update_done_job(job: Job, result: str, processor: Processors, has_fail
         result=result,
     )
 
+    # Use processor-specific error queue
     if not should_expire:
-        await db.rpush(ERROR_JOBS_KEY, job.id)
+        _, _, error_key = get_processor_queue_keys(processor)
+        await db.rpush(error_key, job.id)
         SUMMARY_ERROR_COUNTER.inc()
 
-    await db.lrem(RUNNING_JOBS_KEY, 0, job.id)
+    # Remove from processor-specific running queue
+    _, running_key, _ = get_processor_queue_keys(processor)
+    await db.lrem(running_key, 0, job.id)
 
     SUMMARY_DURATION_METRIC.labels(updated_job.metadata.app_id, processor.value, customer_id).observe(
         updated_job.computed_duration
@@ -174,9 +344,12 @@ async def _run_job(job: Job) -> None:
 
     job = await update_job(job_id=job.id, start=start, status=JobStatus.RUNNING, worker_id=worker_id)
 
-    # add to running jobs list if not already there (which may occur on multiple worker disconnects while running the same job)
-    if job.id not in await db.lrange(RUNNING_JOBS_KEY, 0, -1):
-        await db.rpush(RUNNING_JOBS_KEY, job.id)
+    # Add to processor-specific running jobs list if not already there
+    processor = LLMSelector.get_job_processor(customer_id, job.id)
+    _, running_key, _ = get_processor_queue_keys(processor)
+
+    if job.id not in await db.lrange(running_key, 0, -1):
+        await db.rpush(running_key, job.id)
 
     try:
         result = await process(job)
@@ -193,40 +366,51 @@ async def _run_job(job: Job) -> None:
 
 
 def create_run_job_task(job: Job) -> asyncio.Task:
+    # Extract processor from job id
+    processor_str = job.id.split(':')[-1]
+    processor = Processors(processor_str)
+
     task = asyncio.create_task(run_job(job))
-    task.add_done_callback(lambda t: current_tasks.discard(t))
-    current_tasks.add(task)
+
+    def remove_task(t):
+        current_tasks[processor].discard(t)
+
+    task.add_done_callback(remove_task)
+    current_tasks[processor].add(task)
+
+    return task
 
 
 async def maybe_run_next_job() -> None:
-    if not can_run_next_job():
-        return
-
     next_job_id = None
 
-    if use_vllm:
-        pending_jobs_keys = await db.lrange(PENDING_JOBS_KEY, 0, -1)
+    # Priority order for processor queues - prefer faster external APIs over local processing
+    processor_priority = [Processors.OCI, Processors.OPENAI, Processors.AZURE, Processors.LOCAL]
 
-        for job_id in pending_jobs_keys:
-            if job_id.endswith(Processors.LOCAL.value):
-                next_job_id = job_id
-                await db.lrem(PENDING_JOBS_KEY, 0, job_id)
+    # Try each processor queue in priority order, but only if it can handle more jobs
+    for processor in processor_priority:
+        if not can_run_next_job(processor):
+            continue
 
-                break
+        pending_key = get_processor_queue_keys(processor)[0]
+        next_job_id = await db.lpop(pending_key)
 
-    if not next_job_id:
-        next_job_id = await db.lpop(PENDING_JOBS_KEY)
+        if next_job_id:
+            log.info(f"Found job {next_job_id} in {processor.value} queue")
+            break
 
     await update_summary_queue_metric()
 
     if next_job_id:
         log.info(f"Next job id: {next_job_id}")
-
         next_job = await get_job(next_job_id)
         create_run_job_task(next_job)
 
 
 async def monitor_candidate_jobs() -> None:
+    # Run one-time migration from legacy queues to processor-specific queues
+    await migrate_legacy_queues()
+
     await restore_stale_jobs()
 
     while not await is_openai_api_ready():
