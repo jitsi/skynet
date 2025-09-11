@@ -115,6 +115,12 @@ whisper_flush_interval = int(os.environ.get('WHISPER_FLUSH_BUFFER_INTERVAL', 200
 job_timeout = int(os.environ.get('JOB_TIMEOUT', 60 * 5))  # 5 minutes default
 max_concurrency = int(os.environ.get('MAX_CONCURRENCY', 5))
 
+# per-processor concurrency limits
+max_concurrency_openai = int(os.environ.get('MAX_CONCURRENCY_OPENAI', 5))
+max_concurrency_azure = int(os.environ.get('MAX_CONCURRENCY_AZURE', 5))
+max_concurrency_oci = int(os.environ.get('MAX_CONCURRENCY_OCI', 5))
+max_concurrency_local = int(os.environ.get('MAX_CONCURRENCY_LOCAL', 5))
+
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
 enable_batching = tobool(os.environ.get('ENABLE_BATCHING', 'true'))

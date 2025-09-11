@@ -1,4 +1,9 @@
-from skynet.constants import PENDING_JOBS_KEY
+from skynet.constants import (
+    PENDING_JOBS_AZURE_KEY,
+    PENDING_JOBS_LOCAL_KEY,
+    PENDING_JOBS_OCI_KEY,
+    PENDING_JOBS_OPENAI_KEY,
+)
 from skynet.env import enable_metrics, modules
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
@@ -29,8 +34,18 @@ if enable_metrics:
         Metrics required for the autoscaler.
         '''
 
-        queue_size = await db.llen(PENDING_JOBS_KEY)
-        return {'queueSize': queue_size}
+        # Sum up queue sizes from all processor-specific queues
+        total_queue_size = 0
+        for queue_key in [
+            PENDING_JOBS_OPENAI_KEY,
+            PENDING_JOBS_AZURE_KEY,
+            PENDING_JOBS_OCI_KEY,
+            PENDING_JOBS_LOCAL_KEY,
+        ]:
+            queue_size = await db.llen(queue_key)
+            total_queue_size += queue_size
+
+        return {'queueSize': total_queue_size}
 
     if 'summaries:dispatcher' in modules:
         from skynet.modules.ttt.summaries.app import app as summaries_app
