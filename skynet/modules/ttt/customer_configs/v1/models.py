@@ -4,11 +4,11 @@ from pydantic import BaseModel
 
 
 class CustomerConfigPayload(BaseModel):
-    summary_prompt: str
+    live_summary_prompt: str
 
 
 class CustomerConfig(BaseModel):
-    summary_prompt: Optional[str] = None
+    live_summary_prompt: Optional[str] = None
 
 
 class CustomerConfigResponse(BaseModel):

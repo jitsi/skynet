@@ -30,6 +30,7 @@ class DocumentPayload(BaseModel):
     preferred_locale: Optional[Locale] = None
     priority: Priority = Priority.NORMAL
     prompt: Optional[str] = None
+    live_summary: Optional[bool] = False
 
 
 class ActionItemsDocumentPayload(DocumentPayload):

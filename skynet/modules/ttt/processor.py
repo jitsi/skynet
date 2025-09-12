@@ -161,15 +161,15 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
     chain = None
     text = payload.text
 
-    # Fallback priority: payload.prompt -> customer's summary_prompt -> hint_type_to_prompt[job_type][payload.hint]
+    # Fallback priority: payload.prompt -> customer's live_summary_prompt (if live_summary=True) -> hint_type_to_prompt[job_type][payload.hint]
     system_message = payload.prompt
 
-    if not system_message:
+    if not system_message and payload.live_summary:
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
 
         config = await get_existing_customer_config(customer_id)
         if config:
-            system_message = config.get('summary_prompt')
+            system_message = config.get('live_summary_prompt')
 
     if not system_message:
         system_message = hint_type_to_prompt[job_type][payload.hint]
