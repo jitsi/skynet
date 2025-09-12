@@ -33,6 +33,7 @@ from skynet.modules.monitoring import (
     SUMMARY_ERROR_COUNTER,
     SUMMARY_FULL_DURATION_METRIC,
     SUMMARY_INPUT_LENGTH_METRIC,
+    SUMMARY_QUEUE_SIZE_BY_PROCESSOR_METRIC,
     SUMMARY_QUEUE_SIZE_METRIC,
     SUMMARY_TIME_IN_QUEUE_METRIC,
 )
@@ -116,6 +117,9 @@ async def update_summary_queue_metric() -> None:
         pending_key = get_processor_queue_keys(processor)[0]
         processor_queue_size = await db.llen(pending_key)
         total_queue_size += processor_queue_size
+
+        # Set individual processor queue size metric
+        SUMMARY_QUEUE_SIZE_BY_PROCESSOR_METRIC.labels(processor=processor.value).set(processor_queue_size)
 
     SUMMARY_QUEUE_SIZE_METRIC.set(total_queue_size)
 
