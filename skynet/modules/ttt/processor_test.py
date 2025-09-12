@@ -99,7 +99,7 @@ class TestSummarize:
 
     @pytest.mark.asyncio
     async def test_summarize_falls_back_to_default_when_no_customer_config(self, summarize_fixture):
-        """Test that default prompt is used when no customer config exists."""
+        """Test that default prompt is used when no customer config exists but live_summary=True."""
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
@@ -111,7 +111,9 @@ class TestSummarize:
         # Mock no customer config
         get_existing_customer_config.return_value = None
 
-        payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT)  # Empty prompt to trigger fallback
+        payload = DocumentPayload(
+            prompt="", text="Test text", hint=HintType.TEXT, live_summary=True
+        )  # Empty prompt, live_summary=True
 
         result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
 
