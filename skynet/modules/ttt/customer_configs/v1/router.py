@@ -14,12 +14,12 @@ log = get_logger(__name__)
 
 
 def validate_customer_config_payload(payload: CustomerConfigPayload) -> None:
-    if not payload.summary_prompt.strip():
-        raise HTTPException(status_code=422, detail="summary_prompt cannot be empty")
+    if not payload.live_summary_prompt.strip():
+        raise HTTPException(status_code=422, detail="live_summary_prompt cannot be empty")
 
-    if len(payload.summary_prompt.strip()) < summary_minimum_payload_length:
+    if len(payload.live_summary_prompt.strip()) < summary_minimum_payload_length:
         raise HTTPException(
-            status_code=422, detail=f"summary_prompt must be at least {summary_minimum_payload_length} characters"
+            status_code=422, detail=f"live_summary_prompt must be at least {summary_minimum_payload_length} characters"
         )
 
 
@@ -32,7 +32,7 @@ async def get_customer_config(customer_id=Depends(CustomerId())) -> CustomerConf
     config = await get_existing_customer_config(customer_id)
 
     if config:
-        return CustomerConfig(summary_prompt=config.get('summary_prompt'))
+        return CustomerConfig(live_summary_prompt=config.get('live_summary_prompt'))
 
     raise HTTPException(status_code=404, detail='Customer configuration not found')
 
@@ -47,7 +47,7 @@ async def set_customer_config(
     """
     # Store in database
     key = get_customerconfig_key(customer_id)
-    config = {'summary_prompt': payload.summary_prompt}
+    config = {'live_summary_prompt': payload.live_summary_prompt}
 
     import json
 
