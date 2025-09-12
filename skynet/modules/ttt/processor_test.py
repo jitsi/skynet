@@ -67,8 +67,10 @@ class TestSummarize:
         assert result == "Test result"
 
     @pytest.mark.asyncio
-    async def test_summarize_falls_back_to_default_when_no_payload_prompt_and_no_live_summary(self, summarize_fixture):
-        """Test that default prompt is used when payload.prompt is empty and live_summary is not True."""
+    async def test_summarize_falls_back_to_default_when_no_payload_prompt_and_no_is_live_summary(
+        self, summarize_fixture
+    ):
+        """Test that default prompt is used when payload.prompt is empty and is_live_summary is not True."""
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
@@ -77,14 +79,14 @@ class TestSummarize:
         mock_model = summarize_fixture.Mock()
         mock_model.get_num_tokens.return_value = 100
 
-        # Mock customer config with custom summary prompt (but it shouldn't be used since live_summary is not True)
+        # Mock customer config with custom summary prompt (but it shouldn't be used since is_live_summary is not True)
         get_existing_customer_config.return_value = {'live_summary_prompt': 'Custom customer live summary prompt'}
 
-        payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT)  # Empty prompt, no live_summary
+        payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT)  # Empty prompt, no is_live_summary
 
         result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
 
-        # Verify that get_existing_customer_config was NOT called since live_summary is not True
+        # Verify that get_existing_customer_config was NOT called since is_live_summary is not True
         get_existing_customer_config.assert_not_called()
 
         # Verify ChatPromptTemplate was called with the default prompt
@@ -99,7 +101,7 @@ class TestSummarize:
 
     @pytest.mark.asyncio
     async def test_summarize_falls_back_to_default_when_no_customer_config(self, summarize_fixture):
-        """Test that default prompt is used when no customer config exists but live_summary=True."""
+        """Test that default prompt is used when no customer config exists but is_live_summary=True."""
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
@@ -112,8 +114,8 @@ class TestSummarize:
         get_existing_customer_config.return_value = None
 
         payload = DocumentPayload(
-            prompt="", text="Test text", hint=HintType.TEXT, live_summary=True
-        )  # Empty prompt, live_summary=True
+            prompt="", text="Test text", hint=HintType.TEXT, is_live_summary=True
+        )  # Empty prompt, is_live_summary=True
 
         result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
 
@@ -131,8 +133,8 @@ class TestSummarize:
         assert result == "Test result"
 
     @pytest.mark.asyncio
-    async def test_summarize_uses_live_summary_prompt_when_live_summary_true(self, summarize_fixture):
-        """Test that live_summary_prompt is used when live_summary=True."""
+    async def test_summarize_uses_live_summary_prompt_when_is_live_summary_true(self, summarize_fixture):
+        """Test that live_summary_prompt is used when is_live_summary=True."""
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
@@ -144,7 +146,7 @@ class TestSummarize:
         # Mock customer config with live summary prompt
         get_existing_customer_config.return_value = {'live_summary_prompt': 'Custom live summary prompt'}
 
-        payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT, live_summary=True)
+        payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT, is_live_summary=True)
 
         result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
 
