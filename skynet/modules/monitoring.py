@@ -54,6 +54,14 @@ SUMMARY_QUEUE_SIZE_METRIC = Gauge(
     subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
 
+SUMMARY_QUEUE_SIZE_BY_PROCESSOR_METRIC = Gauge(
+    'summary_queue_size_by_processor',
+    documentation='Number of jobs in the queue per processor',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['processor'],
+)
+
 SUMMARY_ERROR_COUNTER = Counter(
     'summary_errors',
     documentation='Number of jobs that have failed',
