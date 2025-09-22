@@ -6,7 +6,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from skynet.auth.jwt import authorize
 from skynet.env import bypass_auth, whisper_flush_interval
 from skynet.logs import get_logger
-from skynet.modules.monitoring import dec_ws_conn_count, inc_ws_conn_count
+from skynet.modules.monitoring import update_ws_conn_count
 from skynet.modules.stt.streaming_whisper.meeting_connection import MeetingConnection
 from skynet.modules.stt.streaming_whisper.utils import utils
 
@@ -34,9 +34,9 @@ class ConnectionManager:
         if self.flush_audio_task is None:
             loop = asyncio.get_running_loop()
             self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
-        inc_ws_conn_count()
-        log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {len(self.connections)}')
-
+        current_connections = len(self.connections)
+        log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {current_connections}')
+        await update_ws_conn_count(current_connections)
         return connection
 
     async def process(self, connection: MeetingConnection, chunk: bytes, chunk_timestamp: int):
@@ -73,7 +73,9 @@ class ConnectionManager:
         else:
             # mark connection as disconnected
             connection.disconnect()
-        dec_ws_conn_count()
+        remaining_connections = len(self.connections)
+        log.info(f'Disconnected meeting {connection.meeting_id}, remaining connections {remaining_connections}')
+        await update_ws_conn_count(remaining_connections)
 
     async def flush_working_audio_worker(self):
         """
