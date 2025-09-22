@@ -29,6 +29,7 @@ from skynet.env import (
 from skynet.logs import get_logger
 from skynet.modules.monitoring import (
     OPENAI_API_RESTART_COUNTER,
+    SUMMARY_CURRENT_TASKS_METRIC,
     SUMMARY_DURATION_METRIC,
     SUMMARY_ERROR_COUNTER,
     SUMMARY_FULL_DURATION_METRIC,
@@ -122,6 +123,13 @@ async def update_summary_queue_metric() -> None:
         SUMMARY_QUEUE_SIZE_BY_PROCESSOR_METRIC.labels(processor=processor.value).set(processor_queue_size)
 
     SUMMARY_QUEUE_SIZE_METRIC.set(total_queue_size)
+
+
+async def update_current_tasks_metrics() -> None:
+    """Update the current tasks metrics for all processors."""
+    for processor in get_all_processor_queue_keys():
+        current_task_count = len(current_tasks[processor])
+        SUMMARY_CURRENT_TASKS_METRIC.labels(processor=processor.value).set(current_task_count)
 
 
 async def migrate_legacy_queues() -> None:
@@ -378,9 +386,14 @@ def create_run_job_task(job: Job) -> asyncio.Task:
 
     def remove_task(t):
         current_tasks[processor].discard(t)
+        # Update metrics when task is removed
+        asyncio.create_task(update_current_tasks_metrics())
 
     task.add_done_callback(remove_task)
     current_tasks[processor].add(task)
+
+    # Update metrics when task is added
+    asyncio.create_task(update_current_tasks_metrics())
 
     return task
 
