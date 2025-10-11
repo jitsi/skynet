@@ -8,7 +8,7 @@ from starlette.websockets import WebSocket
 from skynet.env import whisper_max_finals_in_initial_prompt as max_finals
 
 from skynet.logs import get_logger
-from skynet.modules.stt.streaming_whisper.cfg import model
+from skynet.modules.stt.streaming_whisper.cfg import model_pool
 from skynet.modules.stt.streaming_whisper.chunk import Chunk
 from skynet.modules.stt.streaming_whisper.state import State
 from skynet.modules.stt.streaming_whisper.utils import utils
@@ -51,8 +51,9 @@ class MeetingConnection:
         # The first chunk sets the meeting language and initializes the Tokenizer
         if not self.meeting_language:
             self.meeting_language = a_chunk.language
+            # Use first model instance's tokenizer (all models share the same tokenizer)
             self.tokenizer = Tokenizer(
-                model.hf_tokenizer, multilingual=False, task='transcribe', language=self.meeting_language
+                model_pool.models[0].hf_tokenizer, multilingual=False, task='transcribe', language=self.meeting_language
             )
 
         if a_chunk.participant_id not in self.participants:
