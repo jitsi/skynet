@@ -41,6 +41,12 @@ class State:
         self.is_transcribing = False
         self.last_speech_timestamp = 0.0
 
+        # Assign model once per participant (round-robin assignment)
+        from skynet.modules.stt.streaming_whisper import cfg
+
+        self.assigned_model, self.model_idx = cfg.model_pool.get_next_model()
+        log.info(f'Participant {self.participant_id}: assigned to model instance {self.model_idx}')
+
     def _extract_transcriptions(
         self, last_pause: utils.CutMark, ts_result: utils.WhisperResult
     ) -> List[utils.TranscriptionResponse]:
@@ -231,15 +237,20 @@ class State:
         start = time.perf_counter_ns()
         loop = asyncio.get_running_loop()
         log.debug(f'Participant {self.participant_id}: starting transcription of {len(audio)} bytes.')
+
         try:
-            ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang, previous_tokens)
+            # Use the model assigned to this participant
+            ts_result = await loop.run_in_executor(
+                None, utils.transcribe, [audio], self.lang, previous_tokens, self.assigned_model
+            )
         except RuntimeError as e:
             log.error(f'Participant {self.participant_id}: failed to transcribe {e}')
-            self.is_transcribing = False
             return None
+        finally:
+            self.is_transcribing = False
+
         end = time.perf_counter_ns()
         processing_time = (end - start) / 1e6 / 1000
         TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         log.debug(ts_result)
-        self.is_transcribing = False
         return ts_result
