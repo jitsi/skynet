@@ -41,6 +41,12 @@ class State:
         self.is_transcribing = False
         self.last_speech_timestamp = 0.0
 
+        # Pre-allocate audio buffer (90 seconds max)
+        # 16kHz sample rate, 2 bytes per sample, 90 seconds
+        self.max_buffer_size = 16000 * 2 * 90  # 2,880,000 bytes (~2.7MB)
+        self.audio_buffer = bytearray(self.max_buffer_size)
+        self.buffer_position = 0
+
         # Assign model once per participant (round-robin assignment)
         from skynet.modules.stt.streaming_whisper import cfg
 
@@ -146,9 +152,37 @@ class State:
     async def add_to_store(self, chunk: Chunk, tmp_working_audio: bytes = b''):
         now_millis = utils.now()
         self.chunk_count += 1
-        # if the working audio is empty, set the start timestamp
-        if not self.working_audio:
+
+        # Check if adding this chunk would overflow the buffer (at 90% capacity)
+        chunk_len = len(chunk.raw)
+        if self.buffer_position + chunk_len > self.max_buffer_size * 0.9:
+            log.warning(
+                f'Participant {self.participant_id}: buffer at {self.buffer_position} bytes '
+                f'({100 * self.buffer_position / self.max_buffer_size:.1f}% full), forcing transcription'
+            )
+            # Force transcription of current buffer to prevent overflow
+            if self.buffer_position > 0:
+                current_audio = bytes(self.audio_buffer[: self.buffer_position])
+                ts_result = await self.do_transcription(current_audio, [])
+                if ts_result and ts_result.text.strip():
+                    log.info(
+                        f'Participant {self.participant_id}: emergency transcription: "{ts_result.text.strip()[:50]}..."'
+                    )
+            # Reset buffer
+            self.buffer_position = 0
             self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
+
+        # if the working audio is empty, set the start timestamp
+        if self.buffer_position == 0:
+            self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
+
+        # Add chunk to pre-allocated buffer
+        self.audio_buffer[self.buffer_position : self.buffer_position + chunk_len] = chunk.raw
+        self.buffer_position += chunk_len
+
+        # Create temporary view of current buffer for VAD
+        tmp_working_audio = bytes(self.audio_buffer[: self.buffer_position])
+
         # retrieve the word timestamps from the new working audio
         _, speech_timestamps = utils.is_silent(tmp_working_audio)
         log.debug(f'## Participant {self.participant_id}: speech timestamps {speech_timestamps}')
@@ -177,21 +211,33 @@ class State:
         log.debug(
             f'Participant {self.participant_id}: chunk length {chunk.size} bytes, '
             f'duration {chunk.duration}s, '
-            f'total chunks {self.chunk_count}.'
+            f'total chunks {self.chunk_count}, '
+            f'buffer: {self.buffer_position}/{self.max_buffer_size} bytes.'
         )
 
     def trim_working_audio(self, bytes_to_cut: int) -> bytes:
         log.debug(
             f'Participant {self.participant_id}: '
-            + f'trimming the audio buffer, current length is {len(self.working_audio)} bytes.'
+            + f'trimming the audio buffer, current length is {self.buffer_position} bytes.'
         )
-        dropped_chunk = self.working_audio[:bytes_to_cut]
-        self.working_audio = self.working_audio[bytes_to_cut:]
-        if len(self.working_audio) == 0:
+        # Extract the dropped chunk
+        dropped_chunk = bytes(self.audio_buffer[:bytes_to_cut])
+
+        # Shift remaining audio to the beginning of buffer
+        remaining_bytes = self.buffer_position - bytes_to_cut
+        if remaining_bytes > 0:
+            # Use memmove-like operation (overlapping copy is safe)
+            self.audio_buffer[:remaining_bytes] = self.audio_buffer[bytes_to_cut : self.buffer_position]
+            self.buffer_position = remaining_bytes
+            # Update working_audio to reflect new buffer state
+            self.working_audio = bytes(self.audio_buffer[: self.buffer_position])
+        else:
+            self.buffer_position = 0
+            self.working_audio = b''
             self.working_audio_starts_at = 0
+
         log.debug(
-            f'Participant {self.participant_id}: '
-            + f'the audio buffer after cut is now {len(self.working_audio)} bytes'
+            f'Participant {self.participant_id}: ' + f'the audio buffer after cut is now {self.buffer_position} bytes'
         )
         return dropped_chunk
 
@@ -221,6 +267,7 @@ class State:
         log.debug(f'Participant {self.participant_id}: flushing working audio')
         self.working_audio_starts_at = 0
         self.working_audio = b''
+        self.buffer_position = 0
         self.last_speech_timestamp = 0.0
 
     @staticmethod
