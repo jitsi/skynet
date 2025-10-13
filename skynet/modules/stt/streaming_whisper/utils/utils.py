@@ -288,8 +288,12 @@ def now() -> int:
 
 
 def transcribe(buffer_list: List[bytes], lang: str, previous_tokens: list[int], model) -> WhisperResult:
-    audio_bytes = b''.join(buffer_list)
-    audio = load_audio(audio_bytes)
+    # Handle single buffer efficiently (most common case)
+    if len(buffer_list) == 1:
+        audio = load_audio(buffer_list[0])
+    else:
+        audio_bytes = b''.join(buffer_list)
+        audio = load_audio(audio_bytes)
     iterator, _ = model.transcribe(
         audio,
         language=lang,

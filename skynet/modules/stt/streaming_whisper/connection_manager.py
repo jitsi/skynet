@@ -33,7 +33,7 @@ class ConnectionManager:
         self.connections.append(connection)
         if self.flush_audio_task is None:
             loop = asyncio.get_running_loop()
-            self.flush_audio_task = loop.create_task(self.flush_working_audio_worker())
+            self.flush_audio_task = loop.create_task(self.flush_working_audio_worker(), name="flusher")
         current_connections = len(self.connections)
         log.info(f'Meeting with id {meeting_id} started. Ongoing meetings {current_connections}')
         await update_ws_conn_count(current_connections)
@@ -89,10 +89,20 @@ class ConnectionManager:
                     state = connection.participants[participant]
                     diff = utils.now() - state.last_received_chunk
                     log.debug(
-                        f'Participant {participant} in meeting {connection.meeting_id} has been silent for {diff} ms and has {len(state.working_audio)} bytes of audio'
+                        f'Participant {participant} in meeting {connection.meeting_id} has been silent for {diff} ms and has {state.buffer_position} bytes of audio'
                     )
-                    if diff > whisper_flush_interval and len(state.working_audio) > 0 and not state.is_transcribing:
+                    # Only flush if we have actual speech in the buffer (last_speech_timestamp > 0)
+                    # This prevents flushing on purely silent audio accumulation
+                    if (
+                        diff > whisper_flush_interval
+                        and state.buffer_position > 0
+                        and state.last_speech_timestamp > 0
+                        and not state.is_transcribing
+                    ):
                         log.info(f'Forcing a transcription in meeting {connection.meeting_id} for {participant}')
                         results = await connection.force_transcription(participant)
                         await self.send(connection, results)
+                        # Update last_received_chunk after flush to prevent immediate re-flushing
+                        # when client continues sending silent chunks
+                        state.last_received_chunk = utils.now()
             await asyncio.sleep(1)

@@ -115,15 +115,19 @@ class State:
 
     async def force_transcription(self, previous_tokens) -> List[utils.TranscriptionResponse] | None:
         results = None
-        if self.is_transcribing:
+        if self.is_transcribing or self.buffer_position == 0:
             return results
-        ts_result = await self.do_transcription(self.working_audio, previous_tokens)
+        # Use memoryview for zero-copy access to current buffer
+        current_audio = memoryview(self.audio_buffer)[: self.buffer_position]
+        ts_result = await self.do_transcription(current_audio, previous_tokens)
         if ts_result.text.strip():
             results = []
             start_timestamp = int(ts_result.words[0].start * 1000) + self.working_audio_starts_at
             final_audio = None
             if return_audio:
-                final_audio = utils.get_wav_header([self.working_audio]) + self.working_audio
+                # Materialize bytes only when needed for WAV header
+                audio_bytes = bytes(current_audio)
+                final_audio = utils.get_wav_header([audio_bytes]) + audio_bytes
             results.append(
                 self.get_response_payload(
                     ts_result.text.strip(),
@@ -139,7 +143,9 @@ class State:
     async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
         await self.add_to_store(chunk)
         if not self.long_silence and not self.is_transcribing:
-            ts_result = await self.do_transcription(self.working_audio, previous_tokens)
+            # Use memoryview for zero-copy access to current buffer
+            current_audio = memoryview(self.audio_buffer)[: self.buffer_position]
+            ts_result = await self.do_transcription(current_audio, previous_tokens)
             last_pause = utils.get_cut_mark_from_segment_probability(ts_result)
             results = self._extract_transcriptions(last_pause, ts_result)
             if len(results) > 0:
@@ -189,13 +195,18 @@ class State:
         # the last speech timestamp has changed
         # update the buffer and the last received chunk timestamp
         if speech_timestamps and speech_timestamps[-1]['end'] != self.last_speech_timestamp:
+            log.info(
+                f'Participant {self.participant_id}: speech timestamp advanced from {self.last_speech_timestamp:.3f}s to {speech_timestamps[-1]["end"]:.3f}s, updating last_received_chunk'
+            )
             self.last_speech_timestamp = speech_timestamps[-1]['end']
             self.last_received_chunk = now_millis
             self.working_audio = tmp_working_audio
             self.long_silence = False
             self.silent_chunks = 0
         else:
-            log.debug(f'## Participant {self.participant_id}: chunk is silent')
+            log.info(
+                f'## Participant {self.participant_id}: chunk is silent or timestamp unchanged (last={self.last_speech_timestamp:.3f}s, current={speech_timestamps[-1]["end"] if speech_timestamps else 0:.3f}s, buffer={self.buffer_position} bytes)'
+            )
             # if the last word timestamp is the same as the previous one
             # the chunk is silent
             self.silent_chunks += 1
