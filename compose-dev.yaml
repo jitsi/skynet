@@ -8,7 +8,7 @@ services:
       - "8001:8001"
     volumes:
       - ./models/streaming-whisper:/models/streaming-whisper
-      - ./transcripts:/opt/transcripts:rw
+      - /mnt/minio:/opt/transcripts:rw
     environment:
       - REDIS_HOST=redis
       - HTTP_PORT=8000
@@ -16,10 +16,10 @@ services:
       - BYPASS_AUTHORIZATION=1
       - ENABLED_MODULES=streaming_whisper
       - WHISPER_DEVICE=cpu
-      - WHISPER_MODEL_NAME=large-v3
+      - WHISPER_MODEL_NAME=medium
       - WHISPER_MODEL_PATH=/models/streaming-whisper
       - WHISPER_TASK=transcribe
-      - BEAM_SIZE=10
+      - BEAM_SIZE=5
       - WHISPER_CHUNK_MS=2000
       - WHISPER_STRIDE_MS=300
       - WHISPER_STREAM_PARTIAL=true
@@ -30,8 +30,8 @@ services:
       - STREAMING_WHISPER_SPEECH_PAD_MS=300
       - STREAMING_WHISPER_SAVE_TRANSCRIPTS=true
       - STREAMING_WHISPER_OUTPUT_DIR=/opt/transcripts
-      - STREAMING_WHISPER_OUTPUT_FORMATS=jsonl,srt
-      - STREAMING_WHISPER_FLUSH_INTERVAL_MS=10000
+      - STREAMING_WHISPER_OUTPUT_FORMATS=jsonl,srt,txt
+      - STREAMING_WHISPER_FLUSH_INTERVAL_MS=5000
       - WHISPER_MIN_PROBABILITY=0.8
 
   redis:
