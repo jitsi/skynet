@@ -59,6 +59,7 @@ openai_api_base_url = os.environ.get(
 
 # openai
 openai_credentials_file = os.environ.get('SKYNET_CREDENTIALS_PATH')
+default_customer_id = os.environ.get('DEFAULT_CUSTOMER_ID')
 
 # health checking
 disable_llm_health_check = tobool(os.environ.get('DISABLE_LLM_HEALTH_CHECK', 'false'))

@@ -3,7 +3,7 @@ from enum import Enum
 import aiofiles
 import yaml
 
-from skynet.env import openai_credentials_file
+from skynet.env import default_customer_id, openai_credentials_file
 from skynet.logs import get_logger
 from skynet.modules.file_watcher import FileWatcher
 
@@ -53,9 +53,14 @@ def get_credentials(customer_id):
     multiple_credentials = customer_credentials.get('credentialsMap')
 
     if multiple_credentials:
-        result = [val for val in multiple_credentials.values() if val['enabled']]
-        return result[0] if result else {}
+        result = [val for val in multiple_credentials.values() if val.get('enabled') and val.get('secret')]
+        customer_credentials = result[0] if result else {}
 
-    # backwards compatibility
-    customer_credentials.setdefault('type', CredentialsType.OPENAI.value)
+    # If no secret is configured and default_customer_id is set, try to use those credentials
+    if not customer_credentials.get('secret') and default_customer_id and customer_id != default_customer_id:
+        log.info(
+            f'No secret configured for customer {customer_id}, falling back to default customer {default_customer_id}'
+        )
+        return get_credentials(default_customer_id)
+
     return customer_credentials
