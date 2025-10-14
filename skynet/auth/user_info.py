@@ -53,7 +53,7 @@ def get_credentials(customer_id):
     multiple_credentials = customer_credentials.get('credentialsMap')
 
     if multiple_credentials:
-        result = [val for val in multiple_credentials.values() if val['enabled']]
+        result = [val for val in multiple_credentials.values() if val.get('enabled') and val.get('secret')]
         customer_credentials = result[0] if result else {}
 
     # If no secret is configured and default_customer_id is set, try to use those credentials
