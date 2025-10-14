@@ -125,7 +125,7 @@ async def update_summary_queue_metric() -> None:
     SUMMARY_QUEUE_SIZE_METRIC.set(total_queue_size)
 
 
-async def update_current_tasks_metrics() -> None:
+def update_current_tasks_metrics() -> None:
     """Update the current tasks metrics for all processors."""
     for processor in get_all_processor_queue_keys():
         current_task_count = len(current_tasks[processor])
@@ -387,13 +387,13 @@ def create_run_job_task(job: Job) -> asyncio.Task:
     def remove_task(t):
         current_tasks[processor].discard(t)
         # Update metrics when task is removed
-        asyncio.create_task(update_current_tasks_metrics())
+        update_current_tasks_metrics()
 
     task.add_done_callback(remove_task)
     current_tasks[processor].add(task)
 
     # Update metrics when task is added
-    asyncio.create_task(update_current_tasks_metrics())
+    update_current_tasks_metrics()
 
     return task
 
