@@ -70,12 +70,17 @@ class LLMSelector:
         if processor == Processors.OPENAI:
             log.info(f'Forwarding inference to OpenAI for customer {customer_id}')
 
+            model_name = options.get('metadata').get('model')
+
+            # gpt-5 family does not support temperature other than 1 anymore
+            model_temp = 1 if model_name.startswith('gpt-5') else temperature
+
             return ChatOpenAI(
                 api_key=options.get('secret'),
                 max_completion_tokens=max_completion_tokens,
-                model_name=options.get('metadata').get('model'),
+                model_name=model_name,
                 streaming=stream,
-                temperature=temperature,
+                temperature=model_temp,
             )
         elif processor == Processors.AZURE:
             log.info(f'Forwarding inference to Azure-OpenAI for customer {customer_id}')
