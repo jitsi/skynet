@@ -81,6 +81,7 @@ class LLMSelector:
                 model_name=model_name,
                 streaming=stream,
                 temperature=model_temp,
+                use_responses_api=True,
             )
         elif processor == Processors.AZURE:
             log.info(f'Forwarding inference to Azure-OpenAI for customer {customer_id}')
