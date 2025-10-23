@@ -399,29 +399,23 @@ def create_run_job_task(job: Job) -> asyncio.Task:
 
 
 async def maybe_run_next_job() -> None:
-    next_job_id = None
-
     # Priority order for processor queues - prefer faster external APIs over local processing
     processor_priority = [Processors.OCI, Processors.OPENAI, Processors.AZURE, Processors.LOCAL]
 
-    # Try each processor queue in priority order, but only if it can handle more jobs
+    # Try to fill capacity for each processor
     for processor in processor_priority:
-        if not can_run_next_job(processor):
-            continue
+        while can_run_next_job(processor):
+            pending_key = get_processor_queue_keys(processor)[0]
+            next_job_id = await db.lpop(pending_key)
 
-        pending_key = get_processor_queue_keys(processor)[0]
-        next_job_id = await db.lpop(pending_key)
+            if not next_job_id:
+                break  # No more jobs in this queue
 
-        if next_job_id:
             log.info(f"Found job {next_job_id} in {processor.value} queue")
-            break
+            next_job = await get_job(next_job_id)
+            create_run_job_task(next_job)
 
     await update_summary_queue_metric()
-
-    if next_job_id:
-        log.info(f"Next job id: {next_job_id}")
-        next_job = await get_job(next_job_id)
-        create_run_job_task(next_job)
 
 
 async def monitor_candidate_jobs() -> None:
