@@ -147,3 +147,266 @@ class TestRestoreStaleJobs:
         assert db.lpush.call_count == 2
         db.lpush.assert_any_call(PENDING_JOBS_LOCAL_KEY, job_2.id)
         db.lpush.assert_any_call(PENDING_JOBS_LOCAL_KEY, job_3.id)
+
+
+class TestMaybeRunNextJob:
+    @pytest.mark.asyncio
+    async def test_pulls_multiple_jobs_when_capacity_available(self, mocker):
+        '''Test that multiple jobs are pulled when there's capacity for multiple.'''
+        from skynet.constants import PENDING_JOBS_OPENAI_KEY
+        from skynet.modules.ttt.summaries.jobs import maybe_run_next_job
+        from skynet.modules.ttt.summaries.v1.models import Processors
+
+        # Mock dependencies
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:executor'})
+        mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
+        mock_get_job = mocker.patch('skynet.modules.ttt.summaries.jobs.get_job')
+        mock_create_task = mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
+
+        # Create mock jobs
+        job_ids = ['job:1:openai', 'job:2:openai', 'job:3:openai']
+        mock_jobs = [
+            Job(
+                id=job_id,
+                payload=DocumentPayload(text='test'),
+                metadata=DocumentMetadata(customer_id='test'),
+                type=JobType.SUMMARY,
+            )
+            for job_id in job_ids
+        ]
+
+        # Mock lpop to return None for OCI queue, then 3 jobs for OPENAI, then None
+        openai_job_index = [0]
+
+        def lpop_side_effect(key):
+            if key == PENDING_JOBS_OPENAI_KEY:
+                if openai_job_index[0] < len(job_ids):
+                    job_id = job_ids[openai_job_index[0]]
+                    openai_job_index[0] += 1
+                    return job_id
+            return None
+
+        mocker.patch('skynet.modules.ttt.persistence.db.lpop', side_effect=lpop_side_effect)
+
+        mock_get_job.side_effect = mock_jobs
+
+        # Mock capacity: current_tasks starts empty, max_concurrency is 5
+        mocker.patch(
+            'skynet.modules.ttt.summaries.jobs.current_tasks',
+            {
+                Processors.OPENAI: set(),
+                Processors.AZURE: set(),
+                Processors.OCI: set(),
+                Processors.LOCAL: set(),
+            },
+        )
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_openai', 5)
+
+        await maybe_run_next_job()
+
+        # Should have pulled all 3 jobs from OPENAI queue
+        assert mock_get_job.call_count == 3
+        assert mock_create_task.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_stops_when_capacity_reached(self, mocker):
+        '''Test that job pulling stops when processor reaches max concurrency.'''
+        import asyncio
+
+        from skynet.constants import PENDING_JOBS_OPENAI_KEY
+        from skynet.modules.ttt.summaries.jobs import maybe_run_next_job
+        from skynet.modules.ttt.summaries.v1.models import Processors
+
+        # Mock dependencies
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:executor'})
+        mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
+        mock_get_job = mocker.patch('skynet.modules.ttt.summaries.jobs.get_job')
+        mock_create_task = mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
+
+        # Mock 2 running tasks, max is 3, so should only pull 1 more job
+        mock_tasks = {asyncio.create_task(asyncio.sleep(0)), asyncio.create_task(asyncio.sleep(0))}
+        mocker.patch(
+            'skynet.modules.ttt.summaries.jobs.current_tasks',
+            {
+                Processors.OPENAI: mock_tasks,
+                Processors.AZURE: set(),
+                Processors.OCI: set(),
+                Processors.LOCAL: set(),
+            },
+        )
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_openai', 3)
+
+        # Mock queue with jobs available - return one job for OPENAI, None for others
+        job = Job(
+            id='job:1:openai',
+            payload=DocumentPayload(text='test'),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+
+        openai_call_count = [0]
+
+        def lpop_side_effect(key):
+            if key == PENDING_JOBS_OPENAI_KEY and openai_call_count[0] == 0:
+                openai_call_count[0] += 1
+                return 'job:1:openai'
+            return None
+
+        mocker.patch('skynet.modules.ttt.persistence.db.lpop', side_effect=lpop_side_effect)
+        mock_get_job.return_value = job
+
+        await maybe_run_next_job()
+
+        # Should only pull 1 job (capacity is 3, currently 2 running)
+        assert openai_call_count[0] == 1
+        assert mock_create_task.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_processes_multiple_processors(self, mocker):
+        '''Test that jobs are pulled from multiple processor queues in priority order.'''
+        from skynet.constants import PENDING_JOBS_OCI_KEY, PENDING_JOBS_OPENAI_KEY
+        from skynet.modules.ttt.summaries.jobs import maybe_run_next_job
+        from skynet.modules.ttt.summaries.v1.models import Processors
+
+        # Mock dependencies
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:executor'})
+        mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
+        mock_get_job = mocker.patch('skynet.modules.ttt.summaries.jobs.get_job')
+        mock_create_task = mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
+
+        # Create mock jobs for different processors
+        oci_job = Job(
+            id='job:1:oci',
+            payload=DocumentPayload(text='test'),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+        openai_job = Job(
+            id='job:2:openai',
+            payload=DocumentPayload(text='test'),
+            metadata=DocumentMetadata(customer_id='test'),
+            type=JobType.SUMMARY,
+        )
+
+        # Track which queues have been popped
+        oci_popped = [False]
+        openai_popped = [False]
+
+        def lpop_side_effect(key):
+            if key == PENDING_JOBS_OCI_KEY and not oci_popped[0]:
+                oci_popped[0] = True
+                return 'job:1:oci'
+            elif key == PENDING_JOBS_OPENAI_KEY and not openai_popped[0]:
+                openai_popped[0] = True
+                return 'job:2:openai'
+            return None
+
+        mocker.patch('skynet.modules.ttt.persistence.db.lpop', side_effect=lpop_side_effect)
+
+        def get_job_side_effect(job_id):
+            if job_id == 'job:1:oci':
+                return oci_job
+            return openai_job
+
+        mock_get_job.side_effect = get_job_side_effect
+
+        # Mock capacity for all processors
+        mocker.patch(
+            'skynet.modules.ttt.summaries.jobs.current_tasks',
+            {
+                Processors.OPENAI: set(),
+                Processors.AZURE: set(),
+                Processors.OCI: set(),
+                Processors.LOCAL: set(),
+            },
+        )
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_openai', 5)
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_oci', 5)
+
+        await maybe_run_next_job()
+
+        # Should have pulled jobs from both OCI and OPENAI
+        assert mock_create_task.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_stops_when_queue_empty(self, mocker):
+        '''Test that job pulling stops when queue is empty.'''
+        from skynet.modules.ttt.summaries.jobs import maybe_run_next_job
+        from skynet.modules.ttt.summaries.v1.models import Processors
+
+        # Mock dependencies
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:executor'})
+        mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
+        mock_get_job = mocker.patch('skynet.modules.ttt.summaries.jobs.get_job')
+        mock_create_task = mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
+
+        # Mock empty queue (lpop returns None)
+        mocker.patch('skynet.modules.ttt.persistence.db.lpop', return_value=None)
+
+        # Mock capacity available
+        mocker.patch(
+            'skynet.modules.ttt.summaries.jobs.current_tasks',
+            {
+                Processors.OPENAI: set(),
+                Processors.AZURE: set(),
+                Processors.OCI: set(),
+                Processors.LOCAL: set(),
+            },
+        )
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_openai', 5)
+
+        await maybe_run_next_job()
+
+        # Should not start any jobs
+        assert mock_get_job.call_count == 0
+        assert mock_create_task.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_skips_processor_without_capacity(self, mocker):
+        '''Test that processors without capacity are skipped.'''
+        import asyncio
+
+        from skynet.constants import (
+            PENDING_JOBS_AZURE_KEY,
+            PENDING_JOBS_LOCAL_KEY,
+            PENDING_JOBS_OCI_KEY,
+            PENDING_JOBS_OPENAI_KEY,
+        )
+        from skynet.modules.ttt.summaries.jobs import maybe_run_next_job
+        from skynet.modules.ttt.summaries.v1.models import Processors
+
+        # Mock dependencies
+        mocker.patch('skynet.modules.ttt.summaries.jobs.modules', {'summaries:executor'})
+        mocker.patch('skynet.modules.ttt.summaries.jobs.update_summary_queue_metric')
+
+        keys_checked = []
+
+        def lpop_side_effect(key):
+            keys_checked.append(key)
+            return None  # All queues empty
+
+        mock_lpop = mocker.patch('skynet.modules.ttt.persistence.db.lpop', side_effect=lpop_side_effect)
+
+        # OPENAI at capacity, others have capacity
+        mock_openai_tasks = {asyncio.create_task(asyncio.sleep(0)) for _ in range(3)}
+        mocker.patch(
+            'skynet.modules.ttt.summaries.jobs.current_tasks',
+            {
+                Processors.OPENAI: mock_openai_tasks,
+                Processors.AZURE: set(),
+                Processors.OCI: set(),
+                Processors.LOCAL: set(),
+            },
+        )
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_openai', 3)  # At capacity
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_oci', 5)
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_azure', 5)
+        mocker.patch('skynet.modules.ttt.summaries.jobs.max_concurrency_local', 5)
+
+        await maybe_run_next_job()
+
+        # Should check OCI, AZURE, and LOCAL queues but NOT OPENAI (since it's at capacity)
+        assert PENDING_JOBS_OCI_KEY in keys_checked
+        assert PENDING_JOBS_AZURE_KEY in keys_checked
+        assert PENDING_JOBS_LOCAL_KEY in keys_checked
+        assert PENDING_JOBS_OPENAI_KEY not in keys_checked

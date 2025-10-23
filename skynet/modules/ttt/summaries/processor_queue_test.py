@@ -158,9 +158,12 @@ class TestProcessorQueueSelection:
         mocker.patch('skynet.modules.ttt.summaries.jobs.get_job')
         mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
 
-        # Mock lpop to return job only for OCI queue (first in priority)
+        # Mock lpop to return job only once for OCI queue (first in priority), then None
+        oci_called = [False]
+
         def mock_lpop(key):
-            if 'oci' in key:
+            if 'oci' in key and not oci_called[0]:
+                oci_called[0] = True
                 return 'test_job_id:OCI'
             return None
 
@@ -188,9 +191,12 @@ class TestProcessorQueueSelection:
         mocker.patch('skynet.modules.ttt.summaries.jobs.get_job')
         mocker.patch('skynet.modules.ttt.summaries.jobs.create_run_job_task')
 
-        # Mock lpop to return job for AZURE queue
+        # Mock lpop to return job only once for AZURE queue, then None
+        azure_called = [False]
+
         def mock_lpop(key):
-            if 'azure' in key:
+            if 'azure' in key and not azure_called[0]:
+                azure_called[0] = True
                 return 'test_job_id:AZURE'
             return None
 
