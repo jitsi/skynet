@@ -1,3 +1,4 @@
+import aiofiles.os
 from botocore.config import Config
 
 from skynet.env import (
@@ -32,6 +33,7 @@ class S3:
                     log.info(f'Downloaded file from S3: {filename}')
         except Exception as e:
             log.error(f'Failed to download file {filename} from S3: {e}')
+            await aiofiles.os.remove(filename)
 
     async def upload_file(self, filename):
         try:
