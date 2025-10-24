@@ -1326,14 +1326,14 @@ natsort = "==8.*"
 
 [[package]]
 name = "faster-whisper"
-version = "1.1.1"
+version = "1.2.0"
 description = "Faster Whisper transcription with CTranslate2"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "faster-whisper-1.1.1.tar.gz", hash = "sha256:50d27571970c1be0c2b2680a2593d5d12f9f5d2f10484f242a1afbe7cb946604"},
-    {file = "faster_whisper-1.1.1-py3-none-any.whl", hash = "sha256:5808dc334fb64fb4336921450abccfe5e313a859b31ba61def0ac7f639383d90"},
+    {file = "faster-whisper-1.2.0.tar.gz", hash = "sha256:56b20d616a575049a79f33b04f02db0868ce38c5d057a0b816d36ca59a6d2598"},
+    {file = "faster_whisper-1.2.0-py3-none-any.whl", hash = "sha256:e5535628fe93b5123029b410fd8edba2d28f8cee9f8fff8119138e5a9d81afbe"},
 ]
 
 [package.dependencies]
@@ -5871,14 +5871,14 @@ files = [
 
 [[package]]
 name = "silero-vad"
-version = "5.1.2"
+version = "6.0.0"
 description = "Voice Activity Detector (VAD) by Silero"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "silero_vad-5.1.2-py3-none-any.whl", hash = "sha256:93b41953d7774b165407fda6b533c119c5803864e367d5034dc626c82cfdf661"},
-    {file = "silero_vad-5.1.2.tar.gz", hash = "sha256:c442971160026d2d7aa0ad83f0c7ee86c89797a65289fe625c8ea59fc6fb828d"},
+    {file = "silero_vad-6.0.0-py3-none-any.whl", hash = "sha256:37d29be8944d2a2e6f1cc38a066076f13e78e6fc1b567a1beddcca72096f077f"},
+    {file = "silero_vad-6.0.0.tar.gz", hash = "sha256:4d202cb662112d9cba0e3fbc9f2c67e2e265c853f319adf20e348d108c797b76"},
 ]
 
 [package.dependencies]
@@ -7429,4 +7429,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.11"
-content-hash = "2d34db1bc1709078895ef0e85f914ec49019cdd707506321942d3990bec75ab5"
+content-hash = "9bce586558994e4c36e0f8781bd2d13f83e20834fc001551518a03933e92d9f6"
