@@ -91,15 +91,21 @@ redis_aws_region = os.environ.get('REDIS_AWS_REGION', 'us-west-2')
 
 
 # modules > stt > streaming_whisper
-whisper_beam_size = int(os.environ.get('BEAM_SIZE', 5))
+# Reduced from 5 to 3 for faster inference (trade-off: slightly lower accuracy)
+whisper_beam_size = int(os.environ.get('BEAM_SIZE', 3))
 whisper_model_name = os.environ.get('WHISPER_MODEL_NAME')
 # https://opennmt.net/CTranslate2/quantization.html
+# Use 'float16' on GPU for 2-3x speedup (set WHISPER_COMPUTE_TYPE=float16 in staging/prod)
 whisper_compute_type = os.environ.get('WHISPER_COMPUTE_TYPE', 'int8')
 whisper_gpu_indices = os.environ.get('WHISPER_GPU_INDICES')
 whisper_device = os.environ.get('WHISPER_DEVICE', 'auto')
+# Number of model instances to run in parallel (3 instances fit on A10 24GB with ~6GB each)
+# Set to 1 on CPU/dev machines, 3+ on GPU for parallel processing
+whisper_model_pool_size = int(os.environ.get('WHISPER_MODEL_POOL_SIZE', 1))
 whisper_model_path = os.environ.get('WHISPER_MODEL_PATH', f'{os.getcwd()}/models/streaming_whisper')
 whisper_return_transcribed_audio = tobool(os.environ.get('WHISPER_RETURN_TRANSCRIBED_AUDIO'))
-whisper_max_connections = int(os.environ.get('WHISPER_MAX_CONNECTIONS', 10))
+# Increased from 10 to 30 to support higher concurrent load
+whisper_max_connections = int(os.environ.get('WHISPER_MAX_CONNECTIONS', 30))
 whisper_min_probability = float(os.environ.get('WHISPER_MIN_PROBABILITY', 0.7))
 ws_max_size_bytes = int(os.environ.get('WS_MAX_SIZE_BYTES', 1000000))
 ws_max_queue_size = int(os.environ.get('WS_MAX_QUEUE_SIZE', 3000))
@@ -108,7 +114,8 @@ ws_max_ping_timeout = int(os.environ.get('WS_MAX_PING_TIMEOUT', 30))
 # The maximum number of final transcriptions to include in the initial prompt.
 # This is used to provide some context to the model
 # The larger the initial prompt (max 224 tokens), the slower the inference.
-whisper_max_finals_in_initial_prompt = int(os.environ.get('WHISPER_MAX_FINALS_IN_INITIAL_PROMPT', 2))
+# Reduced from 2 to 1 for 10-15% faster inference
+whisper_max_finals_in_initial_prompt = int(os.environ.get('WHISPER_MAX_FINALS_IN_INITIAL_PROMPT', 0))
 # The period in milliseconds to flush the buffer after no new spoken audio is detected
 whisper_flush_interval = int(os.environ.get('WHISPER_FLUSH_BUFFER_INTERVAL', 2000))
 

@@ -257,11 +257,11 @@ def get_cut_mark_from_segment_probability(ts_result: WhisperResult) -> CutMark:
 
 
 def get_wav_header(chunks: List[bytes], chunk_duration_s: float = 0.256, sample_rate: int = 16000) -> bytes:
-    duration = len(chunks) * chunk_duration_s
-    samples = int(duration * sample_rate)
+    # Calculate datasize from actual audio bytes, not from duration
+    # This ensures WAV header matches actual data size
+    datasize = sum(len(chunk) for chunk in chunks)
     bits_per_sample = 16
     channels = 1
-    datasize = samples * channels * bits_per_sample // 8
     o = bytes("RIFF", 'ascii')  # (4byte) Marks file as RIFF
     o += (datasize + 36).to_bytes(4, 'little')  # (4byte) File size in bytes excluding this and RIFF marker
     o += bytes("WAVE", 'ascii')  # (4byte) File type
@@ -287,12 +287,14 @@ def now() -> int:
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
 
-def transcribe(buffer_list: List[bytes], lang: str = 'en', previous_tokens=None) -> WhisperResult:
-    if previous_tokens is None:
-        previous_tokens = []
-    audio_bytes = b''.join(buffer_list)
-    audio = load_audio(audio_bytes)
-    iterator, _ = cfg.model.transcribe(
+def transcribe(buffer_list: List[bytes], lang: str, previous_tokens: list[int], model) -> WhisperResult:
+    # Handle single buffer efficiently (most common case)
+    if len(buffer_list) == 1:
+        audio = load_audio(buffer_list[0])
+    else:
+        audio_bytes = b''.join(buffer_list)
+        audio = load_audio(audio_bytes)
+    iterator, _ = model.transcribe(
         audio,
         language=lang,
         task='transcribe',

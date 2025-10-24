@@ -41,6 +41,18 @@ class State:
         self.is_transcribing = False
         self.last_speech_timestamp = 0.0
 
+        # Pre-allocate audio buffer (90 seconds max)
+        # 16kHz sample rate, 2 bytes per sample, 90 seconds
+        self.max_buffer_size = 16000 * 2 * 90  # 2,880,000 bytes (~2.7MB)
+        self.audio_buffer = bytearray(self.max_buffer_size)
+        self.buffer_position = 0
+
+        # Assign model once per participant (round-robin assignment)
+        from skynet.modules.stt.streaming_whisper import cfg
+
+        self.assigned_model, self.model_idx = cfg.model_pool.get_next_model()
+        log.info(f'Participant {self.participant_id}: assigned to model instance {self.model_idx}')
+
     def _extract_transcriptions(
         self, last_pause: utils.CutMark, ts_result: utils.WhisperResult
     ) -> List[utils.TranscriptionResponse]:
@@ -76,8 +88,7 @@ class State:
                 final_raw_audio = self.trim_working_audio(cut_mark_bytes)
 
                 if return_audio:
-                    final_audio_length = utils.convert_bytes_to_seconds(final_raw_audio)
-                    final_audio = utils.get_wav_header([final_raw_audio], final_audio_length) + final_raw_audio
+                    final_audio = utils.get_wav_header([final_raw_audio]) + final_raw_audio
                 results.append(
                     self.get_response_payload(
                         final.strip(), final_start_timestamp, final_audio, True, probability=last_pause.probability
@@ -104,16 +115,19 @@ class State:
 
     async def force_transcription(self, previous_tokens) -> List[utils.TranscriptionResponse] | None:
         results = None
-        if self.is_transcribing:
+        if self.is_transcribing or self.buffer_position == 0:
             return results
-        ts_result = await self.do_transcription(self.working_audio, previous_tokens)
+        # Use memoryview for zero-copy access to current buffer
+        current_audio = memoryview(self.audio_buffer)[: self.buffer_position]
+        ts_result = await self.do_transcription(current_audio, previous_tokens)
         if ts_result.text.strip():
             results = []
             start_timestamp = int(ts_result.words[0].start * 1000) + self.working_audio_starts_at
             final_audio = None
             if return_audio:
-                final_audio_length = utils.convert_bytes_to_seconds(self.working_audio)
-                final_audio = utils.get_wav_header([self.working_audio], final_audio_length) + self.working_audio
+                # Materialize bytes only when needed for WAV header
+                audio_bytes = bytes(current_audio)
+                final_audio = utils.get_wav_header([audio_bytes]) + audio_bytes
             results.append(
                 self.get_response_payload(
                     ts_result.text.strip(),
@@ -127,9 +141,11 @@ class State:
         return results
 
     async def process(self, chunk: Chunk, previous_tokens: list[int]) -> List[utils.TranscriptionResponse] | None:
-        await self.add_to_store(chunk, self.working_audio + chunk.raw)
+        await self.add_to_store(chunk)
         if not self.long_silence and not self.is_transcribing:
-            ts_result = await self.do_transcription(self.working_audio, previous_tokens)
+            # Use memoryview for zero-copy access to current buffer
+            current_audio = memoryview(self.audio_buffer)[: self.buffer_position]
+            ts_result = await self.do_transcription(current_audio, previous_tokens)
             last_pause = utils.get_cut_mark_from_segment_probability(ts_result)
             results = self._extract_transcriptions(last_pause, ts_result)
             if len(results) > 0:
@@ -137,13 +153,41 @@ class State:
         log.debug(f'Participant {self.participant_id}: no ts results')
         return None
 
-    async def add_to_store(self, chunk: Chunk, tmp_working_audio: bytes = b''):
+    async def add_to_store(self, chunk: Chunk):
         now_millis = utils.now()
         self.chunk_count += 1
-        # if the working audio is empty, set the start timestamp
-        if not self.working_audio:
+
+        # Check if adding this chunk would overflow the buffer (at 90% capacity)
+        chunk_len = len(chunk.raw)
+        if self.buffer_position + chunk_len > self.max_buffer_size * 0.9:
+            log.warning(
+                f'Participant {self.participant_id}: buffer at {self.buffer_position} bytes '
+                f'({100 * self.buffer_position / self.max_buffer_size:.1f}% full), forcing transcription'
+            )
+            # Force transcription of current buffer to prevent overflow
+            if self.buffer_position > 0:
+                current_audio = bytes(self.audio_buffer[: self.buffer_position])
+                ts_result = await self.do_transcription(current_audio, [])
+                if ts_result and ts_result.text.strip():
+                    log.info(
+                        f'Participant {self.participant_id}: emergency transcription: "{ts_result.text.strip()[:50]}..."'
+                    )
+            # Reset buffer
+            self.buffer_position = 0
             self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
-        # retrieve the word timestamps from the new working audio
+
+        # if the working audio is empty, set the start timestamp
+        if self.buffer_position == 0:
+            self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)
+
+        # Add chunk to pre-allocated buffer
+        self.audio_buffer[self.buffer_position : self.buffer_position + chunk_len] = chunk.raw
+        self.buffer_position += chunk_len
+
+        # Create temporary view of accumulated audio for VAD (only one allocation)
+        tmp_working_audio = bytes(self.audio_buffer[: self.buffer_position])
+
+        # retrieve the word timestamps from the accumulated audio
         _, speech_timestamps = utils.is_silent(tmp_working_audio)
         log.debug(f'## Participant {self.participant_id}: speech timestamps {speech_timestamps}')
         log.debug(f'## Participant {self.participant_id}: last speech timestamp {self.last_speech_timestamp}')
@@ -151,13 +195,18 @@ class State:
         # the last speech timestamp has changed
         # update the buffer and the last received chunk timestamp
         if speech_timestamps and speech_timestamps[-1]['end'] != self.last_speech_timestamp:
+            log.info(
+                f'Participant {self.participant_id}: speech timestamp advanced from {self.last_speech_timestamp:.3f}s to {speech_timestamps[-1]["end"]:.3f}s, updating last_received_chunk'
+            )
             self.last_speech_timestamp = speech_timestamps[-1]['end']
             self.last_received_chunk = now_millis
             self.working_audio = tmp_working_audio
             self.long_silence = False
             self.silent_chunks = 0
         else:
-            log.debug(f'## Participant {self.participant_id}: chunk is silent')
+            log.info(
+                f'## Participant {self.participant_id}: chunk is silent or timestamp unchanged (last={self.last_speech_timestamp:.3f}s, current={speech_timestamps[-1]["end"] if speech_timestamps else 0:.3f}s, buffer={self.buffer_position} bytes)'
+            )
             # if the last word timestamp is the same as the previous one
             # the chunk is silent
             self.silent_chunks += 1
@@ -171,21 +220,33 @@ class State:
         log.debug(
             f'Participant {self.participant_id}: chunk length {chunk.size} bytes, '
             f'duration {chunk.duration}s, '
-            f'total chunks {self.chunk_count}.'
+            f'total chunks {self.chunk_count}, '
+            f'buffer: {self.buffer_position}/{self.max_buffer_size} bytes.'
         )
 
     def trim_working_audio(self, bytes_to_cut: int) -> bytes:
         log.debug(
             f'Participant {self.participant_id}: '
-            + f'trimming the audio buffer, current length is {len(self.working_audio)} bytes.'
+            + f'trimming the audio buffer, current length is {self.buffer_position} bytes.'
         )
-        dropped_chunk = self.working_audio[:bytes_to_cut]
-        self.working_audio = self.working_audio[bytes_to_cut:]
-        if len(self.working_audio) == 0:
+        # Extract the dropped chunk
+        dropped_chunk = bytes(self.audio_buffer[:bytes_to_cut])
+
+        # Shift remaining audio to the beginning of buffer
+        remaining_bytes = self.buffer_position - bytes_to_cut
+        if remaining_bytes > 0:
+            # Use memmove-like operation (overlapping copy is safe)
+            self.audio_buffer[:remaining_bytes] = self.audio_buffer[bytes_to_cut : self.buffer_position]
+            self.buffer_position = remaining_bytes
+            # Update working_audio to reflect new buffer state
+            self.working_audio = bytes(self.audio_buffer[: self.buffer_position])
+        else:
+            self.buffer_position = 0
+            self.working_audio = b''
             self.working_audio_starts_at = 0
+
         log.debug(
-            f'Participant {self.participant_id}: '
-            + f'the audio buffer after cut is now {len(self.working_audio)} bytes'
+            f'Participant {self.participant_id}: ' + f'the audio buffer after cut is now {self.buffer_position} bytes'
         )
         return dropped_chunk
 
@@ -215,15 +276,16 @@ class State:
         log.debug(f'Participant {self.participant_id}: flushing working audio')
         self.working_audio_starts_at = 0
         self.working_audio = b''
+        self.buffer_position = 0
         self.last_speech_timestamp = 0.0
 
     @staticmethod
     def get_num_bytes_for_slicing(cut_mark: float) -> int:
         byte_threshold = utils.convert_seconds_to_bytes(cut_mark)
-        # the resulting value needs to be a multiple of 2048
-        sliceable_bytes_multiplier, _ = divmod(byte_threshold, 2048)
-        sliceable_bytes = sliceable_bytes_multiplier * 2048
-        log.debug(f'Sliceable bytes: {sliceable_bytes}')
+        # Round to nearest 2-byte boundary (16-bit PCM sample alignment)
+        # No need for larger alignment - 2048 was causing audio/transcription misalignment
+        sliceable_bytes = int(byte_threshold) & ~1  # Clear lowest bit to ensure even number
+        log.debug(f'Sliceable bytes: {sliceable_bytes} (from cut mark {cut_mark}s)')
         return sliceable_bytes
 
     async def do_transcription(self, audio: bytes, previous_tokens: list[int]) -> utils.WhisperResult | None:
@@ -231,15 +293,20 @@ class State:
         start = time.perf_counter_ns()
         loop = asyncio.get_running_loop()
         log.debug(f'Participant {self.participant_id}: starting transcription of {len(audio)} bytes.')
+
         try:
-            ts_result = await loop.run_in_executor(None, utils.transcribe, [audio], self.lang, previous_tokens)
+            # Use the model assigned to this participant
+            ts_result = await loop.run_in_executor(
+                None, utils.transcribe, [audio], self.lang, previous_tokens, self.assigned_model
+            )
         except RuntimeError as e:
             log.error(f'Participant {self.participant_id}: failed to transcribe {e}')
-            self.is_transcribing = False
             return None
+        finally:
+            self.is_transcribing = False
+
         end = time.perf_counter_ns()
         processing_time = (end - start) / 1e6 / 1000
         TRANSCRIBE_DURATION_METRIC.observe(processing_time)
         log.debug(ts_result)
-        self.is_transcribing = False
         return ts_result
