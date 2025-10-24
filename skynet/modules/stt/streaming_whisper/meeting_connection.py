@@ -20,6 +20,9 @@ class MeetingConnection:
     participants: dict[str, State] = {}
     previous_transcription_tokens: List[int]
     previous_transcription_store: List[List[int]]
+    total_finals: int
+    total_interims: int
+    total_audio_received_s: float
     tokenizer: Tokenizer | None
     meeting_language: str | None
     meeting_id: str
@@ -32,9 +35,19 @@ class MeetingConnection:
         self.meeting_id = meeting_id
         self.previous_transcription_tokens = []
         self.previous_transcription_store = []
+        self.total_finals = 0
+        self.total_interims = 0
+        self.total_audio_received_s = 0
         self.meeting_language = None
         self.tokenizer = None
         self.connected = True
+
+    async def update_connection_summary_stats(self, payloads):
+        for payload in payloads:
+            if payload.type == 'final':
+                self.total_finals += 1
+            else:
+                self.total_interims += 1
 
     async def update_initial_prompt(self, previous_payloads: list[utils.TranscriptionResponse]):
         for payload in previous_payloads:
@@ -47,7 +60,7 @@ class MeetingConnection:
 
     async def process(self, chunk: bytes, chunk_timestamp: int) -> List[utils.TranscriptionResponse] | None:
         a_chunk = Chunk(chunk, chunk_timestamp)
-
+        self.total_audio_received_s += a_chunk.duration
         # The first chunk sets the meeting language and initializes the Tokenizer
         if not self.meeting_language:
             self.meeting_language = a_chunk.language
@@ -63,6 +76,7 @@ class MeetingConnection:
 
         payloads = await self.participants[a_chunk.participant_id].process(a_chunk, self.previous_transcription_tokens)
         if payloads:
+            await self.update_connection_summary_stats(payloads)
             await self.update_initial_prompt(payloads)
         return payloads
 

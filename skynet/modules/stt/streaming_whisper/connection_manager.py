@@ -64,6 +64,10 @@ class ConnectionManager:
                     log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
 
     async def disconnect(self, connection: MeetingConnection, already_closed=False):
+        log.info(
+            f"Closed {connection.meeting_id} | Audio: {connection.total_audio_received_s}s | "
+            + f"Interims: {connection.total_interims} | Finals: {connection.total_finals}"
+        )
         try:
             self.connections.remove(connection)
         except ValueError:
