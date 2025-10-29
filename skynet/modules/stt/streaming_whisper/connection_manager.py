@@ -64,10 +64,19 @@ class ConnectionManager:
                     log.error(f'Meeting {connection.meeting_id}: exception while sending transcription results {ex}')
 
     async def disconnect(self, connection: MeetingConnection, already_closed=False):
+        # Build participant audio distribution string
+        participant_stats = []
+        for participant_id, state in connection.participants.items():
+            participant_stats.append(f"{participant_id}: {state.total_audio_received_s:.1f}s")
+
+        participants_str = " | ".join(participant_stats) if participant_stats else "none"
+
         log.info(
             f"Closed {connection.meeting_id} | Audio: {connection.total_audio_received_s}s | "
             + f"Interims: {connection.total_interims} | Finals: {connection.total_finals}"
         )
+        log.info(f"Participant audio distribution: {participants_str}")
+
         try:
             self.connections.remove(connection)
         except ValueError:
