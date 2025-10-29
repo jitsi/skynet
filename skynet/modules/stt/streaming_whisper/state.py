@@ -22,6 +22,7 @@ class State:
     working_audio_starts_at: int
     last_received_chunk: int
     last_speech_timestamp: float
+    total_audio_received_s: float
 
     def __init__(
         self,
@@ -40,6 +41,7 @@ class State:
         self.last_received_chunk = utils.now()
         self.is_transcribing = False
         self.last_speech_timestamp = 0.0
+        self.total_audio_received_s = 0.0
 
     def _extract_transcriptions(
         self, last_pause: utils.CutMark, ts_result: utils.WhisperResult
@@ -140,6 +142,7 @@ class State:
     async def add_to_store(self, chunk: Chunk, tmp_working_audio: bytes = b''):
         now_millis = utils.now()
         self.chunk_count += 1
+        self.total_audio_received_s += chunk.duration
         # if the working audio is empty, set the start timestamp
         if not self.working_audio:
             self.working_audio_starts_at = chunk.timestamp - int(chunk.duration * 1000)

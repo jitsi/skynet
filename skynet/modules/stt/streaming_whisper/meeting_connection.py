@@ -84,6 +84,7 @@ class MeetingConnection:
         if participant_id in self.participants:
             payloads = await self.participants[participant_id].force_transcription(self.previous_transcription_tokens)
             if payloads:
+                await self.update_connection_summary_stats(payloads)
                 await self.update_initial_prompt(payloads)
             return payloads
         return None
