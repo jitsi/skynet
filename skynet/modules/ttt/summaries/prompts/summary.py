@@ -1,46 +1,37 @@
-from skynet.constants import response_prefix
+from typing import Optional
+
+from skynet.constants import Locale, response_prefix
+from skynet.modules.ttt.summaries.prompts.common import get_language_instruction
 
 
-def get_header(transcript_type: str) -> str:
-    return f"You are an AI assistant. Summarize the following {transcript_type} transcript into a clear and concise summary."
+def get_summary_prompt(transcript_type: str, locale: Optional[Locale] = None) -> str:
+    return f"""You are an AI assistant. Summarize the following {transcript_type} transcript into a clear and concise summary.
 
+Instructions:
 
-body = f"""
-    Instructions:
+1. Identify and include the main discussion points, key updates, decisions, and any important issues raised.
+2. Exclude small talk, greetings, and off-topic content.
+3. Format the output as plain text using short paragraphs separated by a single blank line.
+4. Do not use bullet points, numbered lists, bold text, or headings.
+5. Keep the summary clear, concise, and easy to read in under 2 minutes.
 
-    1. Identify and include the main discussion points, key updates, decisions, and any important issues raised.
-    2. Exclude small talk, greetings, and off-topic content.
-    3. Format the output as plain text using short paragraphs separated by a single blank line.
-    4. Do not use bullet points, numbered lists, bold text, or headings.
-    5. Keep the summary clear, concise, and easy to read in under 2 minutes.
+{get_language_instruction(locale)}
 
-    Now generate the summary based on this transcript:
-
-    Start your response with "{response_prefix}".
-    Now generate the summary based on this transcript:
+Start your response with "{response_prefix}".
 """
 
 
-summary_emails = f"""
-    {get_header("emails")}
+def summary_emails(locale: Optional[Locale] = None) -> str:
+    return get_summary_prompt("emails", locale)
 
-    {body}
-"""
 
-summary_conversation = f"""
-    {get_header("conversation")}
+def summary_conversation(locale: Optional[Locale] = None) -> str:
+    return get_summary_prompt("conversation", locale)
 
-    {body}
-"""
 
-summary_meeting = f"""
-    {get_header("meeting")}
+def summary_meeting(locale: Optional[Locale] = None) -> str:
+    return get_summary_prompt("meeting", locale)
 
-    {body}
-"""
 
-summary_text = f"""
-    {get_header("text or document")}
-
-    {body}
-"""
+def summary_text(locale: Optional[Locale] = None) -> str:
+    return get_summary_prompt("text or document", locale)

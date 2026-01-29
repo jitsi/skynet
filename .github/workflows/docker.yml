@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    env:
+      DOCKER_API_VERSION: "1.41"
     strategy:
       fail-fast: false
       matrix:

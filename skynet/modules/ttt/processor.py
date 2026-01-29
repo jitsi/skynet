@@ -31,7 +31,6 @@ from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_meeting,
     action_items_text,
 )
-from skynet.modules.ttt.summaries.prompts.common import set_response_language
 from skynet.modules.ttt.summaries.prompts.summary import (
     summary_conversation,
     summary_emails,
@@ -173,11 +172,11 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
             system_message = config.get('live_summary_prompt')
 
     if not system_message:
-        system_message = hint_type_to_prompt[job_type][payload.hint]
+        prompt_fn = hint_type_to_prompt[job_type][payload.hint]
+        system_message = prompt_fn(payload.preferred_locale)
 
     prompt = ChatPromptTemplate(
         [
-            ('system', set_response_language(payload.preferred_locale)),
             ('system', system_message),
             ('human', '{text}'),
         ]

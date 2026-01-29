@@ -18,8 +18,8 @@ def process_fixture(mocker):
 def summarize_fixture(mocker):
     from skynet.modules.ttt.summaries.v1.models import HintType, JobType
 
-    # Mock the prompt dictionary with correct enum keys
-    mock_prompts = {JobType.SUMMARY: {HintType.TEXT: 'Default summary prompt for text'}}
+    # Mock the prompt dictionary with correct enum keys - prompts are now functions
+    mock_prompts = {JobType.SUMMARY: {HintType.TEXT: lambda locale=None: 'Default summary prompt for text'}}
     mocker.patch('skynet.modules.ttt.processor.hint_type_to_prompt', mock_prompts)
 
     # Mock the chain loading function
@@ -31,7 +31,6 @@ def summarize_fixture(mocker):
     mocker.patch('skynet.modules.ttt.customer_configs.utils.get_existing_customer_config')
 
     # Mock other dependencies
-    mocker.patch('skynet.modules.ttt.processor.set_response_language', return_value='')
     mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate')
 
     return mocker
@@ -61,7 +60,7 @@ class TestSummarize:
         # Verify ChatPromptTemplate was called with the payload prompt
         ChatPromptTemplate.assert_called_once()
         call_args = ChatPromptTemplate.call_args[0][0]  # Get the first positional argument (the messages list)
-        system_message = call_args[1][1]  # Second message should be the system prompt
+        system_message = call_args[0][1]  # First message is now the system prompt
         assert system_message == "Custom user prompt"
 
         assert result == "Test result"
@@ -94,7 +93,7 @@ class TestSummarize:
 
         ChatPromptTemplate.assert_called_once()
         call_args = ChatPromptTemplate.call_args[0][0]  # Get the first positional argument (the messages list)
-        system_message = call_args[1][1]  # Second message should be the system prompt
+        system_message = call_args[0][1]  # First message is now the system prompt
         assert system_message == "Default summary prompt for text"
 
         assert result == "Test result"
@@ -127,7 +126,7 @@ class TestSummarize:
 
         ChatPromptTemplate.assert_called_once()
         call_args = ChatPromptTemplate.call_args[0][0]  # Get the first positional argument (the messages list)
-        system_message = call_args[1][1]  # Second message should be the system prompt
+        system_message = call_args[0][1]  # First message is now the system prompt
         assert system_message == "Default summary prompt for text"
 
         assert result == "Test result"
@@ -158,7 +157,7 @@ class TestSummarize:
 
         ChatPromptTemplate.assert_called_once()
         call_args = ChatPromptTemplate.call_args[0][0]
-        system_message = call_args[1][1]
+        system_message = call_args[0][1]  # First message is now the system prompt
         assert system_message == "Custom live summary prompt"
 
         assert result == "Test result"
