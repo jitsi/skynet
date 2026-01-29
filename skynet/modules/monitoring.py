@@ -129,6 +129,38 @@ MAP_REDUCE_CHUNKING_COUNTER = Counter(
     labelnames=['job_type'],
 )
 
+OPENAI_RATELIMIT_REMAINING_REQUESTS = Gauge(
+    'openai_ratelimit_remaining_requests',
+    documentation='Remaining requests in current OpenAI rate limit window',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['processor'],
+)
+
+OPENAI_RATELIMIT_LIMIT_REQUESTS = Gauge(
+    'openai_ratelimit_limit_requests',
+    documentation='Maximum requests allowed in OpenAI rate limit window',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['processor'],
+)
+
+OPENAI_RATELIMIT_REMAINING_TOKENS = Gauge(
+    'openai_ratelimit_remaining_tokens',
+    documentation='Remaining tokens in current OpenAI rate limit window',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['processor'],
+)
+
+OPENAI_RATELIMIT_LIMIT_TOKENS = Gauge(
+    'openai_ratelimit_limit_tokens',
+    documentation='Maximum tokens allowed in OpenAI rate limit window',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['processor'],
+)
+
 instrumentator = Instrumentator(
     excluded_handlers=["/healthz", "/metrics"],
 )

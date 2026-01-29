@@ -10,12 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11
-      - uses: pydantic/ollama-action@v3
-        with:
-          model: llama3.2:1b
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          nohup ollama serve > /dev/null 2>&1 &
+          sleep 5
+          ollama pull llama3.2:1b
       - uses: shogo82148/actions-setup-redis@v1
         with:
           redis-version: "7.x"

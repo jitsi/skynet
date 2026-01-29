@@ -9,6 +9,7 @@ from skynet.auth.user_info import CredentialsType, get_credentials
 from skynet.env import (
     app_uuid,
     azure_openai_api_version,
+    default_customer_id,
     llama_path,
     oci_auth_type,
     oci_available,
@@ -67,6 +68,11 @@ class LLMSelector:
         processor = LLMSelector.get_job_processor(customer_id, job_id, oci_blackout)
         options = get_credentials(customer_id)
 
+        # Track rate limit headers only for system's own API key
+        track_headers = default_customer_id is not None and (
+            customer_id == default_customer_id or options.get('customerId') == default_customer_id
+        )
+
         if processor == Processors.OPENAI:
             log.info(f'Forwarding inference to OpenAI for customer {customer_id}')
 
@@ -77,6 +83,7 @@ class LLMSelector:
 
             return ChatOpenAI(
                 api_key=options.get('secret'),
+                include_response_headers=track_headers,
                 max_completion_tokens=max_completion_tokens,
                 model_name=model_name,
                 streaming=stream,
@@ -92,6 +99,7 @@ class LLMSelector:
                 api_version=azure_openai_api_version,
                 azure_deployment=metadata.get('deploymentName'),
                 azure_endpoint=metadata.get('endpoint'),
+                include_response_headers=track_headers,
                 max_completion_tokens=max_completion_tokens,
                 streaming=stream,
                 temperature=temperature,
