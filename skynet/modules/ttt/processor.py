@@ -24,6 +24,7 @@ from skynet.modules.ttt.assistant.constants import assistant_rag_question_extrac
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload
 from skynet.modules.ttt.llm_selector import LLMSelector
+from skynet.modules.ttt.ratelimit_tracker import extract_ratelimit_from_response, should_track_ratelimit
 from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_conversation,
     action_items_emails,
@@ -287,21 +288,32 @@ async def process_chat_completion(
 ) -> str:
     llm = LLMSelector.select(customer_id, **model_kwargs)
 
-    chain = llm | StrOutputParser()
-    result = await chain.ainvoke(messages)
+    response = await llm.ainvoke(messages)
 
-    return result
+    # Track rate limits for system's own API key
+    if customer_id and should_track_ratelimit(customer_id):
+        processor = LLMSelector.get_job_processor(customer_id)
+        extract_ratelimit_from_response(response, processor.value)
+
+    return response.content
 
 
 async def process_chat_completion_stream(
     messages: List[ChatCompletionMessageParam], customer_id: Optional[str] = None, **model_kwargs
 ):
     llm = LLMSelector.select(customer_id, **model_kwargs)
-    chain = llm | StrOutputParser()
+    track_ratelimit = customer_id and should_track_ratelimit(customer_id)
+    first_chunk = True
 
     try:
-        async for message in chain.astream(messages):
-            yield message
+        async for chunk in llm.astream(messages):
+            # Track rate limits from first chunk (headers only available there)
+            if first_chunk and track_ratelimit:
+                processor = LLMSelector.get_job_processor(customer_id)
+                extract_ratelimit_from_response(chunk, processor.value)
+                first_chunk = False
+
+            yield chunk.content if hasattr(chunk, 'content') else str(chunk)
     except Exception as e:
         yield json.dumps(
             {'error': e.body if hasattr(e, 'body') else str(e), 'code': e.code if hasattr(e, 'code') else None}
