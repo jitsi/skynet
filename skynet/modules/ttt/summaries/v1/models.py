@@ -41,7 +41,7 @@ class ActionItemsDocumentPayload(DocumentPayload):
                     'text': 'Your text here',
                     'hint': 'text',
                     'priority': 'normal',
-                    'prompt': action_items_meeting,
+                    'prompt': action_items_meeting(),
                     'max_completion_tokens': None,
                 }
             ]
@@ -58,7 +58,7 @@ class TableOfContentsDocumentPayload(DocumentPayload):
                     'hint': 'meeting',
                     'max_completion_tokens': None,
                     'priority': 'normal',
-                    'prompt': table_of_contents_meeting,
+                    'prompt': table_of_contents_meeting(),
                 }
             ]
         }
@@ -74,7 +74,7 @@ class SummaryDocumentPayload(DocumentPayload):
                     'hint': 'meeting',
                     'max_completion_tokens': None,
                     'priority': 'normal',
-                    'prompt': summary_meeting,
+                    'prompt': summary_meeting(),
                 }
             ]
         }
