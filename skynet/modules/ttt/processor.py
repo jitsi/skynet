@@ -24,7 +24,11 @@ from skynet.modules.ttt.assistant.constants import assistant_rag_question_extrac
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload
 from skynet.modules.ttt.llm_selector import LLMSelector
-from skynet.modules.ttt.ratelimit_tracker import extract_ratelimit_from_response, should_track_ratelimit
+from skynet.modules.ttt.ratelimit_tracker import (
+    extract_ratelimit_from_response,
+    get_ratelimit_callback,
+    should_track_ratelimit,
+)
 from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_conversation,
     action_items_emails,
@@ -206,7 +210,13 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
         docs = text_splitter.create_documents([text])
         chain = load_summarize_chain(model, chain_type='map_reduce', combine_prompt=prompt, map_prompt=prompt)
 
-    result = await chain.ainvoke(input={'input_documents': docs})
+    # Add rate limit callback for system's own API key
+    callbacks = []
+    if should_track_ratelimit(customer_id):
+        processor = LLMSelector.get_job_processor(customer_id)
+        callbacks.append(get_ratelimit_callback(processor.value))
+
+    result = await chain.ainvoke(input={'input_documents': docs}, config={'callbacks': callbacks})
     formatted_result = result['output_text'].replace(response_prefix, '').strip()
 
     log.info(f'input length: {len(system_message) + len(text)}')
