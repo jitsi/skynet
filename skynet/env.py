@@ -124,6 +124,8 @@ max_concurrency_local = int(os.environ.get('MAX_CONCURRENCY_LOCAL', 5))
 
 # summaries
 summary_minimum_payload_length = int(os.environ.get('SUMMARY_MINIMUM_PAYLOAD_LENGTH', 100))
+# Live summaries have a higher minimum because the calling service adds extra context to the payload
+live_summary_minimum_payload_length = int(os.environ.get('LIVE_SUMMARY_MINIMUM_PAYLOAD_LENGTH', 400))
 enable_batching = tobool(os.environ.get('ENABLE_BATCHING', 'true'))
 
 # monitoring
