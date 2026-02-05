@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, Request
 from fastapi_versionizer.versionizer import api_version
 
-from skynet.env import summary_minimum_payload_length
+from skynet.env import live_summary_minimum_payload_length, summary_minimum_payload_length
 
 from skynet.utils import get_app_id, get_customer_id, get_router
 
@@ -26,7 +26,8 @@ def get_metadata(request: Request) -> DocumentMetadata:
 
 
 def validate_summaries_payload(payload: DocumentPayload) -> None:
-    if len(payload.text.strip()) < summary_minimum_payload_length:
+    min_length = live_summary_minimum_payload_length if payload.is_live_summary else summary_minimum_payload_length
+    if len(payload.text.strip()) < min_length:
         raise HTTPException(status_code=422, detail="Payload is too short")
 
 
