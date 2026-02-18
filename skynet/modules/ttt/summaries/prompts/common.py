@@ -3,18 +3,13 @@ from typing import Optional
 from skynet.constants import Locale
 
 
-stick_to_main_language = "Respond using the main language of the provided text."
-
-
-def set_response_language(locale: Locale) -> str:
-    if not locale:
-        return stick_to_main_language
-
-    return f'Make sure that you respond in {locale.name.lower()}.'
-
-
 def get_language_instruction(locale: Optional[Locale]) -> str:
     """Get language instruction for prompts."""
     if locale:
         return f"Generate the response in {locale.name.lower()}."
-    return "Detect the main language of the provided transcript and generate the response in that language."
+    return (
+        "Identify the predominant language of the transcript (the language used for "
+        "the majority of the spoken content, ignoring names, greetings, or occasional "
+        "foreign phrases) and generate the response in that language. "
+        "If the predominant language is unclear, default to English."
+    )
