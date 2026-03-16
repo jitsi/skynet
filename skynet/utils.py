@@ -56,7 +56,10 @@ async def create_webserver(app, port):
 
 
 def get_customer_id(request: Request) -> str:
-    return request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
+    if hasattr(request.state, 'decoded_jwt'):
+        return request.state.decoded_jwt.get("cid")
+
+    return 'default' if bypass_auth else None
 
 
 def get_app_id(request: Request) -> str:

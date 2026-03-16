@@ -10,7 +10,7 @@ class CustomerId:
         if customer_id is None:
             raise HTTPException(
                 status_code=422,
-                detail='Customer ID is required to be encoded in the JWT token or specified as a query parameter.',
+                detail='Customer ID is required to be encoded in the JWT token.',
             )
 
         return customer_id
