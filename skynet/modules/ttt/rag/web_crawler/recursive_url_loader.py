@@ -29,14 +29,12 @@ class SkynetRecursiveUrlLoader(RecursiveUrlLoader):
         if depth >= self.max_depth:
             return []
 
-        # Disable SSL verification because websites may have invalid SSL certificates,
-        # but won't cause any security issues for us.
         close_session = session is None
         session = (
             session
             if session is not None
             else aiohttp.ClientSession(
-                connector=aiohttp.TCPConnector(ssl=False),
+                connector=aiohttp.TCPConnector(),
                 timeout=aiohttp.ClientTimeout(total=self.timeout),
                 headers=self.headers,
             )

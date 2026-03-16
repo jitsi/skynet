@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
