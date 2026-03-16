@@ -56,12 +56,7 @@ async def create_webserver(app, port):
 
 
 def get_customer_id(request: Request) -> str:
-    id = request.query_params.get("customerId")
-
-    if not id:
-        id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
-
-    return id
+    return request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
 
 
 def get_app_id(request: Request) -> str:
