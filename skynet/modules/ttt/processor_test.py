@@ -2,7 +2,139 @@ import pytest
 
 from oci.exceptions import TransientServiceError
 
+from skynet.constants import Locale
 from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, Job, JobType, Processors
+
+
+class TestDetectLocale:
+    """Tests for the detect_locale function."""
+
+    @pytest.fixture
+    def mock_model(self, mocker):
+        """Create a mock LLM model."""
+        model = mocker.AsyncMock()
+        return model
+
+    def _create_chain_mock(self, mocker, return_value: str):
+        """Helper to mock the chain behavior."""
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value=return_value)
+        return mock_chain
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_french(self, mocker, mock_model):
+        """Test detection of French text."""
+        mocker.patch(
+            'skynet.modules.ttt.processor.ChatPromptTemplate.from_template'
+        ).__or__ = lambda self, other: self._create_chain_mock(mocker, 'fr')
+
+        # Mock the chain pipeline
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value='fr')
+        mocker.patch('skynet.modules.ttt.processor.StrOutputParser')
+        mocker.patch.object(
+            mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate').from_template.return_value,
+            '__or__',
+            return_value=mocker.MagicMock(__or__=mocker.MagicMock(return_value=mock_chain)),
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "Bonjour, comment allez-vous?")
+        assert result == Locale.FRENCH
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_english(self, mocker, mock_model):
+        """Test detection of English text."""
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value='en')
+        mocker.patch('skynet.modules.ttt.processor.StrOutputParser')
+        mocker.patch.object(
+            mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate').from_template.return_value,
+            '__or__',
+            return_value=mocker.MagicMock(__or__=mocker.MagicMock(return_value=mock_chain)),
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "Hello, how are you?")
+        assert result == Locale.ENGLISH
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_german(self, mocker, mock_model):
+        """Test detection of German text."""
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value='de')
+        mocker.patch('skynet.modules.ttt.processor.StrOutputParser')
+        mocker.patch.object(
+            mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate').from_template.return_value,
+            '__or__',
+            return_value=mocker.MagicMock(__or__=mocker.MagicMock(return_value=mock_chain)),
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "Guten Tag, wie geht es Ihnen?")
+        assert result == Locale.GERMAN
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_spanish(self, mocker, mock_model):
+        """Test detection of Spanish text."""
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value='es')
+        mocker.patch('skynet.modules.ttt.processor.StrOutputParser')
+        mocker.patch.object(
+            mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate').from_template.return_value,
+            '__or__',
+            return_value=mocker.MagicMock(__or__=mocker.MagicMock(return_value=mock_chain)),
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "Hola, ¿cómo estás?")
+        assert result == Locale.SPANISH
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_italian(self, mocker, mock_model):
+        """Test detection of Italian text."""
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value='it')
+        mocker.patch('skynet.modules.ttt.processor.StrOutputParser')
+        mocker.patch.object(
+            mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate').from_template.return_value,
+            '__or__',
+            return_value=mocker.MagicMock(__or__=mocker.MagicMock(return_value=mock_chain)),
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "Ciao, come stai?")
+        assert result == Locale.ITALIAN
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_unsupported_language(self, mocker, mock_model):
+        """Test that unsupported languages return None."""
+        mock_chain = mocker.AsyncMock()
+        mock_chain.ainvoke = mocker.AsyncMock(return_value='unknown')
+        mocker.patch('skynet.modules.ttt.processor.StrOutputParser')
+        mocker.patch.object(
+            mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate').from_template.return_value,
+            '__or__',
+            return_value=mocker.MagicMock(__or__=mocker.MagicMock(return_value=mock_chain)),
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "こんにちは")
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_detect_locale_empty_text_returns_none(self, mock_model):
+        """Test that empty text returns None without calling the model."""
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(mock_model, "")
+        assert result is None
 
 
 @pytest.fixture()
