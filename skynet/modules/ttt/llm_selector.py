@@ -64,6 +64,7 @@ class LLMSelector:
         temperature: Optional[float] = 0,
         stream: Optional[bool] = False,
         oci_blackout: bool = False,
+        for_language_detection: bool = False,
     ) -> BaseChatModel:
         processor = LLMSelector.get_job_processor(customer_id, job_id, oci_blackout)
         options = get_credentials(customer_id)
@@ -76,7 +77,9 @@ class LLMSelector:
         if processor == Processors.OPENAI:
             log.info(f'Forwarding inference to OpenAI for customer {customer_id}')
 
-            model_name = options.get('metadata').get('model')
+            metadata = options.get('metadata')
+            lang_model = metadata.get('languageDetectionModel') if for_language_detection else None
+            model_name = lang_model or metadata.get('model')
 
             # gpt-5 family does not support temperature other than 1 anymore
             model_temp = 1 if model_name.startswith('gpt-5') else temperature
@@ -93,11 +96,13 @@ class LLMSelector:
             log.info(f'Forwarding inference to Azure-OpenAI for customer {customer_id}')
 
             metadata = options.get('metadata')
+            lang_model = metadata.get('languageDetectionModel') if for_language_detection else None
+            deployment_name = lang_model or metadata.get('deploymentName')
 
             return AzureChatOpenAI(
                 api_key=options.get('secret'),
                 api_version=azure_openai_api_version,
-                azure_deployment=metadata.get('deploymentName'),
+                azure_deployment=deployment_name,
                 azure_endpoint=metadata.get('endpoint'),
                 include_response_headers=track_headers,
                 max_completion_tokens=max_completion_tokens,

@@ -87,7 +87,7 @@ _CODE_TO_LOCALE = {
 }
 
 
-async def detect_locale(model: BaseChatModel, text: str) -> Optional[Locale]:
+async def detect_locale(customer_id: str, text: str) -> Optional[Locale]:
     """Detect language from text using the LLM and return matching Locale, or None if unsupported/failed."""
     if not text or not text.strip():
         return None
@@ -96,6 +96,7 @@ async def detect_locale(model: BaseChatModel, text: str) -> Optional[Locale]:
         # Sample first 5000 chars for speed on long transcripts
         sample = text[:5000]
 
+        model = LLMSelector.select(customer_id, for_language_detection=True)
         prompt = ChatPromptTemplate.from_template(LANGUAGE_DETECTION_PROMPT)
         chain = prompt | model | StrOutputParser()
 
@@ -214,7 +215,7 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
 
     if not system_message:
         # Detect language if not explicitly provided
-        locale = payload.preferred_locale or await detect_locale(model, text)
+        locale = payload.preferred_locale or await detect_locale(customer_id, text)
         if locale:
             log.info(f"Using locale: {locale.value}")
 
