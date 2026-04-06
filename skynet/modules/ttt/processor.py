@@ -1,21 +1,21 @@
+import asyncio
 import json
 from datetime import datetime, timedelta, timezone
 from operator import itemgetter
 from typing import List, Optional
 
-from langchain.chains.summarize import load_summarize_chain
-from langchain.prompts import ChatPromptTemplate
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from oci.exceptions import TransientServiceError
 from openai.types.chat import ChatCompletionMessageParam
 
-from skynet.env import llama_n_ctx, modules, oci_blackout_fallback_duration, use_oci
+from skynet.env import modules, oci_blackout_fallback_duration, use_oci
 from skynet.logs import get_logger
 from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
@@ -160,7 +160,6 @@ async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, custom
 
 
 async def summarize(model: BaseChatModel, job: Job) -> str:
-    chain = None
     payload = job.payload
     job_type = job.type
     customer_id = job.metadata.customer_id
@@ -187,29 +186,8 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
         ]
     )
 
-    # this is a rough estimate of the number of tokens in the input text, since llama models will have a different tokenization scheme
-    num_tokens = model.get_num_tokens(text)
-
-    # allow some buffer for the model to generate the output
-    # TODO: adjust this to the actual model's context window
-    threshold = llama_n_ctx * 3 / 4
-
-    if num_tokens < threshold:
-        chain = load_summarize_chain(model, chain_type='stuff', prompt=prompt)
-        docs = [Document(page_content=text)]
-    else:
-        # split the text into roughly equal chunks
-        num_chunks = num_tokens // threshold + 1
-        chunk_size = num_tokens // num_chunks
-
-        log.info(f'Splitting text into {num_chunks} chunks of {chunk_size} tokens')
-
-        # Record map-reduce chunking metric
-        MAP_REDUCE_CHUNKING_COUNTER.labels(job_type=job_type.value).inc()
-
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=100)
-        docs = text_splitter.create_documents([text])
-        chain = load_summarize_chain(model, chain_type='map_reduce', combine_prompt=prompt, map_prompt=prompt)
+    # Build LCEL chain
+    chain = prompt | model | StrOutputParser()
 
     # Add rate limit callback for system's own API key
     callbacks = []
@@ -217,8 +195,36 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
         processor = LLMSelector.get_job_processor(customer_id)
         callbacks.append(get_ratelimit_callback(processor.value))
 
-    result = await chain.ainvoke(input={'input_documents': docs}, config={'callbacks': callbacks})
-    formatted_result = result['output_text'].strip()
+    config = {'callbacks': callbacks} if callbacks else {}
+
+    # Estimate tokens to decide if we need map-reduce
+    num_tokens = model.get_num_tokens(text)
+    context_window = LLMSelector.get_context_window(customer_id)
+    threshold = context_window * 3 / 4
+
+    if num_tokens < threshold:
+        # Simple case: text fits in context window
+        result = await chain.ainvoke({'text': text}, config=config)
+    else:
+        # Map-reduce: split, summarize chunks in parallel, then combine
+        num_chunks = int(num_tokens // threshold + 1)
+        chunk_size = int(num_tokens // num_chunks)
+
+        log.info(f'Splitting text into {num_chunks} chunks of {chunk_size} tokens')
+        MAP_REDUCE_CHUNKING_COUNTER.labels(job_type=job_type.value).inc()
+
+        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=chunk_size, chunk_overlap=100)
+        docs = text_splitter.create_documents([text])
+
+        # Map: summarize each chunk in parallel
+        chunk_tasks = [chain.ainvoke({'text': doc.page_content}, config=config) for doc in docs]
+        chunk_summaries = await asyncio.gather(*chunk_tasks)
+
+        # Reduce: combine summaries
+        combined_text = '\n\n'.join(chunk_summaries)
+        result = await chain.ainvoke({'text': combined_text}, config=config)
+
+    formatted_result = result.strip()
 
     log.info(f'job {job.id} input length: {len(system_message) + len(text)}')
     log.info(f'job {job.id} output length: {len(formatted_result)}')

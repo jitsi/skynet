@@ -141,6 +141,7 @@ echo_requests_token = os.environ.get('ECHO_REQUESTS_TOKEN')
 
 # oci
 oci_max_tokens = int(os.environ.get('OCI_MAX_TOKENS', 4000))
+oci_context_window = int(os.environ.get('OCI_CONTEXT_WINDOW', 128000))
 oci_model_id = os.environ.get('OCI_MODEL_ID')
 oci_service_endpoint = os.environ.get(
     'OCI_SERVICE_ENDPOINT', 'https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com'
