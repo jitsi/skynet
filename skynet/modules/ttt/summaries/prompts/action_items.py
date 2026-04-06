@@ -1,6 +1,6 @@
 from typing import Optional
 
-from skynet.constants import Locale, response_prefix
+from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.common import get_language_instruction
 
 
@@ -17,7 +17,7 @@ Instructions:
 
 {get_language_instruction(locale)}
 
-If there are no action items, respond just with "No action items", else start your response with "{response_prefix}", followed by the list of action items.
+If there are no action items, respond with "No action items".
 """
 
 

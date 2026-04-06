@@ -1,6 +1,6 @@
 from typing import Optional
 
-from skynet.constants import Locale, response_prefix
+from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.common import get_language_instruction
 
 
@@ -22,8 +22,6 @@ Example:
 - 00:09:12 – Bandwidth estimation improvements and Chrome alignment
 
 {get_language_instruction(locale)}
-
-Start your response with "{response_prefix}".
 """
 
 

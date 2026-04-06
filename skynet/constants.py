@@ -1,7 +1,5 @@
 from enum import Enum
 
-response_prefix = 'SkynetResponse'
-
 # Processor-specific queue keys
 PENDING_JOBS_OPENAI_KEY = 'jobs:pending:openai'
 PENDING_JOBS_AZURE_KEY = 'jobs:pending:azure'

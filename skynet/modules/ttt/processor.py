@@ -15,8 +15,6 @@ from langchain_core.output_parsers import StrOutputParser
 from oci.exceptions import TransientServiceError
 from openai.types.chat import ChatCompletionMessageParam
 
-from skynet.constants import response_prefix
-
 from skynet.env import llama_n_ctx, modules, oci_blackout_fallback_duration, use_oci
 from skynet.logs import get_logger
 from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
@@ -132,7 +130,7 @@ async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, custom
     if retriever and not question and payload.text:
         question_payload = DocumentPayload(prompt='\n'.join([payload.text, assistant_rag_question_extractor]), text='')
         question = await process_text(model, question_payload)
-        question = question.replace(response_prefix, '').strip()
+        question = question.strip()
         is_generated_question = True
 
     log.info(
@@ -161,8 +159,11 @@ async def assist(model: BaseChatModel, payload: AssistantDocumentPayload, custom
     return await rag_chain.ainvoke(input={'question': question})
 
 
-async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: JobType, customer_id: str) -> str:
+async def summarize(model: BaseChatModel, job: Job) -> str:
     chain = None
+    payload = job.payload
+    job_type = job.type
+    customer_id = job.metadata.customer_id
     text = payload.text
 
     # Fallback priority: payload.prompt -> customer's live_summary_prompt (if is_live_summary=True) -> hint_type_to_prompt[job_type][payload.hint]
@@ -217,10 +218,10 @@ async def summarize(model: BaseChatModel, payload: DocumentPayload, job_type: Jo
         callbacks.append(get_ratelimit_callback(processor.value))
 
     result = await chain.ainvoke(input={'input_documents': docs}, config={'callbacks': callbacks})
-    formatted_result = result['output_text'].replace(response_prefix, '').strip()
+    formatted_result = result['output_text'].strip()
 
-    log.info(f'input length: {len(system_message) + len(text)}')
-    log.info(f'output length: {len(formatted_result)}')
+    log.info(f'job {job.id} input length: {len(system_message) + len(text)}')
+    log.info(f'job {job.id} output length: {len(formatted_result)}')
 
     return formatted_result
 
@@ -261,7 +262,7 @@ async def process(job: Job) -> str:
         if job_type == JobType.ASSIST:
             result = await assist(llm, payload, customer_id)
         elif job_type in [JobType.SUMMARY, JobType.ACTION_ITEMS, JobType.TABLE_OF_CONTENTS]:
-            result = await summarize(llm, payload, job_type, customer_id)
+            result = await summarize(llm, job)
         elif job_type == JobType.PROCESS_TEXT:
             result = await process_text(llm, payload)
         else:
