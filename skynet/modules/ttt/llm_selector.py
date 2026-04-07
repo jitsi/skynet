@@ -10,11 +10,13 @@ from skynet.env import (
     app_uuid,
     azure_openai_api_version,
     default_customer_id,
+    llama_n_ctx,
     llama_path,
     oci_auth_type,
     oci_available,
     oci_compartment_id,
     oci_config_profile,
+    oci_context_window,
     oci_max_tokens,
     oci_model_id,
     oci_service_endpoint,
@@ -28,10 +30,39 @@ log = get_logger(__name__)
 overriden_processors = {}
 
 
+# Context windows by model family (in tokens)
+OPENAI_CONTEXT_WINDOWS = {
+    'gpt-5': 400000,  # GPT-5.x models (nano, mini, etc.)
+    'gpt-4': 128000,  # GPT-4.x models
+}
+DEFAULT_OPENAI_CONTEXT_WINDOW = 128000
+
+
 class LLMSelector:
     @staticmethod
     def override_job_processor(job_id: str, processor: Processors) -> None:
         overriden_processors[job_id] = processor
+
+    @staticmethod
+    def get_context_window(customer_id: str, job_id: Optional[str] = None, oci_blackout: bool = False) -> int:
+        """Get the context window size for the model that would be selected."""
+        processor = LLMSelector.get_job_processor(customer_id, job_id, oci_blackout)
+
+        if processor == Processors.OPENAI:
+            options = get_credentials(customer_id)
+            model_name = options.get('metadata', {}).get('model', '')
+            for prefix, window in OPENAI_CONTEXT_WINDOWS.items():
+                if model_name.startswith(prefix):
+                    return window
+            return DEFAULT_OPENAI_CONTEXT_WINDOW
+        elif processor == Processors.AZURE:
+            # Azure OpenAI - assume similar to OpenAI, could be made configurable
+            return DEFAULT_OPENAI_CONTEXT_WINDOW
+        elif processor == Processors.OCI:
+            return oci_context_window
+        else:
+            # Local LLM
+            return llama_n_ctx
 
     @staticmethod
     def get_job_processor(customer_id: str, job_id: Optional[str] = None, oci_blackout: bool = False) -> Processors:
@@ -88,6 +119,7 @@ class LLMSelector:
                 model_name=model_name,
                 streaming=stream,
                 temperature=model_temp,
+                use_responses_api=True,
             )
         elif processor == Processors.AZURE:
             log.info(f'Forwarding inference to Azure-OpenAI for customer {customer_id}')

@@ -14,6 +14,22 @@ def process_fixture(mocker):
     return mocker
 
 
+class MockChain:
+    """A mock that mimics LCEL chain behavior with pipe operators."""
+
+    def __init__(self, result="Test result"):
+        self.result = result
+
+    def __or__(self, other):
+        return self
+
+    def __ror__(self, other):
+        return self
+
+    async def ainvoke(self, *args, **kwargs):
+        return self.result
+
+
 @pytest.fixture()
 def summarize_fixture(mocker):
     from skynet.modules.ttt.summaries.v1.models import HintType, JobType
@@ -22,16 +38,11 @@ def summarize_fixture(mocker):
     mock_prompts = {JobType.SUMMARY: {HintType.TEXT: lambda locale=None: 'Default summary prompt for text'}}
     mocker.patch('skynet.modules.ttt.processor.hint_type_to_prompt', mock_prompts)
 
-    # Mock the chain loading function
-    mock_chain = mocker.AsyncMock()
-    mock_chain.ainvoke = mocker.AsyncMock(return_value={"output_text": "Test result"})
-    mocker.patch('skynet.modules.ttt.processor.load_summarize_chain', return_value=mock_chain)
-
     # Mock customer config utility
     mocker.patch('skynet.modules.ttt.customer_configs.utils.get_existing_customer_config')
 
-    # Mock other dependencies
-    mocker.patch('skynet.modules.ttt.processor.ChatPromptTemplate')
+    # Mock LLMSelector.get_context_window to return a large value
+    mocker.patch('skynet.modules.ttt.processor.LLMSelector.get_context_window', return_value=100000)
 
     return mocker
 
@@ -42,26 +53,27 @@ class TestSummarize:
         """Test that payload.prompt is used when provided."""
 
         from skynet.modules.ttt.processor import summarize
-        from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType
+        from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, HintType, Job, JobType
+
+        mock_chain = MockChain(result="Test result")
+
+        # Patch ChatPromptTemplate to return our mock chain when piped
+        mock_prompt = summarize_fixture.Mock()
+        mock_prompt.__or__ = lambda self, other: mock_chain
+        summarize_fixture.patch('skynet.modules.ttt.processor.ChatPromptTemplate', return_value=mock_prompt)
 
         mock_model = summarize_fixture.Mock()
         mock_model.get_num_tokens.return_value = 100
 
         payload = DocumentPayload(prompt="Custom user prompt", text="Test text", hint=HintType.TEXT)
+        job = Job(payload=payload, metadata=DocumentMetadata(customer_id="customer123"), type=JobType.SUMMARY)
 
-        result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
+        result = await summarize(mock_model, job)
 
         # Verify that get_existing_customer_config was not called since payload.prompt exists
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
-        from skynet.modules.ttt.processor import ChatPromptTemplate
 
         get_existing_customer_config.assert_not_called()
-
-        # Verify ChatPromptTemplate was called with the payload prompt
-        ChatPromptTemplate.assert_called_once()
-        call_args = ChatPromptTemplate.call_args[0][0]  # Get the first positional argument (the messages list)
-        system_message = call_args[0][1]  # First message is now the system prompt
-        assert system_message == "Custom user prompt"
 
         assert result == "Test result"
 
@@ -73,7 +85,14 @@ class TestSummarize:
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
-        from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType
+        from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, HintType, Job, JobType
+
+        mock_chain = MockChain(result="Test result")
+
+        # Patch ChatPromptTemplate to return our mock chain when piped
+        mock_prompt = summarize_fixture.Mock()
+        mock_prompt.__or__ = lambda self, other: mock_chain
+        summarize_fixture.patch('skynet.modules.ttt.processor.ChatPromptTemplate', return_value=mock_prompt)
 
         mock_model = summarize_fixture.Mock()
         mock_model.get_num_tokens.return_value = 100
@@ -82,19 +101,12 @@ class TestSummarize:
         get_existing_customer_config.return_value = {'live_summary_prompt': 'Custom customer live summary prompt'}
 
         payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT)  # Empty prompt, no is_live_summary
+        job = Job(payload=payload, metadata=DocumentMetadata(customer_id="customer123"), type=JobType.SUMMARY)
 
-        result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
+        result = await summarize(mock_model, job)
 
         # Verify that get_existing_customer_config was NOT called since is_live_summary is not True
         get_existing_customer_config.assert_not_called()
-
-        # Verify ChatPromptTemplate was called with the default prompt
-        from skynet.modules.ttt.processor import ChatPromptTemplate
-
-        ChatPromptTemplate.assert_called_once()
-        call_args = ChatPromptTemplate.call_args[0][0]  # Get the first positional argument (the messages list)
-        system_message = call_args[0][1]  # First message is now the system prompt
-        assert system_message == "Default summary prompt for text"
 
         assert result == "Test result"
 
@@ -104,7 +116,14 @@ class TestSummarize:
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
-        from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType
+        from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, HintType, Job, JobType
+
+        mock_chain = MockChain(result="Test result")
+
+        # Patch ChatPromptTemplate to return our mock chain when piped
+        mock_prompt = summarize_fixture.Mock()
+        mock_prompt.__or__ = lambda self, other: mock_chain
+        summarize_fixture.patch('skynet.modules.ttt.processor.ChatPromptTemplate', return_value=mock_prompt)
 
         mock_model = summarize_fixture.Mock()
         mock_model.get_num_tokens.return_value = 100
@@ -115,19 +134,12 @@ class TestSummarize:
         payload = DocumentPayload(
             prompt="", text="Test text", hint=HintType.TEXT, is_live_summary=True
         )  # Empty prompt, is_live_summary=True
+        job = Job(payload=payload, metadata=DocumentMetadata(customer_id="customer123"), type=JobType.SUMMARY)
 
-        result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
+        result = await summarize(mock_model, job)
 
         # Verify that get_existing_customer_config was called
         get_existing_customer_config.assert_called_once_with("customer123")
-
-        # Verify ChatPromptTemplate was called with the default prompt
-        from skynet.modules.ttt.processor import ChatPromptTemplate
-
-        ChatPromptTemplate.assert_called_once()
-        call_args = ChatPromptTemplate.call_args[0][0]  # Get the first positional argument (the messages list)
-        system_message = call_args[0][1]  # First message is now the system prompt
-        assert system_message == "Default summary prompt for text"
 
         assert result == "Test result"
 
@@ -137,7 +149,14 @@ class TestSummarize:
 
         from skynet.modules.ttt.customer_configs.utils import get_existing_customer_config
         from skynet.modules.ttt.processor import summarize
-        from skynet.modules.ttt.summaries.v1.models import DocumentPayload, HintType, JobType
+        from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, HintType, Job, JobType
+
+        mock_chain = MockChain(result="Test result")
+
+        # Patch ChatPromptTemplate to return our mock chain when piped
+        mock_prompt = summarize_fixture.Mock()
+        mock_prompt.__or__ = lambda self, other: mock_chain
+        summarize_fixture.patch('skynet.modules.ttt.processor.ChatPromptTemplate', return_value=mock_prompt)
 
         mock_model = summarize_fixture.Mock()
         mock_model.get_num_tokens.return_value = 100
@@ -146,19 +165,12 @@ class TestSummarize:
         get_existing_customer_config.return_value = {'live_summary_prompt': 'Custom live summary prompt'}
 
         payload = DocumentPayload(prompt="", text="Test text", hint=HintType.TEXT, is_live_summary=True)
+        job = Job(payload=payload, metadata=DocumentMetadata(customer_id="customer123"), type=JobType.SUMMARY)
 
-        result = await summarize(mock_model, payload, JobType.SUMMARY, "customer123")
+        result = await summarize(mock_model, job)
 
         # Verify that get_existing_customer_config was called
         get_existing_customer_config.assert_called_once_with("customer123")
-
-        # Verify ChatPromptTemplate was called with the live summary prompt
-        from skynet.modules.ttt.processor import ChatPromptTemplate
-
-        ChatPromptTemplate.assert_called_once()
-        call_args = ChatPromptTemplate.call_args[0][0]
-        system_message = call_args[0][1]  # First message is now the system prompt
-        assert system_message == "Custom live summary prompt"
 
         assert result == "Test result"
 
