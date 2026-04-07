@@ -197,6 +197,23 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
 
     config = {'callbacks': callbacks} if callbacks else {}
 
+    async def invoke_with_retry(input_text: str, context: str) -> str:
+        """Invoke chain with retry on empty result."""
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            result = await chain.ainvoke({'text': input_text}, config=config)
+            if result and result.strip():
+                if attempt > 0:
+                    log.info(f'job {job.id} succeeded on {context} after {attempt + 1} attempts')
+                return result
+            if attempt < max_retries:
+                log.info(
+                    f'job {job.id} got empty result on {context} (attempt {attempt + 1}/{max_retries + 1}), retrying...'
+                )
+            else:
+                log.info(f'job {job.id} got empty result on {context} after {max_retries + 1} attempts')
+        return result
+
     # Estimate tokens to decide if we need map-reduce
     num_tokens = model.get_num_tokens(text)
     context_window = LLMSelector.get_context_window(customer_id)
@@ -204,7 +221,7 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
 
     if num_tokens < threshold:
         # Simple case: text fits in context window
-        result = await chain.ainvoke({'text': text}, config=config)
+        result = await invoke_with_retry(text, 'simple summarize')
     else:
         # Map-reduce: split, summarize chunks in parallel, then combine
         num_chunks = int(num_tokens // threshold + 1)
@@ -222,7 +239,7 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
 
         # Reduce: combine summaries
         combined_text = '\n\n'.join(chunk_summaries)
-        result = await chain.ainvoke({'text': combined_text}, config=config)
+        result = await invoke_with_retry(combined_text, 'map-reduce combine')
 
     formatted_result = result.strip()
 
