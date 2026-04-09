@@ -24,7 +24,7 @@ def delete_file(filename):
 
 
 async def get_rag():
-    resp = await get('assistant/v1/rag')
+    resp = await get('assistant/v1/rag?customerId=e2e')
 
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
@@ -47,12 +47,12 @@ async def create_rag():
     )
     form.add_field('files', open('test_readme.txt', 'r'))
     form.add_field('urls', 'https://jitsi.github.io/handbook/docs/user-guide/user-guide-share-a-jitsi-meeting')
-    resp = await post('assistant/v1/rag', data=form)
+    resp = await post('assistant/v1/rag?customerId=e2e', data=form)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
 
 async def delete_rag():
-    resp = await delete('assistant/v1/rag')
+    resp = await delete('assistant/v1/rag?customerId=e2e')
 
     delete_file(test_file_name)
 
@@ -60,7 +60,7 @@ async def delete_rag():
 
 
 async def get_assist(data):
-    resp = await post('assistant/v1/assist', json=data)
+    resp = await post('assistant/v1/assist?customerId=e2e', json=data)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
 
     resp_json = await resp.json()
