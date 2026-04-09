@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "skynet"
-version = "2025.4.0"
+version = "2026.4.1"
 authors = ["Jitsi Team <team@jitsi.org>"]
 
 [tool.poetry.requires-plugins]
