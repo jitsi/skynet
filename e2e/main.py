@@ -16,6 +16,11 @@ async def main():
             from .summaries import run as summaries_run
 
             await summaries_run()
+
+        if 'openai_api' in modules:
+            from .openai_api import run as openai_api_run
+
+            await openai_api_run()
     except Exception as e:
         print(f'Error: {e}')
         success = False

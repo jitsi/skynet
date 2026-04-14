@@ -19,7 +19,7 @@ parser.add_argument(
     '--modules',
     dest='modules',
     help='modules to run e2e on',
-    default='assistant,summaries',
+    default='assistant,summaries,openai_api',
 )
 
 args = parser.parse_args()

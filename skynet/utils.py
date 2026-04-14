@@ -79,8 +79,8 @@ def get_customer_id(request: Request) -> str:
 
         return jwt_cid
 
-    # Only allow query param for internal services with valid X-Skynet-UUID header
-    if request.headers.get('X-Skynet-UUID') == app_uuid:
+    # Allow query param for internal services with valid X-Skynet-UUID header or in bypass_auth mode
+    if request.headers.get('X-Skynet-UUID') == app_uuid or bypass_auth:
         return query_cid
 
     return None
