@@ -55,14 +55,21 @@ async def create_webserver(app, port):
     await server.serve()
 
 
-def get_customer_id(request: Request) -> str:
-    id = request.query_params.get("customerId")
-
-    if not id:
-        id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
-
-    return id
-
-
 def get_app_id(request: Request) -> str:
     return request.state.decoded_jwt.get('appId') if hasattr(request.state, 'decoded_jwt') else None
+
+
+def get_customer_id(request: Request) -> str:
+    query_cid = request.query_params.get('customerId')
+    jwt_cid = None
+
+    if hasattr(request.state, 'decoded_jwt'):
+        jwt = request.state.decoded_jwt
+        jwt_cid = jwt.get('cid') or jwt.get('context', {}).get('group')
+
+        if query_cid and jwt_cid and query_cid != jwt_cid:
+            log.warning(
+                f'Customer ID mismatch: query param "{query_cid}" differs from JWT "{jwt_cid}" (kid: {get_app_id(request)})'
+            )
+
+    return query_cid or jwt_cid
