@@ -1,9 +1,10 @@
 import uvicorn
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from skynet.auth.bearer import JWTBearer
 from skynet.env import (
+    app_uuid,
     bypass_auth,
     listen_ip,
     ws_max_ping_interval,
@@ -56,12 +57,33 @@ async def create_webserver(app, port):
 
 
 def get_customer_id(request: Request) -> str:
-    id = request.query_params.get("customerId")
+    query_cid = request.query_params.get('customerId')
 
-    if not id:
-        id = request.state.decoded_jwt.get("cid") if hasattr(request.state, 'decoded_jwt') else None
+    if hasattr(request.state, 'decoded_jwt'):
+        jwt = request.state.decoded_jwt
+        jwt_cid = None
 
-    return id
+        # Jitsi tokens: cid is in context.group
+        if jwt.get('aud') == 'jitsi':
+            jwt_cid = jwt.get('context', {}).get('group')
+
+        scd = jwt.get('scd')
+
+        # scd == 'any': system token can act on behalf of any customer
+        if scd == 'any':
+            return query_cid
+
+        # If query param provided, must match JWT's cid
+        if query_cid and query_cid != jwt_cid:
+            raise HTTPException(status_code=403, detail='Customer ID mismatch')
+
+        return jwt_cid
+
+    # Only allow query param for internal services with valid X-Skynet-UUID header
+    if request.headers.get('X-Skynet-UUID') == app_uuid:
+        return query_cid
+
+    return None
 
 
 def get_app_id(request: Request) -> str:
