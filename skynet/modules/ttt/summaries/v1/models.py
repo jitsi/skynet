@@ -26,6 +26,10 @@ class Priority(Enum):
 class DocumentPayload(BaseModel):
     text: str
     hint: HintType = HintType.MEETING
+    job_id: Optional[str] = Field(
+        default=None,
+        description="Optional custom job ID. If provided, this ID will be used instead of an auto-generated one. Must be unique; returns 409 if ID already exists.",
+    )
     max_completion_tokens: Optional[int] = None
     preferred_locale: Optional[Locale] = None
     priority: Priority = Priority.NORMAL
@@ -40,6 +44,7 @@ class ActionItemsDocumentPayload(DocumentPayload):
                 {
                     'text': 'Your text here',
                     'hint': 'text',
+                    'job_id': None,
                     'priority': 'normal',
                     'prompt': action_items_meeting(),
                     'max_completion_tokens': None,
@@ -56,6 +61,7 @@ class TableOfContentsDocumentPayload(DocumentPayload):
                 {
                     'text': 'Your text here',
                     'hint': 'meeting',
+                    'job_id': None,
                     'max_completion_tokens': None,
                     'priority': 'normal',
                     'prompt': table_of_contents_meeting(),
@@ -72,6 +78,7 @@ class SummaryDocumentPayload(DocumentPayload):
                 {
                     'text': 'Your text here',
                     'hint': 'meeting',
+                    'job_id': None,
                     'max_completion_tokens': None,
                     'priority': 'normal',
                     'prompt': summary_meeting(),
@@ -89,6 +96,7 @@ class ProcessTextDocumentPayload(DocumentPayload):
             'examples': [
                 {
                     'text': 'Your text here',
+                    'job_id': None,
                     'max_completion_tokens': None,
                     'priority': 'normal',
                     'prompt': 'Rewrite the following text in middle English',
@@ -140,6 +148,7 @@ class Job(BaseJob):
     end: Optional[float] = None
     metadata: DocumentMetadata = DocumentMetadata()
     payload: DocumentPayload
+    processor: Optional[Processors] = None
     start: Optional[float] = None
     worker_id: Optional[int] = None
 
