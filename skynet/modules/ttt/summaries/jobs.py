@@ -2,6 +2,8 @@ import asyncio
 import os
 import time
 
+from fastapi import HTTPException
+
 from skynet.constants import (
     ERROR_JOBS_AZURE_KEY,
     ERROR_JOBS_LOCAL_KEY,
@@ -258,9 +260,18 @@ async def create_job(job_type: JobType, payload: DocumentPayload, metadata: Docu
 
     job = Job(payload=payload, type=job_type, metadata=metadata)
     processor = LLMSelector.get_job_processor(metadata.customer_id)
+    job.processor = processor
 
-    # encode the processor in the job id to avoid having to retrieve the whole job object
-    job.id += f':{processor.value}'
+    if payload.job_id:
+        # Use user-provided job ID as-is
+        job.id = payload.job_id
+        # Check for duplicate
+        if await db.get(job.id):
+            raise HTTPException(status_code=409, detail="Job ID already exists")
+    else:
+        # Encode the processor in the job id to avoid having to retrieve the whole job object
+        job.id += f':{processor.value}'
+
     job_id = job.id
 
     await db.set(job_id, Job.model_dump_json(job))
@@ -378,9 +389,12 @@ async def _run_job(job: Job) -> None:
 
 
 def create_run_job_task(job: Job) -> asyncio.Task:
-    # Extract processor from job id
-    processor_str = job.id.split(':')[-1]
-    processor = Processors(processor_str)
+    # Use stored processor, or extract from job id for backward compatibility
+    if job.processor:
+        processor = job.processor
+    else:
+        processor_str = job.id.split(':')[-1]
+        processor = Processors(processor_str)
 
     task = asyncio.create_task(run_job(job))
 
