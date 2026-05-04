@@ -15,6 +15,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from oci.exceptions import TransientServiceError
 from openai.types.chat import ChatCompletionMessageParam
 
+from skynet.constants import Locale
 from skynet.env import modules, oci_blackout_fallback_duration, use_oci
 from skynet.logs import get_logger
 from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
@@ -33,6 +34,7 @@ from skynet.modules.ttt.summaries.prompts.action_items import (
     action_items_meeting,
     action_items_text,
 )
+from skynet.modules.ttt.summaries.prompts.language_detection import LANGUAGE_DETECTION_PROMPT
 from skynet.modules.ttt.summaries.prompts.summary import (
     summary_conversation,
     summary_emails,
@@ -73,6 +75,43 @@ def is_oci_blackout_active() -> bool:
         return False
 
     return True
+
+
+_CODE_TO_LOCALE = {
+    'en': Locale.ENGLISH,
+    'fr': Locale.FRENCH,
+    'de': Locale.GERMAN,
+    'it': Locale.ITALIAN,
+    'es': Locale.SPANISH,
+}
+
+
+async def detect_locale(customer_id: str, text: str) -> Optional[Locale]:
+    """Detect language from text using the LLM and return matching Locale, or None if unsupported/failed."""
+    if not text or not text.strip():
+        return None
+
+    try:
+        # Sample first 5000 chars for speed on long transcripts
+        sample = text[:5000]
+
+        model = LLMSelector.select(customer_id, for_language_detection=True)
+        prompt = ChatPromptTemplate.from_template(LANGUAGE_DETECTION_PROMPT)
+        chain = prompt | model | StrOutputParser()
+
+        result = await chain.ainvoke({'text': sample})
+        lang_code = result.strip().lower()
+
+        locale = _CODE_TO_LOCALE.get(lang_code)
+        if locale:
+            log.info(f"Detected language: {lang_code}")
+        else:
+            log.info(f"Language detection returned unsupported code: {lang_code}")
+
+        return locale
+    except Exception as e:
+        log.warning(f"Language detection failed: {e}")
+        return None
 
 
 hint_type_to_prompt = {
@@ -176,8 +215,13 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
             system_message = config.get('live_summary_prompt')
 
     if not system_message:
+        # Detect language if not explicitly provided
+        locale = payload.preferred_locale or await detect_locale(customer_id, text)
+        if locale:
+            log.info(f"Using locale: {locale.value}")
+
         prompt_fn = hint_type_to_prompt[job_type][payload.hint]
-        system_message = prompt_fn(payload.preferred_locale)
+        system_message = prompt_fn(locale)
 
     prompt = ChatPromptTemplate(
         [

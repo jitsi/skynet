@@ -2,32 +2,65 @@ import asyncio
 import re
 
 from skynet.logs import get_logger
-from .common import get, post
+from .common import get, post, skip_smart_tests
+from .transcripts import (
+    english_transcript,
+    french_transcript,
+    german_transcript,
+    italian_transcript,
+    moby_dick_text,
+    spanish_transcript,
+)
 
 log = get_logger(__name__)
 
 
-def contains_chinese(text: str) -> bool:
-    """Check if text contains Chinese characters."""
-    return bool(re.search(r'[\u4e00-\u9fff]', text))
+def contains_french_indicators(text: str) -> bool:
+    """Check if text contains French language indicators."""
+    french_patterns = [
+        r'\b(le|la|les|un|une|des|du|de la)\b',  # articles
+        r'\b(est|sont|a|ont|été|être|avoir)\b',  # common verbs
+        r'\b(nous|vous|ils|elles|ce|cette)\b',  # pronouns
+        r'\b(pour|avec|dans|sur|par)\b',  # prepositions
+        r'[àâäéèêëïîôùûüç]',  # French accented characters
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in french_patterns)
 
 
-# courtesy of https://www.gutenberg.org/files/2701/2701-h/2701-h.htm#link2HCH0001
-moby_dick_text = 'Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation. Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people’s hats off—then, I account it high time to get to sea as soon as I can. This is my substitute for pistol and ball. With a philosophical flourish Cato throws himself upon his sword; I quietly take to the ship. There is nothing surprising in this. If they but knew it, almost all men in their degree, some time or other, cherish very nearly the same feelings towards the ocean with me.'
+def contains_german_indicators(text: str) -> bool:
+    """Check if text contains German language indicators."""
+    german_patterns = [
+        r'\b(der|die|das|ein|eine|einer)\b',  # articles
+        r'\b(ist|sind|hat|haben|wurde|werden)\b',  # common verbs
+        r'\b(wir|sie|es|ich|er|ihr)\b',  # pronouns
+        r'\b(für|mit|auf|bei|nach|von)\b',  # prepositions
+        r'[äöüßÄÖÜ]',  # German specific characters
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in german_patterns)
 
-# English transcript with Chinese names - should be summarized in English
-mixed_language_transcript = """
-张伟 (Zhang Wei): Good morning everyone, let's start the meeting.
-李娜 (Li Na): Thanks Zhang Wei. I wanted to discuss the Q4 roadmap today.
-王芳 (Wang Fang): Sure, I've prepared the slides. We need to focus on three main areas.
-张伟 (Zhang Wei): Perfect. Let's start with the infrastructure updates.
-李娜 (Li Na): Our team has completed the migration to the new cloud provider. Performance improved by 40%.
-王芳 (Wang Fang): That's great news. What about the security audit?
-张伟 (Zhang Wei): The audit is scheduled for next week. 陈明 (Chen Ming) will be leading that effort.
-李娜 (Li Na): We should also discuss the budget allocation for the new hires.
-王芳 (Wang Fang): I agree. We need at least three more engineers for the mobile team.
-张伟 (Zhang Wei): Let's schedule a follow-up meeting to finalize the budget. Thanks everyone for joining today.
-"""
+
+def contains_spanish_indicators(text: str) -> bool:
+    """Check if text contains Spanish language indicators."""
+    spanish_patterns = [
+        r'\b(el|la|los|las|un|una|unos|unas)\b',  # articles
+        r'\b(es|son|está|están|ha|han|fue|fueron)\b',  # common verbs
+        r'\b(nosotros|ellos|ellas|esto|esta)\b',  # pronouns
+        r'\b(para|con|sobre|por|entre)\b',  # prepositions
+        r'[áéíóúñ¿¡]',  # Spanish specific characters
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in spanish_patterns)
+
+
+def contains_italian_indicators(text: str) -> bool:
+    """Check if text contains Italian language indicators."""
+    italian_patterns = [
+        r'\b(il|lo|la|i|gli|le|un|uno|una)\b',  # articles
+        r'\b(è|sono|ha|hanno|stato|stata)\b',  # common verbs
+        r'\b(noi|loro|questo|questa|quello)\b',  # pronouns
+        r'\b(per|con|sul|nella|tra|fra)\b',  # prepositions
+        r'[àèéìòù]',  # Italian accented characters
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in italian_patterns)
 
 
 async def create_summary():
@@ -73,9 +106,19 @@ async def get_job_result(job_id):
     return result
 
 
-async def create_summary_mixed_language():
-    """Create a summary job with a mostly-English transcript containing Chinese names."""
-    summary_job = {'hint': 'meeting', 'text': mixed_language_transcript}
+def contains_english_indicators(text: str) -> bool:
+    """Check if text contains English language indicators."""
+    english_patterns = [
+        r'\b(the|a|an|is|are|was|were)\b',  # articles and verbs
+        r'\b(and|or|but|with|for|to)\b',  # conjunctions and prepositions
+        r'\b(have|has|had|will|would|could)\b',  # auxiliary verbs
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in english_patterns)
+
+
+async def create_summary_for_transcript(transcript: str, hint: str = 'meeting'):
+    """Create a summary job for a given transcript."""
+    summary_job = {'hint': hint, 'text': transcript}
 
     resp = await post('summaries/v1/summary', json=summary_job)
     assert resp.status == 200, log.error(f'Unexpected status code: {resp.status}')
@@ -83,20 +126,96 @@ async def create_summary_mixed_language():
     return await resp.json()
 
 
-async def test_summary_language_detection():
-    """Test that a mostly-English transcript with Chinese names is summarized in English."""
-    log.info('POST summaries/v1/summary - create summary for mixed-language transcript')
-    job = await create_summary_mixed_language()
+async def test_english_language_detection():
+    """Test that an English transcript is summarized in English."""
+    log.info('Testing English language detection')
+    job = await create_summary_for_transcript(english_transcript)
     job_id = job.get('id')
 
-    log.info(f'GET summaries/v1/job/{job_id} - get the result')
     result = await get_job_result(job_id)
-
     summary_text = result.get('result', '')
-    assert not contains_chinese(summary_text), log.error(
-        f'Summary should be in English but contains Chinese characters: {summary_text}'
+
+    assert contains_english_indicators(summary_text), log.error(
+        f'Summary should be in English but does not contain English indicators: {summary_text}'
     )
-    log.info('Language detection test passed - summary is in English')
+    log.info('English language detection test passed')
+
+
+async def test_french_language_detection():
+    """Test that a French transcript is summarized in French."""
+    log.info('Testing French language detection')
+    job = await create_summary_for_transcript(french_transcript)
+    job_id = job.get('id')
+
+    result = await get_job_result(job_id)
+    summary_text = result.get('result', '')
+
+    assert contains_french_indicators(summary_text), log.error(
+        f'Summary should be in French but does not contain French indicators: {summary_text}'
+    )
+    log.info('French language detection test passed')
+
+
+async def test_german_language_detection():
+    """Test that a German transcript is summarized in German."""
+    log.info('Testing German language detection')
+    job = await create_summary_for_transcript(german_transcript)
+    job_id = job.get('id')
+
+    result = await get_job_result(job_id)
+    summary_text = result.get('result', '')
+
+    assert contains_german_indicators(summary_text), log.error(
+        f'Summary should be in German but does not contain German indicators: {summary_text}'
+    )
+    log.info('German language detection test passed')
+
+
+async def test_spanish_language_detection():
+    """Test that a Spanish transcript is summarized in Spanish."""
+    log.info('Testing Spanish language detection')
+    job = await create_summary_for_transcript(spanish_transcript)
+    job_id = job.get('id')
+
+    result = await get_job_result(job_id)
+    summary_text = result.get('result', '')
+
+    assert contains_spanish_indicators(summary_text), log.error(
+        f'Summary should be in Spanish but does not contain Spanish indicators: {summary_text}'
+    )
+    log.info('Spanish language detection test passed')
+
+
+async def test_italian_language_detection():
+    """Test that an Italian transcript is summarized in Italian."""
+    log.info('Testing Italian language detection')
+    job = await create_summary_for_transcript(italian_transcript)
+    job_id = job.get('id')
+
+    result = await get_job_result(job_id)
+    summary_text = result.get('result', '')
+
+    assert contains_italian_indicators(summary_text), log.error(
+        f'Summary should be in Italian but does not contain Italian indicators: {summary_text}'
+    )
+    log.info('Italian language detection test passed')
+
+
+async def run_language_detection_tests():
+    """Run all language detection tests."""
+    if skip_smart_tests:
+        log.info('Skipping language detection tests (requires smarter models)')
+        return
+
+    log.info('#### Running language detection e2e tests')
+
+    await test_english_language_detection()
+    await test_french_language_detection()
+    await test_german_language_detection()
+    await test_spanish_language_detection()
+    await test_italian_language_detection()
+
+    log.info('All language detection tests passed!')
 
 
 async def run():
@@ -120,5 +239,5 @@ async def run():
     log.info(f'GET summaries/v1/job/{job_id} - get the result of the process text job')
     await get_job_result(job_id)
 
-    log.info('Testing language detection for mixed-language transcripts')
-    await test_summary_language_detection()
+    log.info('Running language detection tests')
+    await run_language_detection_tests()
