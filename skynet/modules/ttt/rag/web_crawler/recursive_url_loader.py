@@ -1,6 +1,7 @@
 import asyncio
 import io
 from typing import List, Optional, Set
+from urllib.parse import urljoin
 
 import aiohttp
 import requests
@@ -12,9 +13,43 @@ from langchain_core.utils.html import extract_sub_links
 from pypdf import PdfReader
 
 from skynet.logs import get_logger
+from skynet.modules.ttt.rag.web_crawler.url_validator import URLValidationError, validate_url
 
 ua = UserAgent()
 log = get_logger(__name__)
+
+
+MAX_REDIRECTS = 5
+
+
+def is_safe_url(url: str) -> bool:
+    """Check if a URL passes validation."""
+    try:
+        validate_url(url)
+        return True
+    except URLValidationError as e:
+        log.warning(f"Blocked URL: {url} - {e}")
+        return False
+
+
+async def fetch_with_validated_redirects(
+    session: aiohttp.ClientSession, url: str, timeout: int
+) -> tuple[aiohttp.ClientResponse, str]:
+    """Fetch a URL, validating each redirect target before following."""
+    current_url = url
+    for _ in range(MAX_REDIRECTS):
+        response = await session.get(current_url, timeout=timeout, allow_redirects=False)
+        if response.status not in (301, 302, 303, 307, 308):
+            return response, current_url
+        location = response.headers.get('Location')
+        if not location:
+            return response, current_url
+        redirect_url = urljoin(current_url, location)
+        if not is_safe_url(redirect_url):
+            raise URLValidationError(f"Redirect to blocked URL: {redirect_url}")
+        current_url = redirect_url
+        await response.release()
+    raise URLValidationError(f"Too many redirects for URL: {url}")
 
 
 class SkynetRecursiveUrlLoader(RecursiveUrlLoader):
@@ -45,12 +80,15 @@ class SkynetRecursiveUrlLoader(RecursiveUrlLoader):
         text = ''
         metadata = {}
         results = []
+        final_url = url
 
         try:
-            async with session.get(url, timeout=120) as response:
-                metadata = self.metadata_extractor('', url, response)
+            response, final_url = await fetch_with_validated_redirects(session, url, timeout=120)
+            visited.add(final_url)
+            async with response:
+                metadata = self.metadata_extractor('', final_url, response)
                 text = await response.text()
-        except (aiohttp.client_exceptions.InvalidURL, Exception) as e:
+        except (aiohttp.client_exceptions.InvalidURL, URLValidationError, Exception) as e:
             try:
                 if close_session:
                     await session.close()
@@ -78,13 +116,13 @@ class SkynetRecursiveUrlLoader(RecursiveUrlLoader):
             results.append(
                 Document(
                     page_content=content,
-                    metadata=self.metadata_extractor(text, url, response),
+                    metadata=self.metadata_extractor(text, final_url, response),
                 )
             )
         if depth < self.max_depth - 1:
             sub_links = extract_sub_links(
                 text,
-                url,
+                final_url,
                 base_url=self.base_url,
                 pattern=self.link_regex,
                 prevent_outside=self.prevent_outside,
@@ -95,6 +133,7 @@ class SkynetRecursiveUrlLoader(RecursiveUrlLoader):
             # Recursively call the function to get the children of the children
             sub_tasks = []
             to_visit = set(sub_links).difference(visited)
+            to_visit = {link for link in to_visit if is_safe_url(link)}
             for link in to_visit:
                 sub_tasks.append(self._async_get_child_links_recursive(link, visited, session=session, depth=depth + 1))
             next_results = await asyncio.gather(*sub_tasks)
