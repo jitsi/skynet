@@ -5,10 +5,10 @@ from fastapi import UploadFile
 from pydantic import BaseModel, computed_field, field_validator
 
 from skynet.modules.ttt.assistant.constants import assistant_default_system_message
-
+from skynet.modules.ttt.rag.web_crawler.url_validator import MAX_URL_DEPTH, URLValidationError, validate_urls
 from skynet.modules.ttt.summaries.v1.models import DocumentPayload
 
-default_max_depth = 5
+default_max_depth = MAX_URL_DEPTH
 
 
 class RagStatus(Enum):
@@ -31,6 +31,28 @@ class RagPayload(BaseModel):
     @field_validator('files', mode='before')
     def validate_files(value):
         return [f for f in value if f.filename]
+
+    @field_validator('max_depth', mode='after')
+    @classmethod
+    def validate_max_depth(cls, value):
+        if value is None:
+            return default_max_depth
+        if value < 1:
+            raise ValueError('max_depth must be at least 1')
+        if value > MAX_URL_DEPTH:
+            raise ValueError(f'max_depth cannot exceed {MAX_URL_DEPTH}')
+        return value
+
+    @field_validator('urls', mode='after')
+    @classmethod
+    def validate_urls(cls, value):
+        if not value:
+            return value
+        try:
+            validate_urls(value)
+        except URLValidationError as e:
+            raise ValueError(str(e))
+        return value
 
     model_config = {
         'json_schema_extra': {
