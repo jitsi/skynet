@@ -4,6 +4,12 @@ Skynet exposes a Prometheus `/metrics` endpoint on port `8001`.
 
 The metrics endpoint can be disabled by setting the `ENABLE_METRICS` env var to `false`.
 
+`Skynet_Summaries_summary_tokens_total` counts the LLM tokens consumed by summary /
+assistant inference (as reported by the engine), labelled by `app_id`, `processor`,
+`customer_id`, and `direction` (`input`/`output`). The same figure is reported per job
+to AI Studio's usage registry when `AI_STUDIO_USAGE_ENABLED` is set (see
+[env vars](env_vars.md)).
+
 ## Exposed metrics
 
 ```

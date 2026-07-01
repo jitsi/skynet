@@ -38,6 +38,18 @@ Skynet is configurable via environment variables. Some are shared by all modules
 | `SKYNET_LISTEN_IP`               | Default ip address on which the webserver is started.                                                                                              | `0.0.0.0`                           | N/A                  |
 | `SKYNET_PORT`                    | Default port on which the webserver is started.                                                                                                    | `8000`                              | N/A                  |
 
+## AI Studio Usage Reporting
+
+When enabled, each completed inference job reports the tokens it consumed (as reported by the engine) to AI Studio's usage registry, so summary spend is counted alongside AI Studio's own in 8x8's customer-token metric. Disabled unless `AI_STUDIO_USAGE_ENABLED` is set; the URL and token must also be provided.
+
+| Name                       | **Description**                                                                                             | **Default**       | **Available values** |
+|----------------------------|-------------------------------------------------------------------------------------------------------------|-------------------|----------------------|
+| `AI_STUDIO_USAGE_ENABLED`  | Enable reporting per-job token usage to AI Studio.                                                          | `false`           | `true`, `false`      |
+| `AI_STUDIO_USAGE_URL`      | Full URL of the AI Studio usage endpoint (e.g. `https://8x8.studio/api/usage`).                            | `NULL`            | N/A                  |
+| `AI_STUDIO_USAGE_TOKEN`    | Global service token (Bearer) authorising cross-tenant usage writes.                                       | `NULL`            | N/A                  |
+| `AI_STUDIO_USAGE_CHANNEL`  | Channel label recorded on each usage event.                                                                | `skynet_summary`  | N/A                  |
+| `AI_STUDIO_USAGE_TIMEOUT`  | Timeout in seconds for the usage-reporting request.                                                        | `5`               | N/A                  |
+
 ## Redis vars
 
 | Name                             | **Description**                                                                                                                                    | **Default**                         | **Available values** |

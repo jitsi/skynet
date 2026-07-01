@@ -43,6 +43,12 @@ from skynet.modules.monitoring import (
 from skynet.modules.ttt.llm_selector import LLMSelector
 from skynet.modules.ttt.openai_api.app import is_ready as is_openai_api_ready
 from skynet.modules.ttt.processor import process
+from skynet.modules.ttt.usage_reporting import (
+    reset_usage_collector,
+    schedule_usage_report,
+    set_usage_collector,
+    UsageCollector,
+)
 
 from ..persistence import db
 from .v1.models import DocumentMetadata, DocumentPayload, Job, JobId, JobStatus, JobType, Priority, Processors
@@ -374,14 +380,36 @@ async def _run_job(job: Job) -> None:
     if job.id not in await db.lrange(running_key, 0, -1):
         await db.rpush(running_key, job.id)
 
+    # Capture the tokens the engine consumes across every LLM call this job makes
+    # (map-reduce fan-out and sub-calls included). The collector is picked up by
+    # LLMSelector.select via a ContextVar, so nothing has to be threaded through.
+    usage_collector = UsageCollector(app_id=job.metadata.app_id, customer_id=customer_id, processor=processor.value)
+    collector_token = set_usage_collector(usage_collector)
+
     try:
         result = await process(job)
     except Exception as e:
         has_failed = True
         result = str(e)
+    finally:
+        reset_usage_collector(collector_token)
 
     processor = LLMSelector.get_job_processor(customer_id, job.id)
     await update_done_job(job, result, processor, has_failed)
+
+    # Report the tokens consumed to AI Studio's usage registry (customer-token
+    # north star). Fire-and-forget + best-effort -- never affects the job.
+    if not has_failed:
+        schedule_usage_report(
+            customer_id=customer_id,
+            app_id=job.metadata.app_id,
+            job_id=job.id,
+            event_type=job.type.value,
+            provider=processor.value.lower(),
+            model=usage_collector.model,
+            input_tokens=usage_collector.input_tokens,
+            output_tokens=usage_collector.output_tokens,
+        )
 
     # error returned from the api when vllm crashes with torch.OutOfMemoryError
     if result == 'Error code: 500' and processor == Processors.LOCAL:
