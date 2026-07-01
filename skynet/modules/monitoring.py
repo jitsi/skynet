@@ -129,6 +129,14 @@ MAP_REDUCE_CHUNKING_COUNTER = Counter(
     labelnames=['job_type'],
 )
 
+SUMMARY_TOKENS_METRIC = Counter(
+    'summary_tokens',
+    documentation='LLM tokens consumed by summary / assistant inference, as reported by the engine',
+    namespace=PROMETHEUS_NAMESPACE,
+    subsystem=PROMETHEUS_SUMMARIES_SUBSYSTEM,
+    labelnames=['app_id', 'processor', 'customer_id', 'direction'],
+)
+
 OPENAI_RATELIMIT_REMAINING_REQUESTS = Gauge(
     'openai_ratelimit_remaining_requests',
     documentation='Remaining requests in current OpenAI rate limit window',

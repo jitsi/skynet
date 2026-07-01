@@ -131,6 +131,16 @@ enable_batching = tobool(os.environ.get('ENABLE_BATCHING', 'true'))
 # monitoring
 enable_metrics = tobool(os.environ.get('ENABLE_METRICS', 'true'))
 
+# ai studio usage reporting (customer-token north star)
+# When enabled, each completed job reports the tokens the engine consumed to AI
+# Studio's usage registry so Meetings / CC / JaaS summary spend lands in the same
+# store as AI Studio's own. Off unless explicitly enabled + configured.
+ai_studio_usage_enabled = tobool(os.environ.get('AI_STUDIO_USAGE_ENABLED'))
+ai_studio_usage_url = os.environ.get('AI_STUDIO_USAGE_URL')
+ai_studio_usage_token = os.environ.get('AI_STUDIO_USAGE_TOKEN')
+ai_studio_usage_channel = os.environ.get('AI_STUDIO_USAGE_CHANNEL', 'skynet_summary')
+ai_studio_usage_timeout = int(os.environ.get('AI_STUDIO_USAGE_TIMEOUT', 5))
+
 # load balancing
 enable_haproxy_agent = tobool(os.environ.get('ENABLE_HAPROXY_AGENT'))
 

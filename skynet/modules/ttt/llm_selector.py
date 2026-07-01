@@ -24,6 +24,7 @@ from skynet.env import (
 )
 from skynet.logs import get_logger
 from skynet.modules.ttt.summaries.v1.models import Processors
+from skynet.modules.ttt.usage_reporting import attach_usage_callback
 
 log = get_logger(__name__)
 
@@ -115,13 +116,15 @@ class LLMSelector:
             # gpt-5 family does not support temperature other than 1 anymore
             model_temp = 1 if model_name.startswith('gpt-5') else temperature
 
-            return ChatOpenAI(
-                api_key=options.get('secret'),
-                include_response_headers=track_headers,
-                max_completion_tokens=max_completion_tokens,
-                model_name=model_name,
-                streaming=stream,
-                temperature=model_temp,
+            return attach_usage_callback(
+                ChatOpenAI(
+                    api_key=options.get('secret'),
+                    include_response_headers=track_headers,
+                    max_completion_tokens=max_completion_tokens,
+                    model_name=model_name,
+                    streaming=stream,
+                    temperature=model_temp,
+                )
             )
         elif processor == Processors.AZURE:
             log.info(f'Forwarding inference to Azure-OpenAI for customer {customer_id}')
@@ -130,15 +133,17 @@ class LLMSelector:
             lang_model = metadata.get('languageDetectionModel') if for_language_detection else None
             deployment_name = lang_model or metadata.get('deploymentName')
 
-            return AzureChatOpenAI(
-                api_key=options.get('secret'),
-                api_version=azure_openai_api_version,
-                azure_deployment=deployment_name,
-                azure_endpoint=metadata.get('endpoint'),
-                include_response_headers=track_headers,
-                max_completion_tokens=max_completion_tokens,
-                streaming=stream,
-                temperature=temperature,
+            return attach_usage_callback(
+                AzureChatOpenAI(
+                    api_key=options.get('secret'),
+                    api_version=azure_openai_api_version,
+                    azure_deployment=deployment_name,
+                    azure_endpoint=metadata.get('endpoint'),
+                    include_response_headers=track_headers,
+                    max_completion_tokens=max_completion_tokens,
+                    streaming=stream,
+                    temperature=temperature,
+                )
             )
         elif processor == Processors.OCI:
             log.info(f'Forwarding inference to OCI for customer {customer_id}')
@@ -149,29 +154,33 @@ class LLMSelector:
                 'max_tokens': max(max_completion_tokens or 0, oci_max_tokens),
             }
 
-            return ChatOCIGenAI(
-                auth_profile=oci_config_profile,
-                auth_type=oci_auth_type,
-                compartment_id=oci_compartment_id,
-                is_stream=stream,
-                model_id=oci_model_id,
-                model_kwargs=model_kwargs,
-                provider='meta',
-                service_endpoint=oci_service_endpoint,
+            return attach_usage_callback(
+                ChatOCIGenAI(
+                    auth_profile=oci_config_profile,
+                    auth_type=oci_auth_type,
+                    compartment_id=oci_compartment_id,
+                    is_stream=stream,
+                    model_id=oci_model_id,
+                    model_kwargs=model_kwargs,
+                    provider='meta',
+                    service_endpoint=oci_service_endpoint,
+                )
             )
         else:
             log.info(f'Forwarding inference to local LLM for customer {customer_id}')
 
-            return ChatOpenAI(
-                api_key='placeholder',  # use a placeholder value to bypass validation
-                base_url=f'{openai_api_base_url}/v1',
-                default_headers={'X-Skynet-UUID': app_uuid},
-                frequency_penalty=1,
-                max_completion_tokens=max_completion_tokens,
-                max_retries=0,
-                model=llama_path,
-                streaming=stream,
-                temperature=temperature,
+            return attach_usage_callback(
+                ChatOpenAI(
+                    api_key='placeholder',  # use a placeholder value to bypass validation
+                    base_url=f'{openai_api_base_url}/v1',
+                    default_headers={'X-Skynet-UUID': app_uuid},
+                    frequency_penalty=1,
+                    max_completion_tokens=max_completion_tokens,
+                    max_retries=0,
+                    model=llama_path,
+                    streaming=stream,
+                    temperature=temperature,
+                )
             )
 
 
