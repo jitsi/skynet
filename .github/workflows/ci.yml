@@ -49,6 +49,6 @@ jobs:
       - name: Run unit tests
         run: BYPASS_AUTHORIZATION=1 poetry run pytest
       - name: Run skynet
-        run: BYPASS_AUTHORIZATION=1 LLAMA_PATH=llama3.2:1b ./run.sh & sleep 30
+        run: BYPASS_AUTHORIZATION=1 LLAMA_PATH=llama3.2:1b AI_STUDIO_USAGE_ENABLED=true AI_STUDIO_USAGE_URL=http://localhost:8899/usage AI_STUDIO_USAGE_TOKEN=e2e-token ./run.sh & sleep 30
       - name: Run e2e tests
-        run: BYPASS_AUTHORIZATION=1 poetry run python -m e2e.main -modules 'assistant,summaries' -skip-smart-tests
+        run: BYPASS_AUTHORIZATION=1 AI_STUDIO_USAGE_ENABLED=true AI_STUDIO_USAGE_TOKEN=e2e-token poetry run python -m e2e.main -modules 'assistant,summaries,usage' -skip-smart-tests

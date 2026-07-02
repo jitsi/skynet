@@ -72,8 +72,14 @@ class TestReportUsageToAiStudio:
         http_post = mocker.patch.object(ur, 'http_post', new=mocker.AsyncMock())
 
         await ur.report_usage_to_ai_studio(
-            customer_id='c', app_id='a', job_id='j', event_type='summary',
-            provider='oci', model='m', input_tokens=10, output_tokens=5,
+            customer_id='c',
+            app_id='a',
+            job_id='j',
+            event_type='summary',
+            provider='oci',
+            model='m',
+            input_tokens=10,
+            output_tokens=5,
         )
         http_post.assert_not_called()
 
@@ -87,8 +93,14 @@ class TestReportUsageToAiStudio:
         http_post = mocker.patch.object(ur, 'http_post', new=mocker.AsyncMock())
 
         await ur.report_usage_to_ai_studio(
-            customer_id=None, app_id='a', job_id='j', event_type='summary',
-            provider='oci', model='m', input_tokens=10, output_tokens=5,
+            customer_id=None,
+            app_id='a',
+            job_id='j',
+            event_type='summary',
+            provider='oci',
+            model='m',
+            input_tokens=10,
+            output_tokens=5,
         )
         http_post.assert_not_called()
 
@@ -102,8 +114,14 @@ class TestReportUsageToAiStudio:
         http_post = mocker.patch.object(ur, 'http_post', new=mocker.AsyncMock())
 
         await ur.report_usage_to_ai_studio(
-            customer_id='c', app_id='a', job_id='j', event_type='summary',
-            provider='oci', model='m', input_tokens=0, output_tokens=0,
+            customer_id='c',
+            app_id='a',
+            job_id='j',
+            event_type='summary',
+            provider='oci',
+            model='m',
+            input_tokens=0,
+            output_tokens=0,
         )
         http_post.assert_not_called()
 
@@ -118,8 +136,14 @@ class TestReportUsageToAiStudio:
         http_post = mocker.patch.object(ur, 'http_post', new=mocker.AsyncMock(return_value={'success': True}))
 
         await ur.report_usage_to_ai_studio(
-            customer_id='cust1', app_id='meetings', job_id='job-123', event_type='summary',
-            provider='oci', model='cohere.command', input_tokens=120, output_tokens=45,
+            customer_id='cust1',
+            app_id='meetings',
+            job_id='job-123',
+            event_type='summary',
+            provider='oci',
+            model='cohere.command',
+            input_tokens=120,
+            output_tokens=45,
         )
 
         http_post.assert_called_once()

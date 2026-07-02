@@ -21,6 +21,11 @@ async def main():
             from .openai_api import run as openai_api_run
 
             await openai_api_run()
+
+        if 'usage' in modules:
+            from .usage import run as usage_run
+
+            await usage_run()
     except Exception as e:
         print(f'Error: {e}')
         success = False
