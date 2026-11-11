@@ -33,10 +33,16 @@ overriden_processors = {}
 
 # Context windows by model family (in tokens)
 OPENAI_CONTEXT_WINDOWS = {
+    # GPT-6 models (Luna, Sol) advertise a larger window, but 400k keeps the
+    # map-reduce chunking threshold the same as gpt-5.
+    'gpt-6': 400000,
     'gpt-5': 400000,  # GPT-5.x models (nano, mini, etc.)
     'gpt-4': 128000,  # GPT-4.x models
 }
 DEFAULT_OPENAI_CONTEXT_WINDOW = 128000
+
+# Model families that reject any temperature other than the default (1)
+OPENAI_FIXED_TEMPERATURE_PREFIXES = ('gpt-5', 'gpt-6')
 
 
 class LLMSelector:
@@ -113,8 +119,7 @@ class LLMSelector:
             lang_model = metadata.get('languageDetectionModel') if for_language_detection else None
             model_name = lang_model or metadata.get('model')
 
-            # gpt-5 family does not support temperature other than 1 anymore
-            model_temp = 1 if model_name.startswith('gpt-5') else temperature
+            model_temp = 1 if model_name.startswith(OPENAI_FIXED_TEMPERATURE_PREFIXES) else temperature
 
             return attach_usage_callback(
                 ChatOpenAI(
