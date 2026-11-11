@@ -27,16 +27,11 @@ jobs:
       - uses: shogo82148/actions-setup-redis@2f3253b148c73d7a0682eae73e862b777a4fa74e  # v1
         with:
           redis-version: "7.x"
-      - name: cache poetry install
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: ~/.local
-          key: poetry-2.0.1-0
-      - uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a  # v1
-        with:
-          version: 2.0.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Install poetry
+        run: |
+          pipx install --python "$(which python)" poetry==2.0.1
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
       - name: cache deps
         id: cache-deps
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
