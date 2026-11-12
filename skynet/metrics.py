@@ -1,3 +1,5 @@
+from fastapi.responses import JSONResponse
+
 from skynet.constants import (
     PENDING_JOBS_AZURE_KEY,
     PENDING_JOBS_LOCAL_KEY,
@@ -13,6 +15,7 @@ from skynet.modules.monitoring import (
     PROMETHEUS_SUMMARIES_SUBSYSTEM,
 )
 from skynet.modules.ttt.persistence import db
+from skynet.readiness import is_ready
 from skynet.utils import create_app
 
 log = get_logger(__name__)
@@ -23,8 +26,12 @@ if enable_metrics:
     @metrics.get('/healthz')
     def health():
         '''
-        Health checking.
+        Health checking. Unhealthy until the main app has finished starting up,
+        so a failed startup can't hide behind this separately served endpoint.
         '''
+
+        if not is_ready():
+            return JSONResponse({'status': 'starting'}, status_code=503)
 
         return {'status': 'ok'}
 

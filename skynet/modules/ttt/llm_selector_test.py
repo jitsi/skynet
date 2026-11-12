@@ -1,6 +1,7 @@
 import pytest
 
 from skynet.modules.ttt.llm_selector import DEFAULT_OPENAI_CONTEXT_WINDOW, LLMSelector
+from skynet.modules.ttt.summaries.v1.models import Processors
 
 
 def _openai_credentials(model, language_detection_model=None):
@@ -60,3 +61,20 @@ class TestOpenAIContextWindow:
         mocker.patch('skynet.modules.ttt.llm_selector.get_credentials', return_value=_openai_credentials(model))
 
         assert LLMSelector.get_context_window('customer') == expected
+
+
+class TestOCIRouting:
+    @pytest.fixture
+    def no_customer_credentials(self, mocker):
+        mocker.patch('skynet.modules.ttt.llm_selector.get_credentials', return_value={})
+        mocker.patch('skynet.modules.ttt.llm_selector.oci_available', True)
+
+    def test_customer_without_credentials_uses_oci(self, mocker, no_customer_credentials):
+        mocker.patch('skynet.modules.ttt.llm_selector.is_oci_disabled', return_value=False)
+
+        assert LLMSelector.get_job_processor('customer') == Processors.OCI
+
+    def test_oci_disabled_at_startup_falls_through_to_local(self, mocker, no_customer_credentials):
+        mocker.patch('skynet.modules.ttt.llm_selector.is_oci_disabled', return_value=True)
+
+        assert LLMSelector.get_job_processor('customer') == Processors.LOCAL
