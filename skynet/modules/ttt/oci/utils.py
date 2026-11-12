@@ -1,3 +1,5 @@
+from typing import Optional
+
 from langchain_community.chat_models import ChatOCIGenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from oci.exceptions import TransientServiceError
@@ -14,8 +16,18 @@ from skynet.logs import get_logger
 
 log = get_logger(__name__)
 
+# Set when the startup warm-up fails with a non-transient error (e.g. a model id
+# that does not exist on the configured endpoint). OCI stays off until restart.
+_disabled_reason: Optional[str] = None
+
+
+def is_oci_disabled() -> bool:
+    return _disabled_reason is not None
+
 
 async def initialize():
+    global _disabled_reason
+
     if not oci_available:
         return
 
@@ -46,5 +58,7 @@ async def initialize():
     except TransientServiceError as e:
         log.warning(f"Warming up OCI hit TransientServiceError: {e}")
     except Exception as e:
-        log.warning(f"Warming up OCI hit an exception: {e}")
-        raise e
+        # A broken OCI config must not take the whole service down: customers with
+        # their own OpenAI / Azure credentials don't need OCI at all.
+        _disabled_reason = str(e)
+        log.error(f"Warming up OCI failed, disabling OCI until restart: {e}")

@@ -11,6 +11,7 @@ from skynet import http_client
 from skynet.env import app_port, device, enable_haproxy_agent, enable_metrics, is_mac, modules
 from skynet.haproxy_agent import create_tcpserver
 from skynet.logs import get_logger
+from skynet.readiness import set_ready
 from skynet.utils import create_app, create_webserver
 
 log = get_logger(__name__)
@@ -69,7 +70,11 @@ async def lifespan(main_app: FastAPI):
 
         await executor_startup()
 
+    set_ready(True)
+
     yield
+
+    set_ready(False)
 
     log.info('Skynet is shutting down')
 

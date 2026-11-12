@@ -23,6 +23,7 @@ from skynet.env import (
     openai_api_base_url,
 )
 from skynet.logs import get_logger
+from skynet.modules.ttt.oci.utils import is_oci_disabled
 from skynet.modules.ttt.summaries.v1.models import Processors
 from skynet.modules.ttt.usage_reporting import attach_usage_callback
 
@@ -89,7 +90,7 @@ class LLMSelector:
         if api_type == CredentialsType.LOCAL.value:
             return Processors.LOCAL
 
-        if oci_available and not oci_blackout:
+        if oci_available and not is_oci_disabled() and not oci_blackout:
             return Processors.OCI
 
         return Processors.LOCAL
