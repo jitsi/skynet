@@ -22,7 +22,7 @@ from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload
-from skynet.modules.ttt.language_id import identify_language
+from skynet.modules.ttt.language_id import identify_language, language_name
 from skynet.modules.ttt.llm_selector import LLMSelector
 from skynet.modules.ttt.ratelimit_tracker import (
     extract_ratelimit_from_response,
@@ -87,10 +87,12 @@ _CODE_TO_LOCALE = {
 }
 
 
-async def detect_locale(customer_id: str, text: str) -> Optional[Locale]:
-    """Detect the language of the text and return the matching Locale, or None if unsupported/failed.
+async def detect_locale(customer_id: str, text: str) -> Optional[Locale | str]:
+    """Detect the language of the text.
 
-    Uses the local fastText model, falling back to the LLM when the model is unavailable or unsure.
+    Returns the matching Locale, the English name of another well-supported language, or None when
+    the language is unknown or detection failed. Uses the local fastText model, falling back to the
+    LLM when the model is unavailable or unsure.
     """
     if not text or not text.strip():
         return None
@@ -107,9 +109,9 @@ async def detect_locale(customer_id: str, text: str) -> Optional[Locale]:
     if prediction:
         lang_code, confidence = prediction
         if confidence >= language_id_min_confidence:
-            locale = _CODE_TO_LOCALE.get(lang_code)
-            log.info(f"fastText detected language: {lang_code} ({confidence:.2f}), supported: {locale is not None}")
-            return locale
+            language = _CODE_TO_LOCALE.get(lang_code) or language_name(lang_code)
+            log.info(f"fastText detected language: {lang_code} ({confidence:.2f}), using: {language}")
+            return language
 
         log.info(f"fastText unsure about language ({lang_code}, {confidence:.2f}), asking the LLM")
 
@@ -239,12 +241,12 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
 
     if not system_message:
         # Detect language if not explicitly provided
-        locale = payload.preferred_locale or await detect_locale(customer_id, text)
-        if locale:
-            log.info(f"Using locale: {locale.value}")
+        language = payload.preferred_locale or await detect_locale(customer_id, text)
+        if language:
+            log.info(f"Using language: {language.value if isinstance(language, Locale) else language}")
 
         prompt_fn = hint_type_to_prompt[job_type][payload.hint]
-        system_message = prompt_fn(locale)
+        system_message = prompt_fn(language)
 
     prompt = ChatPromptTemplate(
         [
