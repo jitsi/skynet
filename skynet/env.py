@@ -47,6 +47,13 @@ llama_n_ctx = int(os.environ.get('LLAMA_N_CTX', 128000))
 embeddings_chunk_size = int(os.environ.get('EMBEDDINGS_CHUNK_SIZE', 5000))
 embeddings_model_path = os.environ.get('EMBEDDINGS_MODEL_PATH', 'BAAI/bge-m3')
 
+# fastText language identification; detection falls back to the LLM when the model is
+# missing or its confidence is below the threshold
+language_id_model_path = os.environ.get(
+    'LANGUAGE_ID_MODEL_PATH', f'{os.getcwd()}/models/language_id/glotlid_v4_small.ftz'
+)
+language_id_min_confidence = float(os.environ.get('LANGUAGE_ID_MIN_CONFIDENCE', 0.5))
+
 # azure openai api
 # latest ga version https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
 azure_openai_api_version = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-10-21')

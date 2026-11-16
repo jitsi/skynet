@@ -7,7 +7,80 @@ from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPay
 
 
 class TestDetectLocale:
-    """Tests for the detect_locale function."""
+    """Tests for detect_locale's fastText path, using the real language identification model."""
+
+    @pytest.fixture
+    def llm_select(self, mocker):
+        return mocker.patch('skynet.modules.ttt.processor.LLMSelector.select')
+
+    @pytest.mark.asyncio
+    async def test_uses_fasttext_without_calling_llm(self, llm_select):
+        from e2e.transcripts import german_transcript
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", german_transcript)
+
+        assert result == Locale.GERMAN
+        llm_select.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_confidently_unsupported_language_returns_none_without_llm(self, llm_select):
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(
+            "customer123", "Bom dia, vamos começar a reunião sobre o orçamento do próximo trimestre."
+        )
+
+        assert result is None
+        llm_select.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_llm_when_confidence_is_low(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=('fr', 0.3))
+        mocker.patch(
+            'skynet.modules.ttt.processor._detect_locale_with_llm', new=mocker.AsyncMock(return_value=Locale.GERMAN)
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Ja, oui, d'accord")
+
+        assert result == Locale.GERMAN
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_llm_when_model_is_unavailable(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=None)
+        mocker.patch(
+            'skynet.modules.ttt.processor._detect_locale_with_llm', new=mocker.AsyncMock(return_value=Locale.ITALIAN)
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Ciao, come stai?")
+
+        assert result == Locale.ITALIAN
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_llm_when_fasttext_raises(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', side_effect=RuntimeError('boom'))
+        mocker.patch(
+            'skynet.modules.ttt.processor._detect_locale_with_llm', new=mocker.AsyncMock(return_value=Locale.SPANISH)
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Hola, ¿cómo estás?")
+
+        assert result == Locale.SPANISH
+
+
+class TestDetectLocaleLLMFallback:
+    """Tests for detect_locale's LLM path, taken when fastText is unavailable."""
+
+    @pytest.fixture(autouse=True)
+    def no_fasttext(self, mocker):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=None)
 
     @pytest.fixture
     def mock_llm_selector(self, mocker):

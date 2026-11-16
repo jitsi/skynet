@@ -36,6 +36,11 @@ poetry install --with vllm
 export LLAMA_PATH="llama.3.1"
 poetry install
 
+# Optional: local language detection (otherwise the LLM detects the payload's language)
+mkdir -p models/language_id
+curl -L -o models/language_id/glotlid_v4_small.ftz \
+  https://huggingface.co/cis-lmu/glotlid/resolve/e9592e0a9bc3b6f2a946de94faaa188d1dd6f522/model_v4_small.ftz
+
 ./run.sh
 ```
 
