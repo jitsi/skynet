@@ -16,12 +16,13 @@ from oci.exceptions import TransientServiceError
 from openai.types.chat import ChatCompletionMessageParam
 
 from skynet.constants import Locale
-from skynet.env import modules, oci_blackout_fallback_duration, use_oci
+from skynet.env import language_id_min_confidence, modules, oci_blackout_fallback_duration, use_oci
 from skynet.logs import get_logger
 from skynet.modules.monitoring import MAP_REDUCE_CHUNKING_COUNTER
 from skynet.modules.ttt.assistant.constants import assistant_rag_question_extractor
 from skynet.modules.ttt.assistant.utils import get_assistant_chat_messages
 from skynet.modules.ttt.assistant.v1.models import AssistantDocumentPayload
+from skynet.modules.ttt.language_id import identify_language, language_name
 from skynet.modules.ttt.llm_selector import LLMSelector
 from skynet.modules.ttt.ratelimit_tracker import (
     extract_ratelimit_from_response,
@@ -86,15 +87,39 @@ _CODE_TO_LOCALE = {
 }
 
 
-async def detect_locale(customer_id: str, text: str) -> Optional[Locale]:
-    """Detect language from text using the LLM and return matching Locale, or None if unsupported/failed."""
+async def detect_locale(customer_id: str, text: str) -> Optional[Locale | str]:
+    """Detect the language of the text.
+
+    Returns the matching Locale, the English name of another well-supported language, or None when
+    the language is unknown or detection failed. Uses the local fastText model, falling back to the
+    LLM when the model is unavailable or unsure.
+    """
     if not text or not text.strip():
         return None
 
-    try:
-        # Sample first 5000 chars for speed on long transcripts
-        sample = text[:5000]
+    # Sample first 5000 chars for speed on long transcripts
+    sample = text[:5000]
 
+    try:
+        prediction = identify_language(sample)
+    except Exception as e:
+        log.warning(f"fastText language identification failed: {e}")
+        prediction = None
+
+    if prediction:
+        lang_code, confidence = prediction
+        if confidence >= language_id_min_confidence:
+            language = _CODE_TO_LOCALE.get(lang_code) or language_name(lang_code)
+            log.info(f"fastText detected language: {lang_code} ({confidence:.2f}), using: {language}")
+            return language
+
+        log.info(f"fastText unsure about language ({lang_code}, {confidence:.2f}), asking the LLM")
+
+    return await _detect_locale_with_llm(customer_id, sample)
+
+
+async def _detect_locale_with_llm(customer_id: str, sample: str) -> Optional[Locale]:
+    try:
         model = LLMSelector.select(customer_id, for_language_detection=True)
         prompt = ChatPromptTemplate.from_template(LANGUAGE_DETECTION_PROMPT)
         chain = prompt | model | StrOutputParser()
@@ -104,13 +129,13 @@ async def detect_locale(customer_id: str, text: str) -> Optional[Locale]:
 
         locale = _CODE_TO_LOCALE.get(lang_code)
         if locale:
-            log.info(f"Detected language: {lang_code}")
+            log.info(f"LLM detected language: {lang_code}")
         else:
-            log.info(f"Language detection returned unsupported code: {lang_code}")
+            log.info(f"LLM language detection returned unsupported code: {lang_code}")
 
         return locale
     except Exception as e:
-        log.warning(f"Language detection failed: {e}")
+        log.warning(f"LLM language detection failed: {e}")
         return None
 
 
@@ -216,12 +241,12 @@ async def summarize(model: BaseChatModel, job: Job) -> str:
 
     if not system_message:
         # Detect language if not explicitly provided
-        locale = payload.preferred_locale or await detect_locale(customer_id, text)
-        if locale:
-            log.info(f"Using locale: {locale.value}")
+        language = payload.preferred_locale or await detect_locale(customer_id, text)
+        if language:
+            log.info(f"Using language: {language.value if isinstance(language, Locale) else language}")
 
         prompt_fn = hint_type_to_prompt[job_type][payload.hint]
-        system_message = prompt_fn(locale)
+        system_message = prompt_fn(language)
 
     prompt = ChatPromptTemplate(
         [

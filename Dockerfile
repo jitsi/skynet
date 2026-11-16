@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 ARG BASE_IMAGE_BUILD=nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 ARG BASE_IMAGE_RUN=nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
@@ -85,6 +87,13 @@ COPY --from=ffmpeg_builder /copy_libs/ /usr/local/lib/
 COPY --from=ffmpeg_builder /usr/local/lib/pkgconfig /usr/local/lib/pkgconfig
 COPY --chown=jitsi:jitsi --from=builder /app/.venv /app/.venv
 
+# fastText language identification model (GlotLID v4 small, Apache-2.0), kept outside the /models volume.
+# The directory is created first because ADD --chmod would also apply 644 to it, making it untraversable.
+RUN mkdir -p /opt/language_id
+ADD --checksum=sha256:27fa708eac9680a14e51ead8feb48e7d1b29db9af3d4f9038f50aa0781cd1d85 --chmod=644 \
+    https://huggingface.co/cis-lmu/glotlid/resolve/e9592e0a9bc3b6f2a946de94faaa188d1dd6f522/model_v4_small.ftz \
+    /opt/language_id/glotlid_v4_small.ftz
+
 RUN \
     apt-get update && \
     apt-get install -y apt-transport-https ca-certificates
@@ -113,7 +122,8 @@ ENV \
     OUTLINES_CACHE_DIR=/app/vllm/outlines \
     VLLM_CACHE_ROOT=/app/vllm/cache \
     VLLM_CONFIG_ROOT=/app/vllm/config \
-    HF_HOME=/app/hf
+    HF_HOME=/app/hf \
+    LANGUAGE_ID_MODEL_PATH=/opt/language_id/glotlid_v4_small.ftz
 
 VOLUME [ "/models" ]
 

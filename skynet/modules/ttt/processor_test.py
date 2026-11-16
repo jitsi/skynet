@@ -7,7 +7,92 @@ from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPay
 
 
 class TestDetectLocale:
-    """Tests for the detect_locale function."""
+    """Tests for detect_locale's fastText path, using the real language identification model."""
+
+    @pytest.fixture
+    def llm_select(self, mocker):
+        return mocker.patch('skynet.modules.ttt.processor.LLMSelector.select')
+
+    @pytest.mark.asyncio
+    async def test_uses_fasttext_without_calling_llm(self, llm_select):
+        from e2e.transcripts import german_transcript
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", german_transcript)
+
+        assert result == Locale.GERMAN
+        llm_select.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_names_well_supported_language_without_locale(self, llm_select):
+        """A language Skynet has no Locale for is still named, so the summary is written in it."""
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale(
+            "customer123", "Bom dia, vamos começar a reunião sobre o orçamento do próximo trimestre."
+        )
+
+        assert result == 'portuguese'
+        llm_select.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_confident_minor_language_returns_none_without_llm(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=('lmo_Latn', 0.95))
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Allora, sem chì per la riunion")
+
+        assert result is None
+        llm_select.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_llm_when_confidence_is_low(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=('fr', 0.3))
+        mocker.patch(
+            'skynet.modules.ttt.processor._detect_locale_with_llm', new=mocker.AsyncMock(return_value=Locale.GERMAN)
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Ja, oui, d'accord")
+
+        assert result == Locale.GERMAN
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_llm_when_model_is_unavailable(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=None)
+        mocker.patch(
+            'skynet.modules.ttt.processor._detect_locale_with_llm', new=mocker.AsyncMock(return_value=Locale.ITALIAN)
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Ciao, come stai?")
+
+        assert result == Locale.ITALIAN
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_llm_when_fasttext_raises(self, mocker, llm_select):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', side_effect=RuntimeError('boom'))
+        mocker.patch(
+            'skynet.modules.ttt.processor._detect_locale_with_llm', new=mocker.AsyncMock(return_value=Locale.SPANISH)
+        )
+
+        from skynet.modules.ttt.processor import detect_locale
+
+        result = await detect_locale("customer123", "Hola, ¿cómo estás?")
+
+        assert result == Locale.SPANISH
+
+
+class TestDetectLocaleLLMFallback:
+    """Tests for detect_locale's LLM path, taken when fastText is unavailable."""
+
+    @pytest.fixture(autouse=True)
+    def no_fasttext(self, mocker):
+        mocker.patch('skynet.modules.ttt.processor.identify_language', return_value=None)
 
     @pytest.fixture
     def mock_llm_selector(self, mocker):
@@ -200,6 +285,33 @@ class TestSummarize:
         get_existing_customer_config.assert_not_called()
 
         assert result == "Test result"
+
+    @pytest.mark.asyncio
+    async def test_summarize_passes_detected_language_name_to_prompt(self, summarize_fixture):
+        """A detected language without a Locale reaches the default prompt by name."""
+        from skynet.modules.ttt.processor import summarize
+        from skynet.modules.ttt.summaries.v1.models import DocumentMetadata, DocumentPayload, HintType, Job, JobType
+
+        prompt_fn = summarize_fixture.Mock(return_value='Default summary prompt for text')
+        summarize_fixture.patch(
+            'skynet.modules.ttt.processor.hint_type_to_prompt', {JobType.SUMMARY: {HintType.TEXT: prompt_fn}}
+        )
+
+        mock_prompt = summarize_fixture.Mock()
+        mock_prompt.__or__ = lambda self, other: MockChain(result="Resumo")
+        summarize_fixture.patch('skynet.modules.ttt.processor.ChatPromptTemplate', return_value=mock_prompt)
+
+        mock_model = summarize_fixture.Mock()
+        mock_model.get_num_tokens.return_value = 100
+
+        text = "Bom dia, vamos começar a reunião sobre o orçamento do próximo trimestre."
+        payload = DocumentPayload(text=text, hint=HintType.TEXT)
+        job = Job(payload=payload, metadata=DocumentMetadata(customer_id="customer123"), type=JobType.SUMMARY)
+
+        result = await summarize(mock_model, job)
+
+        prompt_fn.assert_called_once_with('portuguese')
+        assert result == "Resumo"
 
     @pytest.mark.asyncio
     async def test_summarize_falls_back_to_default_when_no_customer_config(self, summarize_fixture):

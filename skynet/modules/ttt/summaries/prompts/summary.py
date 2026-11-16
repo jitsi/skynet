@@ -4,7 +4,7 @@ from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.common import get_language_instruction
 
 
-def get_summary_prompt(transcript_type: str, locale: Optional[Locale] = None) -> str:
+def get_summary_prompt(transcript_type: str, locale: Optional[Locale | str] = None) -> str:
     return f"""You are an AI assistant. Summarize the following {transcript_type} transcript into a clear and concise summary.
 
 Instructions:
@@ -19,17 +19,17 @@ Instructions:
 """
 
 
-def summary_emails(locale: Optional[Locale] = None) -> str:
+def summary_emails(locale: Optional[Locale | str] = None) -> str:
     return get_summary_prompt("emails", locale)
 
 
-def summary_conversation(locale: Optional[Locale] = None) -> str:
+def summary_conversation(locale: Optional[Locale | str] = None) -> str:
     return get_summary_prompt("conversation", locale)
 
 
-def summary_meeting(locale: Optional[Locale] = None) -> str:
+def summary_meeting(locale: Optional[Locale | str] = None) -> str:
     return get_summary_prompt("meeting", locale)
 
 
-def summary_text(locale: Optional[Locale] = None) -> str:
+def summary_text(locale: Optional[Locale | str] = None) -> str:
     return get_summary_prompt("text or document", locale)

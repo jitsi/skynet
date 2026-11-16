@@ -41,6 +41,12 @@ jobs:
       - run: poetry install --no-interaction --no-root
         if: steps.cache-deps.outputs.cache-hit != 'true'
       - run: poetry install --no-interaction
+      - name: Download language identification model
+        run: |
+          mkdir -p models/language_id
+          curl -sSfL -o models/language_id/glotlid_v4_small.ftz \
+            https://huggingface.co/cis-lmu/glotlid/resolve/e9592e0a9bc3b6f2a946de94faaa188d1dd6f522/model_v4_small.ftz
+          echo "27fa708eac9680a14e51ead8feb48e7d1b29db9af3d4f9038f50aa0781cd1d85  models/language_id/glotlid_v4_small.ftz" | sha256sum -c -
       - name: Run unit tests
         run: BYPASS_AUTHORIZATION=1 poetry run pytest
       - name: Run skynet

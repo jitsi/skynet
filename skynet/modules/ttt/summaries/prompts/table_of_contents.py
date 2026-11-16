@@ -4,7 +4,7 @@ from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.common import get_language_instruction
 
 
-def get_table_of_contents_prompt(transcript_type: str, locale: Optional[Locale] = None) -> str:
+def get_table_of_contents_prompt(transcript_type: str, locale: Optional[Locale | str] = None) -> str:
     return f"""You are an AI assistant. From a {transcript_type} transcript, extract a normalized table of contents.
 
 Guidelines:
@@ -25,17 +25,17 @@ Example:
 """
 
 
-def table_of_contents_emails(locale: Optional[Locale] = None) -> str:
+def table_of_contents_emails(locale: Optional[Locale | str] = None) -> str:
     return get_table_of_contents_prompt("emails", locale)
 
 
-def table_of_contents_conversation(locale: Optional[Locale] = None) -> str:
+def table_of_contents_conversation(locale: Optional[Locale | str] = None) -> str:
     return get_table_of_contents_prompt("conversation", locale)
 
 
-def table_of_contents_meeting(locale: Optional[Locale] = None) -> str:
+def table_of_contents_meeting(locale: Optional[Locale | str] = None) -> str:
     return get_table_of_contents_prompt("meeting", locale)
 
 
-def table_of_contents_text(locale: Optional[Locale] = None) -> str:
+def table_of_contents_text(locale: Optional[Locale | str] = None) -> str:
     return get_table_of_contents_prompt("text or document", locale)

@@ -4,7 +4,7 @@ from skynet.constants import Locale
 from skynet.modules.ttt.summaries.prompts.common import get_language_instruction
 
 
-def get_action_items_prompt(transcript_type: str, locale: Optional[Locale] = None) -> str:
+def get_action_items_prompt(transcript_type: str, locale: Optional[Locale | str] = None) -> str:
     return f"""You are an AI assistant. Your task is to extract all action items from the following {transcript_type} transcript.
 
 Instructions:
@@ -21,17 +21,17 @@ If there are no action items, respond with "No action items".
 """
 
 
-def action_items_emails(locale: Optional[Locale] = None) -> str:
+def action_items_emails(locale: Optional[Locale | str] = None) -> str:
     return get_action_items_prompt("emails", locale)
 
 
-def action_items_conversation(locale: Optional[Locale] = None) -> str:
+def action_items_conversation(locale: Optional[Locale | str] = None) -> str:
     return get_action_items_prompt("conversation", locale)
 
 
-def action_items_meeting(locale: Optional[Locale] = None) -> str:
+def action_items_meeting(locale: Optional[Locale | str] = None) -> str:
     return get_action_items_prompt("meeting", locale)
 
 
-def action_items_text(locale: Optional[Locale] = None) -> str:
+def action_items_text(locale: Optional[Locale | str] = None) -> str:
     return get_action_items_prompt("text or document", locale)
